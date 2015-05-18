@@ -42,14 +42,14 @@ sub new {
         };
 
         for my $connector (@{$self->{__connectors}->get_definitions()}) {
-            $self->{__cron}->add($connector->get_scheduling(), sub {
-                my $exec = Navel::Scheduler::Cron::Exec->new(
-                    $connector,
-                    $self->{__rabbitmq}
-                );
-
-                $exec->exec()->push();
-            });
+            $self->{__cron}->add($connector->get_scheduling(),
+                sub {
+                    Navel::Scheduler::Cron::Exec->new(
+                        $connector,
+                        $self->{__rabbitmq}
+                    )->exec()->push();
+                }
+            );
         }
 
         $class = ref $class || $class;
