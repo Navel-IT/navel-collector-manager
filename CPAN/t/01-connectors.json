@@ -1,0 +1,20 @@
+[
+    {
+        "name" : "hiera-file-1",
+        "collection" : "hiera-file",
+        "type" : "code",
+        "scheduling" : "* * * * * *"
+    },
+    {
+        "name" : "nagios-host-and-services-1",
+        "collection" : "nagios-host-and-services",
+        "type" : "external",
+        "scheduling" : "* * * * * *"
+    },
+    {
+        "name" : "puppet-reports-1",
+        "collection" : "puppet-reports",
+        "type" : "text",
+        "scheduling" : "* * * * * *"
+    }
+]

@@ -1,0 +1,24 @@
+[
+    {
+        "name" : "rabbitmq-1",
+        "host" : "localhost",
+        "port" : 5672,
+        "user" : "guest",
+        "password" : "guest",
+        "timeout" : 0,
+        "vhost" : "/vhost1",
+        "tls" : 0,
+        "channel" : 1
+    },
+    {
+        "name" : "rabbitmq-2",
+        "host" : "127.0.0.1",
+        "port" : 5672,
+        "user" : "guest",
+        "password" : "guest",
+        "timeout" : 0,
+        "vhost" : "/vhost2",
+        "tls" : 0,
+        "channel" : 1
+    }
+]

@@ -1,0 +1,237 @@
+#!/usr/bin/env perl
+# Copyright 2015 Navel-IT
+# Navel Scheduler is developped by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
+
+#-> BEGIN
+
+#-> initialization
+
+use 5.10.1;
+
+use lib '/usr/local/share/navel-scheduler/lib';
+
+use Getopt::Long qw/
+    Configure
+    GetOptions
+/;
+
+use Mojolicious::Lite;
+
+use Mojo::Server::Daemon;
+
+use Navel::Logger;
+
+use Navel::Scheduler qw/
+    $VERSION
+/;
+
+use Navel::Definition::WebService::Etc::Parser;
+
+#-> defaults
+
+my $general_configuration_file;
+
+#-> functions
+
+sub get_help() {
+    return <<EOF;
+        -h, --help    show help
+        -v, --version    show version
+
+        -l, --load-configuration <J>    load general configuration from <J> (JSON file)
+EOF
+}
+
+#-> main
+
+Configure('bundling');
+
+GetOptions(
+    'h|help' => sub {
+        print get_help();
+
+        exit 0;
+    },
+    'v|version' => sub {
+        print $VERSION . "\n";
+
+        exit 0;
+    },
+    'l|load-configuration=s' => \$general_configuration_file
+) or die $!;
+
+if (defined $general_configuration_file) {
+    my $scheduler = eval {
+        Navel::Scheduler->new($general_configuration_file);
+    };
+
+    my $logger = Navel::Logger->new($@ ? undef : $scheduler->get_configuration()->get_definition()->{log}->{file_path});
+
+    unless ($@) {
+        my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
+
+        my $return = $web_services_listeners->load($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
+
+        if ($return->[0]) {
+            my $return = $web_services_listeners->make();
+
+            if ($return->[0]) {
+                app()->mode('production');
+
+                app()->log()->level('fatal');
+
+                under sub {
+                    my $controller = shift;
+
+                    my $userinfo = $controller->req()->url()->to_abs()->userinfo();
+
+                    if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
+                        return 1;
+                    } else {
+                        $controller->res()->headers()->www_authenticate('Basic');
+
+                        $controller->render(
+                            json => {
+                                error_message => 'Authentication required'
+                            },
+                            status => 401
+                        );
+
+                        return undef;
+                    }
+                };
+
+                get '/scheduler/api' => {
+                    json => {
+                        version => $VERSION
+                    }
+                };
+
+                get '/scheduler/api/general' => {
+                    json => $scheduler->get_configuration()->get_definition()
+                };
+
+                get '/scheduler/api/connectors' => {
+                    json => $scheduler->get_core()->get_connectors()->get_names()
+                };
+
+                get '/scheduler/api/connectors/(:connector)' => sub {
+                    my $controller = shift;
+
+                    $controller->render(
+                        json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
+                    );
+                };
+
+                get '/scheduler/api/rabbitmq' => {
+                    json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                };
+
+                get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                    my $controller = shift;
+
+                    $controller->render(
+                        json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                    );
+                };
+
+                get '/scheduler/api/webservices' => {
+                    json => $web_services_listeners->get_names()
+                };
+
+                get '/scheduler/api/webservices/(:webservice)' => sub {
+                    my $controller = shift;
+
+                    $controller->render(
+                        json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
+                    );
+                };
+
+                my $mojo_server = Mojo::Server::Daemon->new(
+                    app => app(),
+                    listen => $web_services_listeners->get_urls()
+                );
+
+                $mojo_server->silent(1)->start();
+
+                $scheduler->run(); # * bypass scope bugs, need duplicate
+
+                exit 0;
+            } else {
+                $logger->push_to_buffer($return->[1])->flush_buffer();
+            }
+        } else {
+            $logger->push_to_buffer($return->[1])->flush_buffer();
+        }
+
+        $scheduler->run(); # * bypass scope bugs, need duplicate
+    } else {
+        $logger->push_to_buffer($@)->flush_buffer();
+
+        exit 1;
+    }
+} else {
+    print get_help() . "\n";
+}
+
+exit 0;
+
+#-> POD
+
+=pod
+
+=head1 NAME
+
+navel-scheduler
+
+=head1 SYNOPSIS
+
+Control and run Navel::Scheduler
+
+=head1 USAGE
+
+navel-scheduler -h
+
+=head1 AUTHOR
+
+Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+
+=head1 LICENSE
+
+GNU GPL v3
+
+=cut
+
+#-> TPL + END
+
+__DATA__
+
+@@ favicon.ico (base64)
+AAABAAEAEBAAAAAAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAQAAAAAAAAAAAAAAAAA
+AAAAAAAAAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/
+AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8A
+AAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/////////////////////////////////////////
+////////////////////////AAAA/wAAAP8AAAD/AAAA////////////////////////////////
+/////////////////////////////////wAAAP8AAAD/AAAA/wAAAP///////////wAAAP8AAAD/
+AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD///////////8AAAD/AAAA/wAAAP8AAAD///////////8A
+AAD/////////////////////////////////AAAA////////////AAAA/wAAAP8AAAD/AAAA////
+////////AAAA/////////////////////////////////wAAAP///////////wAAAP8AAAD/AAAA
+/wAAAP///////////wAAAP///////////wAAAP8AAAD///////////8AAAD///////////8AAAD/
+AAAA/wAAAP8AAAD///////////8AAAD///////////8AAAD/AAAA////////////AAAA////////
+////AAAA/wAAAP8AAAD/AAAA////////////AAAA/////////////////////////////////wAA
+AP///////////wAAAP8AAAD/AAAA/wAAAP///////////wAAAP//////////////////////////
+//////8AAAD///////////8AAAD/AAAA/wAAAP8AAAD///////////8AAAD/AAAA/wAAAP8AAAD/
+AAAA/wAAAP8AAAD/AAAA////////////AAAA/wAAAP8AAAD/AAAA////////////////////////
+/////////////////////////////////////////wAAAP8AAAD/AAAA/wAAAP//////////////
+//////////////////////////////////////////////////8AAAD/AAAA/wAAAP8AAAD/AAAA
+/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/
+AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8A
+AAD/AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA
+//8AAP//AAD//w==
+
+@@ not_found.html.ep
+<!DOCTYPE html>
+<html>
+    <head><title>Page not found</title></head>
+    <body>Page not found</body>
+</html>

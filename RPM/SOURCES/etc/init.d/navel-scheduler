@@ -1,0 +1,66 @@
+#!/bin/bash
+# Copyright 2015 Navel-IT
+# Navel Scheduler is developped by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
+#
+# chkconfig: - 98 02
+
+#-> BEGIN
+
+#-> initialization
+
+. /etc/rc.d/init.d/functions
+
+ECHO='echo'
+TOUCH='touch'
+RM='rm'
+
+prog='navel-scheduler'
+
+lockfile="/var/lock/subsys/${prog}.lock"
+pidfile="/var/run/${prog}.pid"
+sysconfig="/etc/sysconfig/${prog}"
+
+[[ -r ${sysconfig} ]] && . ${sysconfig}
+
+#-> functions
+
+f_start() {
+    ${ECHO} "Starting ${prog} ..."
+
+    daemon ${prog} ${OPTS}
+
+    [[ ${?} -eq 0 ]] && ${TOUCH} ${lockfile}
+}
+
+f_stop() {
+    ${ECHO} "Stopping ${prod} ..."
+
+    killproc ${prog}
+
+    [[ ${?} -eq 0 ]] && ${RM} -f ${lockfile}
+}
+
+#-> main
+
+case ${1} in
+    start)
+        f_start ;;
+    stop)
+        f_stop ;;
+    status)
+        status ${prog} ;;
+    restart)
+        f_stop
+
+        f_start
+
+        ;;
+    *)
+        ${ECHO} "Usage : $0 {start|stop|restart|status}"
+
+        exit 1
+
+        ;;
+esac
+
+#-> END

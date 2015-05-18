@@ -1,0 +1,14 @@
+[
+    {
+        "name" : "webservice-1",
+        "interface_mask" : "*",
+        "port" : 3080,
+        "tls" : 0
+    },
+    {
+        "name" : "webservice-2",
+        "interface_mask" : "[::]",
+        "port" : 3090,
+        "tls" : 1
+    }
+]

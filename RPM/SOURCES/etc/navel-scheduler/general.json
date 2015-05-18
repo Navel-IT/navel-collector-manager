@@ -1,0 +1,18 @@
+{
+    "log" : {
+        "file_path" : "/var/log/navel-scheduler/navel-scheduler.log"
+    },
+    "definitions_path" : {
+        "connectors" : "/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory" : "/etc/navel-scheduler/connectors",
+        "rabbitmq" : "/etc/navel-scheduler/rabbitmq.json",
+        "webservices" : "/etc/navel-scheduler/webservices.json"
+    },
+    "rabbitmq" : {
+        "fork_max_procs" : 10
+    },
+    "webservices" : {
+        "login" : "admin",
+        "password": "admin"
+    }
+}

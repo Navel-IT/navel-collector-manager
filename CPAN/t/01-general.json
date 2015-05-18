@@ -1,0 +1,17 @@
+{
+    "log" : {
+        "file_path" : "navel-scheduler.log"
+    },
+    "definitions_path" : {
+        "connectors" : "t/01-connectors.json",
+        "connectors_exec_directory" : "connectors",
+        "rabbitmq" : "t/01-rabbitmq.json"
+    },
+    "rabbitmq" : {
+        "fork_max_procs" : 10
+    },
+    "webservices" : {
+        "login" : "admin",
+        "password": "navel-scheduler"
+    }
+}
