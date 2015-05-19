@@ -7,8 +7,7 @@
         "password" : "guest",
         "timeout" : 0,
         "vhost" : "/vhost1",
-        "tls" : 0,
-        "channel" : 1
+        "tls" : 0
     },
     {
         "name" : "rabbitmq-2",
@@ -18,7 +17,6 @@
         "password" : "guest",
         "timeout" : 0,
         "vhost" : "/vhost2",
-        "tls" : 0,
-        "channel" : 1
+        "tls" : 0
     }
 ]

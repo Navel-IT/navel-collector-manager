@@ -47,8 +47,7 @@ sub rabbitmq_definition_validator($) {
             user => 'text',
             password => 'text',
             timeout => 'int',
-            vhost => 'text',
-            channel => 'int'
+            vhost => 'text'
         }
     );
 
@@ -118,14 +117,6 @@ sub get_vhost {
 
 sub set_vhost {
     return shift->set_generic('vhost', shift);
-}
-
-sub get_channel {
-    return shift->{__channel};
-}
-
-sub set_channel {
-    return shift->set_generic('channel', shift);
 }
 
 # sub AUTOLOAD {}

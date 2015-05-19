@@ -41,7 +41,7 @@ WriteMakefile(
         'IO::File' => 0,
         'IPC::Cmd' => 0,
         'Parallel::ForkManager' => 0,
-        'Net::RabbitMQ' => 0,
+        'Net::RabbitFoot' => 0,
         'Carp' => 0,
         'AnyEvent::DateTime::Cron' => 0,
         'Exporter::Easy' => 0,

@@ -30,7 +30,7 @@ use IPC::Cmd qw/
 
 use Parallel::ForkManager;
 
-use Net::RabbitMQ;
+use Net::RabbitFoot;
 
 use Navel::RabbitMQ::Serialize::Data qw/
     to
@@ -120,47 +120,45 @@ sub push {
         $self->get_connector(),
         $self->get_datas()
     );
-    
+
     print $serialize->[1] . "\n";
 
-    # if ($serialize->[0]) {
-        # my $fm = Parallel::ForkManager->new(10); # general.json
+    if ($serialize->[0]) {
+        my $fm = Parallel::ForkManager->new(10); # general.json
 
-        # for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
-            # $fm->start() && next;
+        for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
+            $fm->start() && next;
 
-            # my $pusher = Net::RabbitMQ->new();
+            eval {
+                my $pusher = Net::RabbitFoot->new()->load_xml_spec()->connect(
+                    host => $rabbitmq->get_host(),
+                    port => $rabbitmq->get_port(),
+                    user => $rabbitmq->get_user(),
+                    pass => $rabbitmq->get_password(),
+                    vhost => $rabbitmq->get_vhost(),
+                    timeout => $rabbitmq->get_timeout()
+                );
 
-            # eval {
-                # if ($pusher->connect(
-                    # $rabbitmq->get_host(),
-                    # {
-                        # user => $rabbitmq->get_user(),
-                        # password => $rabbitmq->get_password(),
-                        # port => $rabbitmq->get_port(),
-                        # vhost => $rabbitmq->get_vhost(),
-                        # timeout => $rabbitmq->get_timeout()
-                    # }
-                # )) {
-                    # $pusher->channel_open($rabbitmq->get_channel());
+                my $channel = $pusher->open_channel();
 
-                    # $pusher->publish(
-                        # $rabbitmq->get_channel(),
-                        # 'cli.' . $self->get_connector()->get_name() . 'event',
-                        # $serialize->[1]
-                    # );
+                $channel->publish(
+                    exchange => 'navel-scheduler.events',
+                    routing_key => $self->get_connector()->get_name()
+                    body => $serialize->[1]
+                );
 
-                    # $pusher->disconnect();
-                # }
-            # };
+                $pusher->close();
+            };
 
-            # print $@ . "\n";
+            if ($@) {
+                # error to manage and log
+            }
 
-            # $fm->finish();
-        # }
+            $fm->finish();
+        }
 
-        # return $fm->wait_all_children();
-    # }
+        return $fm->wait_all_children();
+    }
 
     return 0;
 }
