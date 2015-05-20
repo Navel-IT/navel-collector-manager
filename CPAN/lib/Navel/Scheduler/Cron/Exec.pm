@@ -30,7 +30,7 @@ use IPC::Cmd qw/
 
 use Parallel::ForkManager;
 
-use Net::RabbitFoot;
+use Net::AMQP::RabbitMQ;
 
 use Navel::RabbitMQ::Serialize::Data qw/
     to
@@ -45,18 +45,19 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $rabbitmq, $extra_parameters) = @_;
+    my ($class, $connector, $rabbitmq, $logger, $extra_parameters) = @_;
 
-    if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser') {
+    if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
         my $self = {
             __datas => undef,
             __connector => $connector,
             __rabbitmq => $rabbitmq,
+            __logger => $logger,
             __max_procs => isint($extra_parameters->{max_procs}) ? $extra_parameters->{max_procs} : FM_DEFAULT_MAX_PROCS
         };
 
         if ($connector->is_type_code()) {
-            $self->{__exec} = sub { # error to manage and log (eval require and eval { connector() }
+            $self->{__exec} = sub {
                 local $@;
 
                 my $datas;
@@ -67,6 +68,12 @@ sub new {
                     };
                 }
 
+                if ($@) {
+                    $self->{__logger}->push_to_buffer($@)->flush_buffer();
+
+                    $self->{__logger}->clear_buffer;
+                }
+
                 return $datas;
             };
         } elsif ($connector->is_type_external()) {
@@ -75,12 +82,16 @@ sub new {
                     command => $connector->get_exec_file_path()
                 );
 
-                # $cr # error to manage and log
+                if ($error) {
+                    $self->{__logger}->push_to_buffer(join '', @{$buffererr})->flush_buffer();
+
+                    $self->{__logger}->clear_buffer();
+                }
 
                 return join '', @{$bufferout};
             };
         } elsif ($connector->is_type_plain_text()) {
-            $self->{__exec} = sub { # error to manage and log if open() failed
+            $self->{__exec} = sub {
                 my $datas;
 
                 my $fh = IO::File->new();
@@ -93,6 +104,10 @@ sub new {
                     $datas = <$fh>;
 
                     $fh->close();
+                } else {
+                    $self->{__logger}->push_to_buffer($!)->flush_buffer();
+
+                    $self->{__logger}->clear_buffer();
                 }
 
                 return $datas;
@@ -121,37 +136,68 @@ sub push {
         $self->get_datas()
     );
 
-    print $serialize->[1] . "\n";
-
     if ($serialize->[0]) {
-        my $fm = Parallel::ForkManager->new(10); # general.json
+        my $fm = Parallel::ForkManager->new($self->get_max_procs());
 
         for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
             $fm->start() && next;
 
+            my $pusher = Net::AMQP::RabbitMQ->new();
+
+            my $channel_id = 1;
+
+            my %naming_conventions = (
+                exchange => 'navel-scheduler.E.direct.events',
+                queue => 'navel-scheduler.Q.events',
+                binding_key => 'navel-scheduler.collection.' . $self->get_connector()->get_collection()
+            );
+
+            my %options = (
+                user => $rabbitmq->get_user(),
+                password => $rabbitmq->get_password(),
+                port => $rabbitmq->get_port(),
+                vhost => $rabbitmq->get_vhost()
+            );
+
+            $options{timeout} = $rabbitmq->get_timeout() if ($rabbitmq->get_timeout());
+
             eval {
-                my $pusher = Net::RabbitFoot->new()->load_xml_spec()->connect(
-                    host => $rabbitmq->get_host(),
-                    port => $rabbitmq->get_port(),
-                    user => $rabbitmq->get_user(),
-                    pass => $rabbitmq->get_password(),
-                    vhost => $rabbitmq->get_vhost(),
-                    timeout => $rabbitmq->get_timeout()
+                $pusher->connect($rabbitmq->get_host(), \%options);
+
+                $pusher->channel_open($channel_id); # $pusher->get_channel_max()
+
+                $pusher->exchange_declare($channel_id, $naming_conventions{exchange},
+                    {
+                        durable => 1
+                    }
                 );
 
-                my $channel = $pusher->open_channel();
+                for (@{$rabbitmq->get_queues_suffix()}) {
+                    my $queue_name = $naming_conventions{queue} . '.' . $_;
 
-                $channel->publish(
-                    exchange => 'navel-scheduler.events',
-                    routing_key => $self->get_connector()->get_name()
-                    body => $serialize->[1]
+                    $pusher->queue_declare($channel_id, $queue_name,
+                        {
+                            durable => 1
+                        }
+                    );
+
+                    $pusher->queue_bind($channel_id, $queue_name, $naming_conventions{exchange}, $naming_conventions{binding_key});
+
+                }
+
+                $pusher->publish($channel_id, $naming_conventions{binding_key}, $serialize->[1],
+                    {
+                        exchange => $naming_conventions{exchange}
+                    }
                 );
 
-                $pusher->close();
+                $pusher->disconnect();
             };
 
             if ($@) {
-                # error to manage and log
+                $self->get_logger()->push_to_buffer($@)->flush_buffer();
+
+                $self->get_logger()->clear_buffer();
             }
 
             $fm->finish();
@@ -181,6 +227,10 @@ sub get_connector {
 
 sub get_rabbitmq {
     return shift->{__rabbitmq};
+}
+
+sub get_logger {
+    return shift->{__logger};
 }
 
 sub get_max_procs {

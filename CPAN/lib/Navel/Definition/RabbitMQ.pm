@@ -47,11 +47,15 @@ sub rabbitmq_definition_validator($) {
             user => 'text',
             password => 'text',
             timeout => 'int',
-            vhost => 'text'
+            vhost => 'text',
+            queues_suffix => [
+                'word',
+                ''
+            ]
         }
     );
 
-    return $validator->validate($parameters);
+    return $validator->validate($parameters) && @{$parameters->{queues_suffix}};
 }
 
 #-> methods
@@ -117,6 +121,14 @@ sub get_vhost {
 
 sub set_vhost {
     return shift->set_generic('vhost', shift);
+}
+
+sub get_queues_suffix {
+    return shift->{__queues_suffix};
+}
+
+sub set_queues_suffix {
+    return shift->set_generic('queues_suffix', shift);
 }
 
 # sub AUTOLOAD {}

@@ -46,8 +46,8 @@ sub get_vhosts {
     return shift->__get_all_by_getter('get_vhost');
 }
 
-sub get_tls {
-    return shift->__get_all_by_getter('get_tls');
+sub get_queues_suffix {
+    return shift->__get_all_by_getter('get_queues_suffix');
 }
 
 # sub AUTOLOAD {}

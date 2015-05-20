@@ -7,7 +7,6 @@
         "password" : "guest",
         "timeout" : 0,
         "vhost" : "/",
-        "tls" : 0,
-        "channel" : 1
+        "queues_suffix" : ["FIRST"]
     }
 ]

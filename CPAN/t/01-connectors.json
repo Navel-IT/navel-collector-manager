@@ -1,19 +1,19 @@
 [
     {
-        "name" : "hiera-file-1",
-        "collection" : "hiera-file",
+        "name" : "test-1",
+        "collection" : "test",
         "type" : "code",
         "scheduling" : "* * * * * *"
     },
     {
-        "name" : "nagios-host-and-services-1",
-        "collection" : "nagios-host-and-services",
+        "name" : "test-2",
+        "collection" : "test",
         "type" : "external",
         "scheduling" : "* * * * * *"
     },
     {
-        "name" : "puppet-reports-1",
-        "collection" : "puppet-reports",
+        "name" : "test-3",
+        "collection" : "test",
         "type" : "text",
         "scheduling" : "* * * * * *"
     }
