@@ -107,12 +107,16 @@ if (defined $general_configuration_file) {
                     }
                 };
 
-                get '/scheduler/api/general' => {
-                    json => $scheduler->get_configuration()->get_definition()
+                get '/scheduler/api/general' => sub {
+                    shift->render(
+                        json => $scheduler->get_configuration()->get_definition()
+                    );
                 };
 
-                get '/scheduler/api/connectors' => {
-                    json => $scheduler->get_core()->get_connectors()->get_names()
+                get '/scheduler/api/connectors' => sub {
+                    shift->render(
+                        json => $scheduler->get_core()->get_connectors()->get_names()
+                    );
                 };
 
                 get '/scheduler/api/connectors/(:connector)' => sub {
@@ -123,8 +127,10 @@ if (defined $general_configuration_file) {
                     );
                 };
 
-                get '/scheduler/api/rabbitmq' => {
-                    json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                get '/scheduler/api/rabbitmq' => sub {
+                    shift->render(
+                        json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                    );
                 };
 
                 get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
@@ -152,9 +158,17 @@ if (defined $general_configuration_file) {
                     listen => $web_services_listeners->get_urls()
                 );
 
-                $mojo_server->silent(1)->start();
+                eval {
+                    $mojo_server->silent(1)->start();
 
-                $scheduler->run(); # * bypass scope bugs, need duplicate
+                    $scheduler->run($logger); # * bypass scope bugs, need duplicate
+                };
+
+                if ($@) {
+                    $logger->push_to_buffer($@)->flush_buffer();
+
+                    exit 1;
+                }
 
                 exit 0;
             } else {
@@ -164,7 +178,17 @@ if (defined $general_configuration_file) {
             $logger->push_to_buffer($return->[1])->flush_buffer();
         }
 
-        $scheduler->run(); # * bypass scope bugs, need duplicate
+        $logger->clear_buffer();
+
+        eval {
+            $scheduler->run($logger); # * bypass scope bugs, need duplicate
+        };
+
+        if ($@) {
+            $logger->push_to_buffer($@)->flush_buffer();
+
+            exit 1;
+        }
     } else {
         $logger->push_to_buffer($@)->flush_buffer();
 
