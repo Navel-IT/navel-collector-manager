@@ -32,12 +32,13 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connectors, $rabbitmq) = @_;
+    my ($class, $connectors, $rabbitmq, $logger, $extra_parameters) = @_;
 
-    if (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser') {
+    if (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
         my $self = {
             __connectors => $connectors,
             __rabbitmq => $rabbitmq,
+            __logger => $logger,
             __cron => AnyEvent::DateTime::Cron->new()
         };
 
@@ -46,7 +47,9 @@ sub new {
                 sub {
                     Navel::Scheduler::Cron::Exec->new(
                         $connector,
-                        $self->{__rabbitmq}
+                        $self->{__rabbitmq},
+                        $self->{__logger},
+                        $extra_parameters
                     )->exec()->push();
                 }
             );
@@ -82,6 +85,10 @@ sub get_connectors {
 
 sub get_rabbitmq {
     return shift->{__rabbitmq};
+}
+
+sub get_logger {
+    return shift->{__logger};
 }
 
 sub get_cron {

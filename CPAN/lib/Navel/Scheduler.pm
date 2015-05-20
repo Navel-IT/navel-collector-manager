@@ -56,59 +56,56 @@ sub new {
 
     if (hascontent($configuration_path)) {
         my $configuration = Navel::Scheduler::Etc::Parser->new();
-        
+
         my $return = $configuration->load($configuration_path);
-        
+
         if ($return->[0]) {
-            my $connectors = Navel::Definition::Connector::Etc::Parser->new();
+            $class = ref $class || $class;
 
-            $return = $connectors->load($configuration->get_definition()->{definitions_path}->{connectors});
-
-            if ($return->[0]) {
-                $return = $connectors->make(
-                    {
-                        exec_directory_path => $configuration->get_definition()->{definitions_path}->{connectors_exec_directory}
-                    }
-                );
-
-                if ($return->[0]) {
-                    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new();
-
-                    $return = $rabbitmq->load($configuration->get_definition()->{definitions_path}->{rabbitmq});
-
-                    if ($return->[0]) {
-                        $return = $rabbitmq->make();
-
-                        if ($return->[0]) {
-                            my $self = {
-                                __core => Navel::Scheduler::Cron->new(
-                                    $connectors,
-                                    $rabbitmq
-                                ),
-                                __configuration => $configuration
-                            };
-
-                            $class = ref $class || $class;
-
-                            return bless $self, $class;
-                        }
-                    }
-                }
-            }
+            return bless {
+                __core => undef,
+                __configuration => $configuration
+            }, $class;
         }
-        
+
         croak($return->[1]);
     } else {
-        croak('general.json path are missing');
+        croak('general.json path is missing');
     }
 }
 
 sub run {
-    my $self = shift;
+    my ($self, $logger, $extra_parameters) = @_;
 
-    $self->get_core()->start();
+    my $connectors = Navel::Definition::Connector::Etc::Parser->new();
 
-    return $self;
+    my $return = $connectors->load($self->get_configuration()->get_definition()->{definitions_path}->{connectors});
+
+    if ($return->[0]) {
+        $return = $connectors->make(
+            {
+                exec_directory_path => $self->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+            }
+        );
+
+        if ($return->[0]) {
+            my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new();
+
+            $return = $rabbitmq->load($self->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
+
+            if ($return->[0]) {
+                $return = $rabbitmq->make();
+
+                if ($return->[0]) {
+                    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger, $extra_parameters);
+
+                    $self->get_core()->start();
+                }
+            }
+        }
+    }
+
+    croak($return->[1]);
 }
 
 sub get_core {
