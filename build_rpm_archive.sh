@@ -7,6 +7,7 @@ READLINK='readlink'
 DIRNAME='dirname'
 ECHO='echo'
 WHICH='which'
+MKDIR='mkdir'
 CP='cp'
 SED='sed'
 TAR='tar'
@@ -30,8 +31,8 @@ if [[ $(${WHICH} ${RPMBUILD}) ]] &>/dev/null ; then
     specs_directory="${rpm_directory}/SPECS/"
     sources_directory="${rpm_directory}/SOURCES/"
 
-    ${CP} -r ${cpan_directory}/lib ${sources_directory}/usr/local/share/${prog} 1>/dev/null && ${CP} -r ${cpan_directory}/bin ${sources_directory}/usr/local/ 1>/dev/null
-    
+    ${MKDIR} -p ${sources_directory}/usr/local/${prog} && ${CP} -r ${cpan_directory}/lib ${sources_directory}/usr/local/share/${prog} 1>/dev/null && ${CP} -r ${cpan_directory}/bin ${sources_directory}/usr/local/ 1>/dev/null
+
     if [[ ${?} -eq 0 ]] ; then
         pushd ${sources_directory}
 
