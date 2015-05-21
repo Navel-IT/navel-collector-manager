@@ -167,11 +167,9 @@ if (defined $general_configuration_file) {
                         $mojo_server->silent(1)->start();
                     };
 
-                    if ($@) {
-                        $logger->push_to_buffer($@)->flush_buffer();
 
-                        $logger->clear_buffer();
-                    }
+                    $logger->push_to_buffer($@)->flush_buffer(1) if ($@);
+
 
                     eval {
                         $scheduler->run($logger); # * bypass (lexical) scope bugs, need duplicate
@@ -187,9 +185,7 @@ if (defined $general_configuration_file) {
                 }
             }
 
-            $logger->push_to_buffer($return->[1])->flush_buffer();
-
-            $logger->clear_buffer();
+            $logger->push_to_buffer($return->[1])->flush_buffer(1);
         }
 
         eval {

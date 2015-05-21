@@ -68,11 +68,7 @@ sub new {
                     };
                 }
 
-                if ($@) {
-                    $self->{__logger}->push_to_buffer($@)->flush_buffer();
-
-                    $self->{__logger}->clear_buffer;
-                }
+                $self->{__logger}->push_to_buffer($@)->flush_buffer(1) if ($@);
 
                 return $datas;
             };
@@ -82,11 +78,7 @@ sub new {
                     command => $connector->get_exec_file_path()
                 );
 
-                if ($error) {
-                    $self->{__logger}->push_to_buffer(join '', @{$buffererr})->flush_buffer();
-
-                    $self->{__logger}->clear_buffer();
-                }
+                $self->{__logger}->push_to_buffer(join '', @{$buffererr})->flush_buffer(1) if ($error);
 
                 return join '', @{$bufferout};
             };
@@ -105,9 +97,7 @@ sub new {
 
                     $fh->close();
                 } else {
-                    $self->{__logger}->push_to_buffer($!)->flush_buffer();
-
-                    $self->{__logger}->clear_buffer();
+                    $self->{__logger}->push_to_buffer($!)->flush_buffer(1);
                 }
 
                 return $datas;
@@ -194,11 +184,7 @@ sub push {
                 $pusher->disconnect();
             };
 
-            if ($@) {
-                $self->get_logger()->push_to_buffer($@)->flush_buffer();
-
-                $self->get_logger()->clear_buffer();
-            }
+            $self->get_logger()->push_to_buffer($@)->flush_buffer(1) if ($@);
 
             $fm->finish();
         }
