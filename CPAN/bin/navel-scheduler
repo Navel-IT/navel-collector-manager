@@ -15,6 +15,10 @@ use Getopt::Long qw/
     GetOptions
 /;
 
+use Mojolicious::Lite;
+
+use Mojo::Server::Daemon;
+
 use Navel::Logger;
 
 use Navel::Scheduler qw/
@@ -36,7 +40,7 @@ sub get_help() {
 
         -l, --load-configuration <J>    load general configuration from <J> (JSON file)
 
-        -d, --disable-rest   disable the REST api (do not run Mojolicious at all)
+        -d, --disable-rest   disable the REST api
 EOF
 }
 
@@ -58,7 +62,7 @@ GetOptions(
     'l|load-configuration=s' => \$general_configuration_file,
     'd|disable-rest' => \$disable_rest
 
-) or die $!;
+) || die $!;
 
 if (defined $general_configuration_file) {
     my $scheduler = eval {
@@ -69,12 +73,6 @@ if (defined $general_configuration_file) {
 
     unless ($@) {
         unless ($disable_rest) {
-            #-> Mojolicious app
-
-            require Mojolicious::Lite;
-
-            require Mojo::Server::Daemon;
-
             my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
 
             my $return = $web_services_listeners->load($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
@@ -159,8 +157,6 @@ if (defined $general_configuration_file) {
                             json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
                         );
                     };
-
-                    #-< Mojolicious app
 
                     my $mojo_server = Mojo::Server::Daemon->new(
                         app => app(),
