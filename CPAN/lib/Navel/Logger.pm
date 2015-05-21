@@ -67,16 +67,12 @@ sub get_buffer {
     return shift->{__buffer};
 }
 
-sub join_buffer {
-    my ($self, $separator) = @_;
-
-    return join $separator, @{$self->get_buffer()};
-}
-
 sub push_to_buffer {
-    my ($self, $messages, $clear_buffer) = @_;
+    my ($self, $messages) = @_;
 
     if (defined $messages) {
+        $self->clear_buffer() if ($clear_buffer);
+
         if (ref $messages eq 'ARRAY') {
             for (@{$messages}) {
                 $self->push_to_buffer(get_a_proper_localtime(time) . ' ' . crunch($_)) if (defined $_);
@@ -84,11 +80,27 @@ sub push_to_buffer {
         } else {
             push @{$self->get_buffer()}, get_a_proper_localtime(time) . ' ' . crunch($messages);
         }
-
-        $self->clear_buffer() if ($clear_buffer);
     }
 
     return $self;
+}
+
+sub join_buffer {
+    my ($self, $separator) = @_;
+
+    return join $separator, @{$self->get_buffer()};
+}
+
+sub flush_buffer {
+    my ($self, $clear_buffer) = @_;
+
+    no strict qw/
+        refs
+    /;
+
+    print { $self->__get_filehandler() } $self->join_buffer("\n") . "\n";
+
+    return $clear_buffer ? $self->clear_buffer() : $self;
 }
 
 sub clear_buffer {
@@ -97,16 +109,6 @@ sub clear_buffer {
     @{$self->get_buffer()} = ();
 
     return $self;
-}
-
-sub flush_buffer {
-    my $self = shift;
-
-    no strict qw/
-        refs
-    /;
-
-    return print { $self->__get_filehandler() } $self->join_buffer("\n") . "\n";
 }
 
 sub get_file_path {
