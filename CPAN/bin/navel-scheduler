@@ -15,10 +15,6 @@ use Getopt::Long qw/
     GetOptions
 /;
 
-use Mojolicious::Lite;
-
-use Mojo::Server::Daemon;
-
 use Navel::Logger;
 
 use Navel::Scheduler qw/
@@ -29,7 +25,7 @@ use Navel::Definition::WebService::Etc::Parser;
 
 #-> defaults
 
-my $general_configuration_file;
+my ($general_configuration_file, $disable_rest);
 
 #-> functions
 
@@ -39,6 +35,8 @@ sub get_help() {
         -v, --version    show version
 
         -l, --load-configuration <J>    load general configuration from <J> (JSON file)
+
+        -d, --disable-rest   disable the REST api (do not run Mojolicious at all)
 EOF
 }
 
@@ -57,7 +55,9 @@ GetOptions(
 
         exit 0;
     },
-    'l|load-configuration=s' => \$general_configuration_file
+    'l|load-configuration=s' => \$general_configuration_file,
+    'd|disable-rest' => \$disable_rest
+
 ) or die $!;
 
 if (defined $general_configuration_file) {
@@ -68,120 +68,136 @@ if (defined $general_configuration_file) {
     my $logger = Navel::Logger->new($@ ? undef : $scheduler->get_configuration()->get_definition()->{log}->{file_path});
 
     unless ($@) {
-        my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
+        unless ($disable_rest) {
+            #-> Mojolicious app
 
-        my $return = $web_services_listeners->load($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
+            require Mojolicious::Lite;
 
-        if ($return->[0]) {
-            my $return = $web_services_listeners->make();
+            require Mojo::Server::Daemon;
+
+            my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
+
+            my $return = $web_services_listeners->load($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
 
             if ($return->[0]) {
-                app()->mode('production');
+                my $return = $web_services_listeners->make();
 
-                app()->log()->level('fatal');
+                if ($return->[0]) {
+                    app()->mode('production');
 
-                under sub {
-                    my $controller = shift;
+                    app()->log()->level('fatal');
 
-                    my $userinfo = $controller->req()->url()->to_abs()->userinfo();
+                    under sub {
+                        my $controller = shift;
 
-                    if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
-                        return 1;
-                    } else {
-                        $controller->res()->headers()->www_authenticate('Basic');
+                        my $userinfo = $controller->req()->url()->to_abs()->userinfo();
+
+                        if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
+                            return 1;
+                        } else {
+                            $controller->res()->headers()->www_authenticate('Basic');
+
+                            $controller->render(
+                                json => {
+                                    error_message => 'Authentication required'
+                                },
+                                status => 401
+                            );
+
+                            return undef;
+                        }
+                    };
+
+                    get '/scheduler/api' => {
+                        json => {
+                            version => $VERSION
+                        }
+                    };
+
+                    get '/scheduler/api/general' => sub {
+                        shift->render(
+                            json => $scheduler->get_configuration()->get_definition()
+                        );
+                    };
+
+                    get '/scheduler/api/connectors' => sub {
+                        shift->render(
+                            json => $scheduler->get_core()->get_connectors()->get_names()
+                        );
+                    };
+
+                    get '/scheduler/api/connectors/(:connector)' => sub {
+                        my $controller = shift;
 
                         $controller->render(
-                            json => {
-                                error_message => 'Authentication required'
-                            },
-                            status => 401
+                            json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
                         );
+                    };
 
-                        return undef;
+                    get '/scheduler/api/rabbitmq' => sub {
+                        shift->render(
+                            json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                        );
+                    };
+
+                    get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                        my $controller = shift;
+
+                        $controller->render(
+                            json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                        );
+                    };
+
+                    get '/scheduler/api/webservices' => {
+                        json => $web_services_listeners->get_names()
+                    };
+
+                    get '/scheduler/api/webservices/(:webservice)' => sub {
+                        my $controller = shift;
+
+                        $controller->render(
+                            json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
+                        );
+                    };
+
+                    #-< Mojolicious app
+
+                    my $mojo_server = Mojo::Server::Daemon->new(
+                        app => app(),
+                        listen => $web_services_listeners->get_urls()
+                    );
+
+                    eval {
+                        $mojo_server->silent(1)->start();
+                    };
+
+                    if ($@) {
+                        $logger->push_to_buffer($@)->flush_buffer();
+
+                        $logger->clear_buffer();
                     }
-                };
 
-                get '/scheduler/api' => {
-                    json => {
-                        version => $VERSION
+                    eval {
+                        $scheduler->run($logger); # * bypass (lexical) scope bugs, need duplicate
+                    };
+
+                    if ($@) {
+                        $logger->push_to_buffer($@)->flush_buffer();
+
+                        exit 1;
                     }
-                };
 
-                get '/scheduler/api/general' => sub {
-                    shift->render(
-                        json => $scheduler->get_configuration()->get_definition()
-                    );
-                };
-
-                get '/scheduler/api/connectors' => sub {
-                    shift->render(
-                        json => $scheduler->get_core()->get_connectors()->get_names()
-                    );
-                };
-
-                get '/scheduler/api/connectors/(:connector)' => sub {
-                    my $controller = shift;
-
-                    $controller->render(
-                        json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
-                    );
-                };
-
-                get '/scheduler/api/rabbitmq' => sub {
-                    shift->render(
-                        json => $scheduler->get_core()->get_rabbitmq()->get_names()
-                    );
-                };
-
-                get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
-                    my $controller = shift;
-
-                    $controller->render(
-                        json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
-                    );
-                };
-
-                get '/scheduler/api/webservices' => {
-                    json => $web_services_listeners->get_names()
-                };
-
-                get '/scheduler/api/webservices/(:webservice)' => sub {
-                    my $controller = shift;
-
-                    $controller->render(
-                        json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
-                    );
-                };
-
-                my $mojo_server = Mojo::Server::Daemon->new(
-                    app => app(),
-                    listen => $web_services_listeners->get_urls()
-                );
-
-                eval {
-                    $mojo_server->silent(1)->start();
-
-                    $scheduler->run($logger); # * bypass scope bugs, need duplicate
-                };
-
-                if ($@) {
-                    $logger->push_to_buffer($@)->flush_buffer();
-
-                    exit 1;
+                    exit 0;
                 }
-
-                exit 0;
-            } else {
-                $logger->push_to_buffer($return->[1])->flush_buffer();
             }
-        } else {
+
             $logger->push_to_buffer($return->[1])->flush_buffer();
+
+            $logger->clear_buffer();
         }
 
-        $logger->clear_buffer();
-
         eval {
-            $scheduler->run($logger); # * bypass scope bugs, need duplicate
+            $scheduler->run($logger); # * bypass (lexical) scope bugs, need duplicate
         };
 
         if ($@) {
