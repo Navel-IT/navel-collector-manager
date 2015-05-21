@@ -38,19 +38,19 @@ sub new {
 
 sub load {
     my ($self, $file_path) = @_;
-    
+
     my $return = $self->SUPER::load($file_path);
-    
+
     $self->__set_raw($return->[1]) if ($return->[0]);
-    
+
     return $return;
 }
 
 sub make {
-    my ($self, $definition_package, $extra_parameters) = @_;
+    my ($self, $definition_package, $do_not_need_at_least_one, $extra_parameters) = @_;
 
     if (eval 'require ' . $definition_package) {
-        if (reftype($self->get_raw()) eq 'ARRAY' && @{$self->get_raw()}) {
+        if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $do_not_need_at_least_one) {
             my (@definitions, @names);
 
             for my $parameters (@{$self->get_raw()}) {
