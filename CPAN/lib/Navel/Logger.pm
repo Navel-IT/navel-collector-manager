@@ -74,7 +74,7 @@ sub join_buffer {
 }
 
 sub push_to_buffer {
-    my ($self, $messages) = @_;
+    my ($self, $messages, $clear_buffer) = @_;
 
     if (defined $messages) {
         if (ref $messages eq 'ARRAY') {
@@ -84,6 +84,8 @@ sub push_to_buffer {
         } else {
             push @{$self->get_buffer()}, get_a_proper_localtime(time) . ' ' . crunch($messages);
         }
+
+        $self->clear_buffer() if ($clear_buffer);
     }
 
     return $self;
