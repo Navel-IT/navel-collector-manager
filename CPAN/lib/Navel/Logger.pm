@@ -96,7 +96,7 @@ sub flush_buffer {
         refs
     /;
 
-    print { $self->__get_filehandler() } $self->join_buffer("\n") . "\n";
+    print { $self->get_filehandler() } $self->join_buffer("\n") . "\n";
 
     return $clear_buffer ? $self->clear_buffer() : $self;
 }
@@ -113,7 +113,7 @@ sub get_file_path {
     return shift->{__file_path};
 }
 
-sub __get_filehandler {
+sub get_filehandler {
     return shift->{__filehandler};
 }
 
@@ -138,7 +138,7 @@ sub on_stderr {
 }
 
 sub is_filehandler_via_lib {
-    return blessed(shift->__get_filehandler()) eq 'IO::File';
+    return blessed(shift->get_filehandler()) eq 'IO::File';
 }
 
 # sub AUTOLOAD {}
@@ -146,7 +146,7 @@ sub is_filehandler_via_lib {
 sub DESTROY {
     my $self = shift;
 
-    $self->__get_filehandler()->close() if ($self->is_filehandler_via_lib());
+    $self->get_filehandler()->close() if ($self->is_filehandler_via_lib());
 }
 
 1;

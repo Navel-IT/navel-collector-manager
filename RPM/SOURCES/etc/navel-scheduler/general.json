@@ -1,7 +1,4 @@
 {
-    "log" : {
-        "file_path" : "/var/log/navel-scheduler/navel-scheduler.log"
-    },
     "definitions_path" : {
         "connectors" : "/etc/navel-scheduler/connectors.json",
         "connectors_exec_directory" : "/etc/navel-scheduler/connectors",

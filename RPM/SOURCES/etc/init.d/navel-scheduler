@@ -27,17 +27,21 @@ sysconfig="/etc/sysconfig/${prog}"
 #-> functions
 
 f_start() {
-    ${ECHO} "Starting ${prog} ..."
+    ${ECHO} -n "Starting ${prog} : "
 
     daemon --pidfile=${pidfile} ${prog_full_path} ${OPTS}
+
+    ${ECHO}
 
     ${TOUCH} ${lockfile}
 }
 
 f_stop() {
-    ${ECHO} "Stopping ${prod} ..."
+    ${ECHO} -n "Stopping ${prog} : "
 
-    killproc -p ${prog_full_path}
+    killproc -p ${pidfile} ${prog_full_path}
+
+    ${ECHO}
 
     ${RM} -f ${lockfile}
 }
@@ -50,7 +54,7 @@ case ${1} in
     stop)
         f_stop ;;
     status)
-        status -p ${prog} ;;
+        status -p ${pidfile} ${prog_full_path};;
     restart)
         f_stop
 

@@ -17,6 +17,8 @@ use Getopt::Long qw/
 
 use Proc::Daemon;
 
+use Cwd;
+
 use Mojolicious::Lite;
 
 use Mojo::Server::Daemon;
@@ -31,7 +33,15 @@ use Navel::Definition::WebService::Etc::Parser;
 
 #-> defaults
 
-my ($general_configuration_file, $disable_rest, $daemonize, $mojo_server);
+my (
+    $general_configuration_file_path,
+    $log_file_path,
+    $disable_rest,
+    $daemonize,
+    $mojo_server
+);
+
+my $pid_dir = '/var/run';
 
 #-> functions
 
@@ -41,10 +51,11 @@ sub get_help() {
         -h, --help    show help
         -v, --version    show version
 
-        -l, --load-configuration <J>    load general configuration from <J> (JSON file)
-        -n, --no-rest   disable the REST api
+        -c, --general-configuration-file-path <F>    load general configuration from <F>
+        [-l, --log-file-path <F>]   log informations in file <F>
+        [-n, --no-rest]   disable the REST api
 
-        -d, --daemonize   run as a standalone daemon (Unix-like systems only)
+        [-d, --daemonize]   run as a standalone daemon (only work on Unix-like systems)
 EOF
 }
 
@@ -63,18 +74,19 @@ GetOptions(
 
         exit 0;
     },
-    'l|load-configuration=s' => \$general_configuration_file,
+    'c|general-configuration-file-path=s' => \$general_configuration_file_path,
+    'l|log-file-path=s' => \$log_file_path,
     'n|no-rest' => \$disable_rest,
     'd|daemonize' => \$daemonize
 
 ) || die $!;
 
-if (defined $general_configuration_file) {
-    my $scheduler = eval {
-        Navel::Scheduler->new($general_configuration_file);
-    };
+if (defined $general_configuration_file_path) {
+    my $logger = Navel::Logger->new($log_file_path);
 
-    my $logger = Navel::Logger->new($@ ? undef : $scheduler->get_configuration()->get_definition()->{log}->{file_path});
+    my $scheduler = eval {
+        Navel::Scheduler->new($general_configuration_file_path);
+    };
 
     unless ($@) {
         unless ($disable_rest) {
@@ -175,14 +187,14 @@ if (defined $general_configuration_file) {
 
         if ($daemonize) {
             Proc::Daemon->new(
-                dont_close_fh => [__PACKAGE__ . '::DATA']
+                working_directory => getcwd(),
+                pid_file => $pid_dir . '/navel-scheduler.pid',
+                dont_close_fh => $logger->is_filehandler_via_lib() ? [__PACKAGE__ . '::DATA', $logger->get_filehandler()] : [__PACKAGE__ . '::DATA']
             )->Init();
         }
 
         eval {
-            unless ($disable_rest) {
-                $mojo_server->silent(1)->start();
-            }
+            $mojo_server->silent(1)->start() unless ($disable_rest);
         };
 
         $logger->push_to_buffer($@)->flush_buffer(1) if ($@);
@@ -203,6 +215,8 @@ if (defined $general_configuration_file) {
     }
 } else {
     print get_help() . "\n";
+
+    exit 1;
 }
 
 exit 0;

@@ -46,9 +46,6 @@ sub scheduler_definition_validator($) {
 
     my $validator = Data::Validate::Struct->new(
         {
-            log => {
-               file_path => 'text'
-            },
             definitions_path => {
                 connectors => 'text',
                 connectors_exec_directory => 'text',

@@ -52,6 +52,7 @@ WriteMakefile(
         'DateTime::Event::Cron' => 0,
         'List::MoreUtils' => 0,
         'String::Util' => 0,
+        'Cwd' => 0,
         'Proc::Daemon' => 0,
         'Mojolicious' => 0
     },
