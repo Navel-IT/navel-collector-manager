@@ -71,8 +71,6 @@ sub push_to_buffer {
     my ($self, $messages) = @_;
 
     if (defined $messages) {
-        $self->clear_buffer() if ($clear_buffer);
-
         if (ref $messages eq 'ARRAY') {
             for (@{$messages}) {
                 $self->push_to_buffer(get_a_proper_localtime(time) . ' ' . crunch($_)) if (defined $_);
