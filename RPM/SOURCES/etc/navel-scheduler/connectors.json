@@ -2,7 +2,7 @@
     {
         "name" : "test-1"
         "collection" : "test",
-        "type" : "file",
+        "type" : "text",
         "scheduling" : "* * * * * *"
     }
 ]
