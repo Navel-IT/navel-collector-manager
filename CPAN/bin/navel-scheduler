@@ -15,6 +15,8 @@ use Getopt::Long qw/
     GetOptions
 /;
 
+use Proc::Daemon;
+
 use Mojolicious::Lite;
 
 use Mojo::Server::Daemon;
@@ -29,18 +31,20 @@ use Navel::Definition::WebService::Etc::Parser;
 
 #-> defaults
 
-my ($general_configuration_file, $disable_rest);
+my ($general_configuration_file, $disable_rest, $daemonize, $mojo_server);
 
 #-> functions
 
 sub get_help() {
     return <<EOF;
+
         -h, --help    show help
         -v, --version    show version
 
         -l, --load-configuration <J>    load general configuration from <J> (JSON file)
+        -n, --no-rest   disable the REST api
 
-        -d, --disable-rest   disable the REST api
+        -d, --daemonize   run as a standalone daemon (Unix-like systems only)
 EOF
 }
 
@@ -60,7 +64,8 @@ GetOptions(
         exit 0;
     },
     'l|load-configuration=s' => \$general_configuration_file,
-    'd|disable-rest' => \$disable_rest
+    'n|no-rest' => \$disable_rest,
+    'd|daemonize' => \$daemonize
 
 ) || die $!;
 
@@ -158,38 +163,32 @@ if (defined $general_configuration_file) {
                         );
                     };
 
-                    my $mojo_server = Mojo::Server::Daemon->new(
+                    $mojo_server = Mojo::Server::Daemon->new(
                         app => app(),
                         listen => $web_services_listeners->get_urls()
                     );
-
-                    eval {
-                        $mojo_server->silent(1)->start();
-                    };
-
-
-                    $logger->push_to_buffer($@)->flush_buffer(1) if ($@);
-
-
-                    eval {
-                        $scheduler->run($logger); # * bypass (lexical) scope bugs, need duplicate
-                    };
-
-                    if ($@) {
-                        $logger->push_to_buffer($@)->flush_buffer();
-
-                        exit 1;
-                    }
-
-                    exit 0;
                 }
             }
 
-            $logger->push_to_buffer($return->[1])->flush_buffer(1);
+            $logger->push_to_buffer($return->[1])->flush_buffer(1) unless ($return->[0]);
+        }
+
+        if ($daemonize) {
+            Proc::Daemon->new(
+                dont_close_fh => [__PACKAGE__ . '::DATA']
+            )->Init();
         }
 
         eval {
-            $scheduler->run($logger); # * bypass (lexical) scope bugs, need duplicate
+            unless ($disable_rest) {
+                $mojo_server->silent(1)->start();
+            }
+        };
+
+        $logger->push_to_buffer($@)->flush_buffer(1) if ($@);
+
+        eval {
+            $scheduler->run($logger);
         };
 
         if ($@) {

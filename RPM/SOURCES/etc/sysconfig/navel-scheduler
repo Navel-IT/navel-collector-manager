@@ -1,1 +1,1 @@
-OPTS='--load-configuration /usr/local/etc/navel-scheduler/general.json'
+OPTS='--load-configuration=/usr/local/etc/navel-scheduler/general.json --daemonize'
