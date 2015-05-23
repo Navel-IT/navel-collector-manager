@@ -62,7 +62,7 @@ case ${1} in
 
         ;;
     *)
-        ${ECHO} "Usage : $0 {start|stop|restart|status}"
+        ${ECHO} "Usage : ${0} {start|stop|restart|status}"
 
         exit 1
 
