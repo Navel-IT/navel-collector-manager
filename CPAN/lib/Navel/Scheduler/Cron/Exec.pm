@@ -56,6 +56,8 @@ sub new {
             __max_procs => isint($extra_parameters->{max_procs}) ? $extra_parameters->{max_procs} : FM_DEFAULT_MAX_PROCS
         };
 
+        my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed :';
+
         if ($connector->is_type_code()) {
             $self->{__exec} = sub {
                 local $@;
@@ -68,7 +70,7 @@ sub new {
                     };
                 }
 
-                $self->{__logger}->push_to_buffer($@)->flush_buffer(1) if ($@);
+                $self->{__logger}->push_to_buffer($connector_generic_failed_message . ' ' . $@)->flush_buffer(1) if ($@);
 
                 return $datas;
             };
@@ -78,7 +80,7 @@ sub new {
                     command => $connector->get_exec_file_path()
                 );
 
-                $self->{__logger}->push_to_buffer(join '', @{$buffererr})->flush_buffer(1) if ($error);
+                $self->{__logger}->push_to_buffer($connector_generic_failed_message . ' ' . join '', @{$buffererr})->flush_buffer(1) if ($error);
 
                 return join '', @{$bufferout};
             };
@@ -97,7 +99,7 @@ sub new {
 
                     $fh->close();
                 } else {
-                    $self->{__logger}->push_to_buffer($!)->flush_buffer(1);
+                    $self->{__logger}->push_to_buffer($connector_generic_failed_message . ' ' . $!)->flush_buffer(1);
                 }
 
                 return $datas;
@@ -115,11 +117,15 @@ sub new {
 sub exec {
     my $self = shift;
 
+    $self->get_logger()->push_to_buffer('Execution of connector ' . $self->get_connector()->get_name())->flush_buffer(1);
+
     return $self->set_datas($self->get_exec()->());
 }
 
 sub push {
     my $self = shift;
+
+    $self->get_logger()->push_to_buffer('Serialize and push to RabbitMQ datas for connector ' . $self->get_connector()->get_name())->flush_buffer(1);
 
     my $serialize = to(
         $self->get_connector(),
@@ -184,13 +190,15 @@ sub push {
                 $pusher->disconnect();
             };
 
-            $self->get_logger()->push_to_buffer($@)->flush_buffer(1) if ($@);
+            $self->get_logger()->push_to_buffer($@ || 'Successfully push datas to RabbitMQ ' . $rabbitmq->get_name())->flush_buffer(1);
 
             $fm->finish();
         }
 
         return $fm->wait_all_children();
     }
+
+    $self->get_logger()->push_to_buffer('Serialize datas for connector ' . $self->get_connector()->name() . ' failed')->flush_buffer(1);
 
     return 0;
 }
