@@ -23,7 +23,7 @@ my $return = eval {
                 name => 'nagios_host_and_services_1',
                 collection => 'nagios_host_and_services',
                 type => 'external',
-                scheduling => '* * * * *',
+                scheduling => '0 * * * * ?',
                 exec_directory_path => ''
             }
         ),

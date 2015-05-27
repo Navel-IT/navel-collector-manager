@@ -34,7 +34,7 @@ use Exporter::Easy (
 
 use Data::Validate::Struct;
 
-use DateTime::Event::Cron;
+use DateTime::Event::Cron::Quartz;
 
 use Navel::Utils qw/
     :all
@@ -64,11 +64,9 @@ sub connector_definition_validator($) {
             return $value eq CODE || $value eq EXTERNAL || $value eq PLAIN_TEXT;
         },
         connector_cron => sub {
-            eval {
-                DateTime::Event::Cron->from_cron(shift);
+            return eval {
+                DateTime::Event::Cron::Quartz->new(shift);
             };
-
-            return ! $@;
         }
     );
 

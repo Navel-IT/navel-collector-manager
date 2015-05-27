@@ -30,6 +30,10 @@ use String::Util qw/
     hascontent
 /;
 
+use Scalar::Util::Numeric qw/
+    isint
+/;
+
 use JSON;
 
 use Navel::Definition::Connector qw/
@@ -58,6 +62,7 @@ sub to($$) {
     my $json = JSON->new()->utf8()->allow_nonref()->encode(
         {
             connector => $connector,
+            time => time,
             datas => $@ ? undef : $datas
         }
     );
@@ -73,7 +78,7 @@ sub from($) {
     };
 
     unless ($@) {
-        if (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && exists $datas->{datas}) {
+        if (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && isint($datas->{time}) && exists $datas->{datas}) {
             return [
                 1,
                 {

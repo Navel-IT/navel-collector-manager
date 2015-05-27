@@ -28,6 +28,8 @@ use Exporter::Easy (
 
 use Data::Validate::Struct;
 
+use DateTime::Event::Cron::Quartz;
+
 use Navel::Utils qw/
     :all
 /;
@@ -48,14 +50,21 @@ sub rabbitmq_definition_validator($) {
             password => 'text',
             timeout => 'int',
             vhost => 'text',
-            queues_suffix => [
-                'word',
-                ''
-            ]
+            exchange => 'text',
+            routing_key => 'text',
+            scheduling => 'connector_cron'
         }
     );
 
-    return $validator->validate($parameters) && @{$parameters->{queues_suffix}};
+    $validator->type(
+        connector_cron => sub {
+            return eval {
+                DateTime::Event::Cron::Quartz->new(shift);
+            };
+        }
+    );
+
+    return $validator->validate($parameters);
 }
 
 #-> methods
@@ -123,12 +132,28 @@ sub set_vhost {
     return shift->set_generic('vhost', shift);
 }
 
-sub get_queues_suffix {
-    return shift->{__queues_suffix};
+sub get_exchange {
+    return shift->{__exchange};
 }
 
-sub set_queues_suffix {
-    return shift->set_generic('queues_suffix', shift);
+sub set_exchange {
+    return shift->set_generic('exchange', shift);
+}
+
+sub get_routing_key {
+    return shift->{__routing_key};
+}
+
+sub set_routing_key {
+    return shift->set_generic('routing_key', shift);
+}
+
+sub get_scheduling {
+    return shift->{__scheduling};
+}
+
+sub set_scheduling {
+    return shift->set_generic('scheduling', shift);
 }
 
 # sub AUTOLOAD {}

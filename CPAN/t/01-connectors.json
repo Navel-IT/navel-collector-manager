@@ -3,18 +3,18 @@
         "name" : "test-1",
         "collection" : "test",
         "type" : "code",
-        "scheduling" : "* * * * * *"
+        "scheduling" : "15 * * * * ?"
     },
     {
         "name" : "test-2",
         "collection" : "test",
         "type" : "external",
-        "scheduling" : "* * * * * *"
+        "scheduling" : "30 * * * * ?"
     },
     {
         "name" : "test-3",
         "collection" : "test",
         "type" : "text",
-        "scheduling" : "* * * * * *"
+        "scheduling" : "45 * * * * ?"
     }
 ]

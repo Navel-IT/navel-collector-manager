@@ -104,7 +104,7 @@ sub flush_buffer {
 sub clear_buffer {
     my $self = shift;
 
-    @{$self->get_buffer()} = ();
+    undef @{$self->get_buffer()};
 
     return $self;
 }

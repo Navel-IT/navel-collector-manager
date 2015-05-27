@@ -46,8 +46,16 @@ sub get_vhosts {
     return shift->__get_all_by_getter('get_vhost');
 }
 
-sub get_queues_suffix {
-    return shift->__get_all_by_getter('get_queues_suffix');
+sub get_exchanges {
+    return shift->__get_all_by_getter('get_exchanges');
+}
+
+sub get_routing_keys {
+    return shift->__get_all_by_getter('get_routing_key');
+}
+
+sub get_schedulings {
+    return shift->__get_all_by_getter('get_scheduling');
 }
 
 # sub AUTOLOAD {}

@@ -54,9 +54,6 @@ sub scheduler_definition_validator($) {
             webservices => {
                 login => 'text',
                 password => 'text'
-            },
-            rabbitmq => {
-                fork_max_procs => 'int'
             }
         }
     );

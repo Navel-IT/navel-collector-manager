@@ -21,6 +21,8 @@ use Carp qw/
 
 use AnyEvent::DateTime::Cron;
 
+use Net::AMQP::RabbitMQ;
+
 use Navel::Scheduler::Cron::Exec;
 
 use Navel::Utils qw/
@@ -38,19 +40,25 @@ sub new {
         my $self = {
             __connectors => $connectors,
             __rabbitmq => $rabbitmq,
+            __senders => [],
+            __buffers => {},
             __logger => $logger,
-            __cron => AnyEvent::DateTime::Cron->new()
+            __cron => AnyEvent::DateTime::Cron->new(
+                quartz => 1
+            )
         };
 
         for my $connector (@{$self->{__connectors}->get_definitions()}) {
-            $self->{__cron}->add($connector->get_scheduling(),
+            $self->{__cron}->add($connector->get_scheduling(), # need to be blocking (per item name)
                 sub {
-                    Navel::Scheduler::Cron::Exec->new(
+                    my $body = Navel::Scheduler::Cron::Exec->new(
                         $connector,
                         $self->{__rabbitmq},
                         $self->{__logger},
                         $extra_parameters
-                    )->exec()->push();
+                    )->exec()->serialize();
+
+                    map { $self->__push_in_a_buffer($_, $body) } keys %{$self->get_buffers()};
                 }
             );
         }
@@ -61,6 +69,78 @@ sub new {
     }
 
     croak('Object(s) invalid(s).');
+}
+
+sub prepare_senders {
+    my $self = shift;
+
+    for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
+        $self->__init_a_buffer($rabbitmq->get_name());
+
+        my %options = (
+            user => $rabbitmq->get_user(),
+            password => $rabbitmq->get_password(),
+            port => $rabbitmq->get_port(),
+            vhost => $rabbitmq->get_vhost()
+        );
+
+        $options{timeout} = $rabbitmq->get_timeout() if ($rabbitmq->get_timeout());
+
+        my $sender = Net::AMQP::RabbitMQ->new();
+
+        eval {
+            $sender->connect($rabbitmq->get_host(), \%options);
+        };
+
+        push @{$self->get_senders()}, {
+            __net => $sender,
+            __definition => $rabbitmq
+        };
+
+        $self->get_logger()->push_to_buffer('Connect sender ' . $rabbitmq->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+    }
+
+    return $self;
+}
+
+sub register_senders {
+    my $self = shift;
+
+    my $channel_id = 1;
+
+    for my $sender (@{$self->get_senders()}) {
+        $self->get_cron()->add($sender->{__definition}->get_scheduling(), # need to be blocking (per item name)
+            sub {
+                my @buffer = @{$self->get_a_buffer($sender->{__definition}->get_name())};
+
+                if (@buffer) {
+                    $self->__clear_a_buffer($sender->{__definition}->get_name());
+
+                    eval {
+                        $sender->{__net}->channel_open($channel_id);
+
+                        for my $body (@buffer) {
+                            $self->get_logger()->push_to_buffer('Publishing for ' . $sender->{__definition}->get_name() . ' on channel ' . $channel_id)->flush_buffer(1);
+
+                            $sender->{__net}->publish($channel_id, $sender->{__definition}->get_routing_key(), $body,
+                                {
+                                    exchange => $sender->{__definition}->get_exchange()
+                                }
+                            );
+                        }
+
+                        $sender->{__net}->channel_close($channel_id);
+                    };
+
+                    $self->get_logger()->push_to_buffer('Publish datas for ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+                } else {
+                    self->get_logger()->push_to_buffer('Buffer for ' . $sender->{__definition}->get_name() . ' is empty')->flush_buffer(1);
+                }
+            }
+        );
+    }
+
+    return $self;
 }
 
 sub start {
@@ -87,6 +167,44 @@ sub get_rabbitmq {
     return shift->{__rabbitmq};
 }
 
+sub get_senders {
+    return shift->{__senders};
+}
+
+sub get_buffers {
+    return shift->{__buffers};
+}
+
+sub get_a_buffer {
+    my ($self, $buffer_name) = @_;
+
+    return $self->get_buffers()->{$buffer_name};
+}
+
+sub __init_a_buffer {
+    my ($self, $buffer_name) = @_;
+
+    $self->get_buffers()->{$buffer_name} = [];
+
+    return $self;
+}
+
+sub __push_in_a_buffer {
+    my ($self, $buffer_name, $body) = @_;
+
+    push @{$self->get_buffers()->{$buffer_name}}, $body;
+
+    return $self;
+}
+
+sub __clear_a_buffer {
+    my ($self, $buffer_name) = @_;
+
+    undef @{$self->get_buffers()->{$buffer_name}};
+
+    return $self;
+}
+
 sub get_logger {
     return shift->{__logger};
 }
@@ -97,7 +215,9 @@ sub get_cron {
 
 # sub AUTOLOAD {}
 
-# sub DESTROY {}
+sub DESTROY {
+    map { $_->disconnect() } shift->get_senders();
+}
 
 1;
 
