@@ -3,6 +3,6 @@
         "name" : "test-1"
         "collection" : "test",
         "type" : "text",
-        "scheduling" : "* * * * * *"
+        "scheduling" : "0 * * * * ?"
     }
 ]

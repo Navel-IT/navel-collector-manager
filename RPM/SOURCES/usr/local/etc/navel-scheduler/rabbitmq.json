@@ -7,6 +7,8 @@
         "password" : "guest",
         "timeout" : 0,
         "vhost" : "/",
-        "queues_suffix" : ["FIRST"]
+        "exchange" : "navel-scheduler.E.direct.events",
+        "routing_key" : "navel-scheduler.collections",
+        "scheduling" : "*/15 * * * * ?"
     }
 ]

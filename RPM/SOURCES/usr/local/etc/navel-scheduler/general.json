@@ -5,9 +5,6 @@
         "rabbitmq" : "/etc/navel-scheduler/rabbitmq.json",
         "webservices" : "/etc/navel-scheduler/webservices.json"
     },
-    "rabbitmq" : {
-        "fork_max_procs" : 10
-    },
     "webservices" : {
         "login" : "admin",
         "password": "admin"
