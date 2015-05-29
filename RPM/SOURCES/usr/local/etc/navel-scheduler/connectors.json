@@ -1,6 +1,6 @@
 [
     {
-        "name" : "test-1"
+        "name" : "test-1",
         "collection" : "test",
         "type" : "text",
         "scheduling" : "0 * * * * ?"
