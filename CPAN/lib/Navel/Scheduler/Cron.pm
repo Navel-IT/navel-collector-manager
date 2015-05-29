@@ -71,33 +71,47 @@ sub new {
     croak('Object(s) invalid(s).');
 }
 
-sub prepare_senders {
+sub init_senders {
     my $self = shift;
 
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
+        $self->get_logger()->push_to_buffer('Initialize sender ' . $rabbitmq->get_name())->flush_buffer(1);
+
         $self->__init_a_buffer($rabbitmq->get_name());
 
-        my %options = (
-            user => $rabbitmq->get_user(),
-            password => $rabbitmq->get_password(),
-            port => $rabbitmq->get_port(),
-            vhost => $rabbitmq->get_vhost()
-        );
-
-        $options{timeout} = $rabbitmq->get_timeout() if ($rabbitmq->get_timeout());
-
         my $sender = Net::AMQP::RabbitMQ->new();
-
-        eval {
-            $sender->connect($rabbitmq->get_host(), \%options);
-        };
 
         push @{$self->get_senders()}, {
             __net => $sender,
             __definition => $rabbitmq
         };
+    }
 
-        $self->get_logger()->push_to_buffer('Connect sender ' . $rabbitmq->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+    return $self;
+}
+
+sub connect_senders {
+    my $self = shift;
+
+    for my $sender (@{$self->get_senders()}) {
+        my %options = (
+            user => $sender->{__definition}->get_user(),
+            password => $sender->{__definition}->get_password(),
+            port => $sender->{__definition}->get_port(),
+            vhost => $sender->{__definition}->get_vhost()
+        );
+
+        $options{timeout} = $sender->{__definition}->get_timeout() if ($sender->{__definition}->get_timeout());
+
+        unless ($sender->{__net}->is_connected()) {
+            eval {
+                $sender->{__net}->connect($sender->{__definition}->get_host(), \%options);
+            };
+
+            $self->get_logger()->push_to_buffer('Connect sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+        } else {
+            $self->get_logger()->push_to_buffer('Connect sender ' . $sender->{__definition}->get_name() . ' : seem already connected')->flush_buffer(1);
+        }
     }
 
     return $self;
@@ -111,36 +125,49 @@ sub register_senders {
     for my $sender (@{$self->get_senders()}) {
         $self->get_cron()->add($sender->{__definition}->get_scheduling(), # need to be blocking (per item name)
             sub {
-                my @buffer = @{$self->get_a_buffer($sender->{__definition}->get_name())};
+                if ($sender->{__net}->is_connected()) {
+                    my @buffer = @{$self->get_a_buffer($sender->{__definition}->get_name())};
 
-                if (@buffer) {
-                    $self->__clear_a_buffer($sender->{__definition}->get_name());
+                    if (@buffer) {
+                        $self->__clear_a_buffer($sender->{__definition}->get_name());
 
-                    eval {
-                        $sender->{__net}->channel_open($channel_id);
+                        eval {
+                            $sender->{__net}->channel_open($channel_id);
 
-                        for my $body (@buffer) {
-                            $self->get_logger()->push_to_buffer('Publishing for ' . $sender->{__definition}->get_name() . ' on channel ' . $channel_id)->flush_buffer(1);
+                            for my $body (@buffer) {
+                                $self->get_logger()->push_to_buffer('Publishing for sender ' . $sender->{__definition}->get_name() . ' on channel ' . $channel_id)->flush_buffer(1);
 
-                            $sender->{__net}->publish($channel_id, $sender->{__definition}->get_routing_key(), $body,
-                                {
-                                    exchange => $sender->{__definition}->get_exchange()
-                                }
-                            );
-                        }
+                                $sender->{__net}->publish($channel_id, $sender->{__definition}->get_routing_key(), $body,
+                                    {
+                                        exchange => $sender->{__definition}->get_exchange()
+                                    }
+                                );
+                            }
 
-                        $sender->{__net}->channel_close($channel_id);
-                    };
+                            $sender->{__net}->channel_close($channel_id);
+                        };
 
-                    $self->get_logger()->push_to_buffer('Publish datas for ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+                        $self->get_logger()->push_to_buffer('Publish datas for sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful'))->flush_buffer(1);
+                    } else {
+                        $self->get_logger()->push_to_buffer('Buffer for sender ' . $sender->{__definition}->get_name() . ' is empty')->flush_buffer(1);
+                    }
                 } else {
-                    self->get_logger()->push_to_buffer('Buffer for ' . $sender->{__definition}->get_name() . ' is empty')->flush_buffer(1);
+                    $self->get_logger()->push_to_buffer('Publish datas for sender ' . $sender->{__definition}->get_name() . " : isn't connected")->flush_buffer(1);
                 }
             }
         );
     }
 
     return $self;
+}
+
+sub disconnect_senders {
+    my $self = shift;
+
+    $_->{__net}->disconnect() for (@{$self->get_senders()});
+
+    return $self;
+
 }
 
 sub start {
@@ -216,7 +243,7 @@ sub get_cron {
 # sub AUTOLOAD {}
 
 sub DESTROY {
-    map { $_->disconnect() } shift->get_senders();
+    shift->disconnect_senders();
 }
 
 1;
