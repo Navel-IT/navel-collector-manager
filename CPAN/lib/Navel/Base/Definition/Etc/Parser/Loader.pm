@@ -23,7 +23,7 @@ use String::Util qw/
     hascontent
 /;
 
-use IO::File;
+use File::Slurp;
 
 use JSON;
 
@@ -39,23 +39,13 @@ sub load {
     my ($self, $file_path) = @_;
 
     if (hascontent($file_path)) {
-        my $fh = IO::File->new();
-
-        $fh->binmode(':encoding(UTF-8)');
-
-        if ($fh->open('< ' . $file_path)) {
             my $json = eval {
-                local $/;
-
-                JSON->new()->utf8()->decode(<$fh>);
+                decode_json(
+                    read_file($file_path)
+                );
             };
 
-            $fh->close();
-
             return $@ ? [0, 'JSON decode failed for file ' . $file_path . ' : ' . $@] : [1, $json];
-        }
-
-        return [0, 'Cannot open file ' . $file_path];
     }
 
     croak('File path missing');
