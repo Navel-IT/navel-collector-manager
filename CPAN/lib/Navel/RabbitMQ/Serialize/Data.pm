@@ -51,15 +51,15 @@ our $VERSION = 0.1;
 sub to($$) {
     my ($connector, $datas) = @_;
 
-    eval {
-        JSON->new()->allow_nonref()->utf8()->decode($datas);
-    };
-
     $connector = unblessed($connector);
 
     publicize($connector);
 
-    my $json = JSON->new()->utf8()->allow_nonref()->encode(
+    eval {
+        decode_json($datas);
+    };
+
+    my $json = encode_json(
         {
             connector => $connector,
             time => time,
@@ -74,7 +74,7 @@ sub from($) {
     my $json = shift;
 
     my $datas = eval {
-        JSON->new()->utf8()->decode($json);
+        decode_json($json);
     };
 
     unless ($@) {
