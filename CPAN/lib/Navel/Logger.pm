@@ -40,7 +40,7 @@ our $VERSION = 0.1;
 
 #-> methods
 
-sub new {
+sub new { # add log level to this package
     my ($class, $file_path) = @_;
 
     my $self = {
