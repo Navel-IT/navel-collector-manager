@@ -18,7 +18,9 @@ use Scalar::Util::Numeric qw/
     isint
 /;
 
-use IO::File;
+use File::Slurp;
+
+use Safe;
 
 use IPC::Cmd qw/
     run
@@ -55,13 +57,13 @@ sub new {
 
                 local $@;
 
-                my $datas;
+                my $datas = Safe->new()->reval(
+                    "
+                        require '" . $connector->get_exec_file_path() . "';
 
-                if (eval "require '" . $connector->get_exec_file_path() . "'") {
-                    $datas = eval {
-                        connector($connector->get_properties());
-                    };
-                }
+                        connector(shift);
+                    "
+                );
 
                 $self->get_logger()->push_to_buffer($connector_generic_failed_message . ' ' . $@)->flush_buffer(1) if ($@);
 
@@ -83,21 +85,13 @@ sub new {
             $self->{__exec} = sub {
                 my $self = shift;
 
-                my $datas;
+                local $@;
 
-                my $fh = IO::File->new();
+                my $datas = eval {
+                    read_file($connector->get_exec_file_path());
+                };
 
-                $fh->binmode(':encoding(UTF-8)');
-
-                if ($fh->open('< ' . $connector->get_exec_file_path())) {
-                    local $/;
-
-                    $datas = <$fh>;
-
-                    $fh->close();
-                } else {
-                    $self->get_logger()->push_to_buffer($connector_generic_failed_message . ' ' . $!)->flush_buffer(1);
-                }
+                $self->get_logger()->push_to_buffer($connector_generic_failed_message . ' ' . $@)->flush_buffer(1) if ($@);
 
                 return $datas;
             };
