@@ -41,7 +41,7 @@ sub load {
     if (hascontent($file_path)) {
             my $json = eval {
                 decode_json(
-                    read_file($file_path)
+                    scalar read_file($file_path)
                 );
             };
 
