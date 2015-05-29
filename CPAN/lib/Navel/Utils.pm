@@ -14,6 +14,10 @@ use parent qw/
     Scalar::Util
 /;
 
+use subs qw/
+    substitute_all_keys
+/;
+
 use Exporter::Easy (
     OK => [qw/
         :all
@@ -45,10 +49,6 @@ use Exporter::Easy (
 use Scalar::Util;
 
 our $VERSION = 0.1;
-
-#-> interfaces
-
-sub substitute_all_keys($$$@);
 
 #-> methods
 
