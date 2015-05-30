@@ -20,7 +20,11 @@ dirname=$(${DIRNAME} $(${READLINK} -f $0))
 rpm_version=${1}
 rpm_release=${2}
 
-[[ -z ${rpm_version} || -z ${rpm_release} ]] && exit 1
+if [[ -z ${rpm_version} || -z ${rpm_release} ]] ; then
+    ${ECHO} "Usage : ${0} <version> <release>"
+
+    exit 1
+fi
 
 ${ECHO} "Building RPM archive version ${rpm_version}, release ${rpm_release}"
 

@@ -13,7 +13,11 @@ dirname=$(${DIRNAME} $0)
 
 version=${1}
 
-[[ -z ${version} ]] && exit 1
+if [[ -z ${version} ]] ; then
+    ${ECHO} "Usage : ${0} <version>"
+
+    exit 1
+fi
 
 ${ECHO} "Building CPAN archive version ${version}"
 
