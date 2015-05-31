@@ -44,6 +44,7 @@ WriteMakefile(
         'IPC::Cmd' => 0,
         'Net::AMQP::RabbitMQ' => 0,
         'Carp' => 0,
+        'EV' => 0,
         'AnyEvent::DateTime::Cron' => 0,
         'Exporter::Easy' => 0,
         'Storable' => 0,

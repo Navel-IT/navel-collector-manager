@@ -23,6 +23,8 @@ use Mojolicious::Lite;
 
 use Mojo::Server::Daemon;
 
+use EV;
+
 use Navel::Logger;
 
 use Navel::Scheduler qw/
