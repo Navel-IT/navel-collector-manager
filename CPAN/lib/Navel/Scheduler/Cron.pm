@@ -164,7 +164,7 @@ sub register_publishers {
                         $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.', 'info')->flush_buffer(1);
                     }
                 } else {
-                    $self->get_logger()->good($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_buffer(1);
+                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_buffer(1);
                 }
             }
         );

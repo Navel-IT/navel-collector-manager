@@ -46,8 +46,6 @@ use Exporter::Easy (
     ]
 );
 
-use Scalar::Util;
-
 our $VERSION = 0.1;
 
 #-> methods

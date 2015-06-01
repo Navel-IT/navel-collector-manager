@@ -117,11 +117,11 @@ sub push_to_buffer { # need changes relatives to the comments below
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    return shift->push_to_buffer(':) ' . shift, shift);
+    return shift->push_to_buffer('[:)] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    return shift->push_to_buffer(':( ' . shift, shift);
+    return shift->push_to_buffer('[:(] ' . shift, shift);
 }
 
 sub join_buffer {
