@@ -70,17 +70,17 @@ sub get_buffer {
 sub push_to_buffer {
     my ($self, $messages) = @_;
 
-    if (defined $messages) {
-        if (ref $messages eq 'ARRAY') {
-            for (@{$messages}) {
-                $self->push_to_buffer(get_a_proper_localtime(time) . ' ' . crunch($_)) if (defined $_);
-            }
-        } else {
-            push @{$self->get_buffer()}, get_a_proper_localtime(time) . ' ' . crunch($messages);
-        }
-    }
+    push @{$self->get_buffer()}, get_a_proper_localtime(time) . ' ' . crunch($messages) if (defined $messages);
 
     return $self;
+}
+
+sub good {
+    return shift->push_to_buffer(':) ' . shift);
+}
+
+sub bad {
+    return shift->push_to_buffer(':( ' . shift);
 }
 
 sub join_buffer {
