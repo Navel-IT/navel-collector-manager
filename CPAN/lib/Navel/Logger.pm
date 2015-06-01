@@ -9,8 +9,6 @@ package Navel::Logger;
 
 use 5.10.1;
 
-use utf8;
-
 use strict;
 use warnings;
 
@@ -66,7 +64,7 @@ sub new {
     if (defined $self->{__file_path}) {
         $self->{__filehandler} = IO::File->new();
 
-        $self->{__filehandler}->binmode(':encoding(UTF-8)');
+        $self->{__filehandler}->binmode(':utf8');
 
         $self->{__filehandler} = undef unless $self->{__filehandler}->open('>> ' . $self->{__file_path});
     }
@@ -127,11 +125,11 @@ sub push_to_buffer { # need changes relatives to the comments below
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[✓] ' . shift, shift);
+    return shift->push_to_buffer('[OK] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[✗] ' . shift, shift);
+    return shift->push_to_buffer('[NOK] ' . shift, shift);
 }
 
 sub join_buffer {
