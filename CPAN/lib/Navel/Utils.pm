@@ -29,7 +29,6 @@ use Exporter::Easy (
         publicize
         privasize
         unblessed
-        eval_require_package
     /],
     TAGS => [
         all => [qw/
@@ -41,7 +40,6 @@ use Exporter::Easy (
             publicize
             privasize
             unblessed
-            eval_require_package
         /]
     ]
 );
@@ -49,6 +47,11 @@ use Exporter::Easy (
 our $VERSION = 0.1;
 
 #-> methods
+
+sub import {
+}
+
+#-> functions
 
 sub blessed($) {
    my $blessed = Scalar::Util::blessed(shift);
