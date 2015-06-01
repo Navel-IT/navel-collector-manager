@@ -40,7 +40,7 @@ sub new {
         my $self = {
             __connectors => $connectors,
             __rabbitmq => $rabbitmq,
-            __senders => [],
+            __publishers => [],
             __buffers => {},
             __logger => $logger,
             __cron => AnyEvent::DateTime::Cron->new(
@@ -71,18 +71,18 @@ sub new {
     croak('Object(s) invalid(s).');
 }
 
-sub init_senders {
+sub init_publishers {
     my $self = shift;
 
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
-        $self->get_logger()->push_to_buffer('Initialize sender ' . $rabbitmq->get_name() . '.')->flush_buffer(1);
+        $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.')->flush_buffer(1);
 
         $self->__init_a_buffer($rabbitmq->get_name());
 
-        my $sender = Net::AMQP::RabbitMQ->new();
+        my $publisher = Net::AMQP::RabbitMQ->new();
 
-        push @{$self->get_senders()}, {
-            __net => $sender,
+        push @{$self->get_publishers()}, {
+            __net => $publisher,
             __definition => $rabbitmq
         };
     }
@@ -90,67 +90,67 @@ sub init_senders {
     return $self;
 }
 
-sub connect_senders {
+sub connect_publishers {
     my $self = shift;
 
-    for my $sender (@{$self->get_senders()}) {
+    for my $publisher (@{$self->get_publishers()}) {
         my %options = (
-            user => $sender->{__definition}->get_user(),
-            password => $sender->{__definition}->get_password(),
-            port => $sender->{__definition}->get_port(),
-            vhost => $sender->{__definition}->get_vhost()
+            user => $publisher->{__definition}->get_user(),
+            password => $publisher->{__definition}->get_password(),
+            port => $publisher->{__definition}->get_port(),
+            vhost => $publisher->{__definition}->get_vhost()
         );
 
-        $options{timeout} = $sender->{__definition}->get_timeout() if ($sender->{__definition}->get_timeout());
+        $options{timeout} = $publisher->{__definition}->get_timeout() if ($publisher->{__definition}->get_timeout());
 
-        unless ($sender->{__net}->is_connected()) {
+        unless ($publisher->{__net}->is_connected()) {
             eval {
-                $sender->{__net}->connect($sender->{__definition}->get_host(), \%options);
+                $publisher->{__net}->connect($publisher->{__definition}->get_host(), \%options);
             };
 
-            $self->get_logger()->good('Connect sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+            $self->get_logger()->good('Connect publisher ' . $publisher->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
         } else {
-            $self->get_logger()->bad('Connect sender ' . $sender->{__definition}->get_name() . ' : seem already connected.')->flush_buffer(1);
+            $self->get_logger()->bad('Connect publisher ' . $publisher->{__definition}->get_name() . ' : seem already connected.')->flush_buffer(1);
         }
     }
 
     return $self;
 }
 
-sub register_senders {
+sub register_publishers {
     my $self = shift;
 
     my $channel_id = 1;
 
-    for my $sender (@{$self->get_senders()}) {
-        $self->get_cron()->add($sender->{__definition}->get_scheduling(), # need to be blocking (per item name)
+    for my $publisher (@{$self->get_publishers()}) {
+        $self->get_cron()->add($publisher->{__definition}->get_scheduling(), # need to be blocking (per item name)
             sub {
-                if ($sender->{__net}->is_connected()) {
-                    my @buffer = @{$self->get_a_buffer($sender->{__definition}->get_name())};
+                if ($publisher->{__net}->is_connected()) {
+                    my @buffer = @{$self->get_a_buffer($publisher->{__definition}->get_name())};
 
                     if (@buffer) {
-                        $self->__clear_a_buffer($sender->{__definition}->get_name());
+                        $self->__clear_a_buffer($publisher->{__definition}->get_name());
 
                         eval {
-                            $sender->{__net}->channel_open($channel_id);
+                            $publisher->{__net}->channel_open($channel_id);
 
                             for my $body (@buffer) {
-                                $sender->{__net}->publish($channel_id, $sender->{__definition}->get_routing_key(), $body,
+                                $publisher->{__net}->publish($channel_id, $publisher->{__definition}->get_routing_key(), $body,
                                     {
-                                        exchange => $sender->{__definition}->get_exchange()
+                                        exchange => $publisher->{__definition}->get_exchange()
                                     }
                                 );
                             }
 
-                            $sender->{__net}->channel_close($channel_id);
+                            $publisher->{__net}->channel_close($channel_id);
                         };
 
-                        $self->get_logger()->good('Publish datas for sender ' . $sender->{__definition}->get_name() . ' on channel ' . $channel_id . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+                        $self->get_logger()->good('Publish datas for publisher ' . $publisher->{__definition}->get_name() . ' on channel ' . $channel_id . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
                     } else {
-                        $self->get_logger()->bad('Buffer for sender ' . $sender->{__definition}->get_name() . ' is empty.')->flush_buffer(1);
+                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.')->flush_buffer(1);
                     }
                 } else {
-                    $self->get_logger()->good('Publish datas for sender ' . $sender->{__definition}->get_name() . " : isn't connected.")->flush_buffer(1);
+                    $self->get_logger()->good('Publish datas for publisher ' . $publisher->{__definition}->get_name() . " : isn't connected.")->flush_buffer(1);
                 }
             }
         );
@@ -159,10 +159,10 @@ sub register_senders {
     return $self;
 }
 
-sub disconnect_senders {
+sub disconnect_publishers {
     my $self = shift;
 
-    $_->{__net}->disconnect() for (@{$self->get_senders()});
+    $_->{__net}->disconnect() for (@{$self->get_publishers()});
 
     return $self;
 
@@ -192,8 +192,8 @@ sub get_rabbitmq {
     return shift->{__rabbitmq};
 }
 
-sub get_senders {
-    return shift->{__senders};
+sub get_publishers {
+    return shift->{__publishers};
 }
 
 sub get_buffers {
@@ -241,7 +241,7 @@ sub get_cron {
 # sub AUTOLOAD {}
 
 sub DESTROY {
-    shift->disconnect_senders();
+    shift->disconnect_publishers();
 }
 
 1;
