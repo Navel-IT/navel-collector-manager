@@ -69,12 +69,12 @@ Configure('bundling');
 
 GetOptions(
     'h|help' => sub {
-        print get_help() . "\n";
+        say get_help();
 
         exit 0;
     },
     'v|version' => sub {
-        print $VERSION . "\n";
+        say $VERSION;
 
         exit 0;
     },
@@ -239,7 +239,7 @@ if (defined $general_configuration_file_path) {
         exit 1;
     }
 } else {
-    print get_help() . "\n";
+    say get_help();
 
     exit 1;
 }
