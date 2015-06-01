@@ -69,7 +69,7 @@ Configure('bundling');
 
 GetOptions(
     'h|help' => sub {
-        print get_help();
+        print get_help() . "\n";
 
         exit 0;
     },
