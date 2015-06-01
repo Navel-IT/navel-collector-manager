@@ -75,7 +75,7 @@ sub init_publishers {
     my $self = shift;
 
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
-        $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.')->flush_buffer(1);
+        $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_buffer(1);
 
         $self->__init_a_buffer($rabbitmq->get_name());
 
@@ -103,14 +103,20 @@ sub connect_publishers {
 
         $options{timeout} = $publisher->{__definition}->get_timeout() if ($publisher->{__definition}->get_timeout());
 
+        my $publisher_generic_message = 'Connect publisher ' . $publisher->{__definition}->get_name();
+
         unless ($publisher->{__net}->is_connected()) {
             eval {
                 $publisher->{__net}->connect($publisher->{__definition}->get_host(), \%options);
             };
 
-            $self->get_logger()->good('Connect publisher ' . $publisher->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+            if ($@) {
+                $self->get_logger()->bad($publisher_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
+            } else {
+                $self->get_logger()->good($publisher_generic_message . ' : successful.', 'notice')->flush_buffer(1);
+            }
         } else {
-            $self->get_logger()->bad('Connect publisher ' . $publisher->{__definition}->get_name() . ' : seem already connected.')->flush_buffer(1);
+            $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_buffer(1);
         }
     }
 
@@ -125,6 +131,8 @@ sub register_publishers {
     for my $publisher (@{$self->get_publishers()}) {
         $self->get_cron()->add($publisher->{__definition}->get_scheduling(), # need to be blocking (per item name)
             sub {
+                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->{__definition}->get_name() . ' on channel ' . $channel_id;
+
                 if ($publisher->{__net}->is_connected()) {
                     my @buffer = @{$self->get_a_buffer($publisher->{__definition}->get_name())};
 
@@ -135,6 +143,8 @@ sub register_publishers {
                             $publisher->{__net}->channel_open($channel_id);
 
                             for my $body (@buffer) {
+                                $self->get_logger()->push_to_buffer($publish_generic_message . ' : send body.', 'info')->flush_buffer(1);
+
                                 $publisher->{__net}->publish($channel_id, $publisher->{__definition}->get_routing_key(), $body,
                                     {
                                         exchange => $publisher->{__definition}->get_exchange()
@@ -145,12 +155,16 @@ sub register_publishers {
                             $publisher->{__net}->channel_close($channel_id);
                         };
 
-                        $self->get_logger()->good('Publish datas for publisher ' . $publisher->{__definition}->get_name() . ' on channel ' . $channel_id . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+                        if ($@) {
+                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
+                        } else {
+                            $self->get_logger()->good($publish_generic_message . ' : successful', 'notice')->flush_buffer(1);
+                        }
                     } else {
-                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.')->flush_buffer(1);
+                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.', 'info')->flush_buffer(1);
                     }
                 } else {
-                    $self->get_logger()->good('Publish datas for publisher ' . $publisher->{__definition}->get_name() . " : isn't connected.")->flush_buffer(1);
+                    $self->get_logger()->good($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_buffer(1);
                 }
             }
         );

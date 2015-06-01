@@ -67,7 +67,7 @@ sub reftype($) {
 sub get_a_proper_localtime($) {
     my ($sec, $min, $hour, $mday, $mon, $year) = localtime shift;
 
-    return sprintf '[%d/%02d/%02d %02d:%02d:%02d]', 1900 + $year, $mday, $mon, $hour, $min, $sec;
+    return sprintf '%d/%02d/%02d %02d:%02d:%02d', 1900 + $year, $mday, $mon, $hour, $min, $sec;
 }
 
 sub replace_key($$$) {

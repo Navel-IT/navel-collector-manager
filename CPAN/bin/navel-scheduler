@@ -38,6 +38,7 @@ use Navel::Definition::WebService::Etc::Parser;
 my (
     $general_configuration_file_path,
     $log_file_path,
+    $log_severity,
     $disable_rest,
     $daemonize,
     $mojo_server
@@ -55,6 +56,7 @@ sub get_help() {
 
         -c, --general-configuration-file-path <F>    load general configuration from <F>
         [-l, --log-file-path <F>]   log informations in file <F>
+        [-s, --log-severity <F>]    set severity (syslog format) to <F>
         [-n, --no-rest]   disable the REST api
 
         [-d, --daemonize]   run as a standalone daemon (only work on Unix-like systems)
@@ -78,13 +80,18 @@ GetOptions(
     },
     'c|general-configuration-file-path=s' => \$general_configuration_file_path,
     'l|log-file-path=s' => \$log_file_path,
+    's|log-severity=s' => \$log_severity,
     'n|no-rest' => \$disable_rest,
     'd|daemonize' => \$daemonize
 
 ) || die $!;
 
 if (defined $general_configuration_file_path) {
-    my $logger = Navel::Logger->new($log_file_path);
+    my $logger = Navel::Logger->new(
+        'notice',
+        $log_file_path,
+        $log_severity
+    );
 
     my $scheduler = eval {
         Navel::Scheduler->new($general_configuration_file_path);
@@ -192,10 +199,12 @@ if (defined $general_configuration_file_path) {
                 }
             }
 
-            $logger->bad($return->[1] . '.')->flush_buffer(1) unless ($return->[0]);
+            $logger->bad($return->[1] . '.', 'err')->flush_buffer(1) unless ($return->[0]);
         }
 
         if ($daemonize) {
+            $logger->push_to_buffer('Daemonizing ...', 'info')->flush_buffer(1);
+
             Proc::Daemon->new(
                 working_directory => getcwd(),
                 pid_file => $pid_dir . '/navel-scheduler.pid',
@@ -203,23 +212,29 @@ if (defined $general_configuration_file_path) {
             )->Init();
         }
 
-        eval {
-            $mojo_server->silent(1)->start() unless ($disable_rest);
-        };
+        unless ($disable_rest) {
+            $logger->push_to_buffer('Starting the webservices ...', 'notice')->flush_buffer(1);
 
-        $logger->bad($@ . '.')->flush_buffer(1) if ($@);
+            eval {
+                $mojo_server->silent(1)->start();
+            };
+
+            $logger->bad($@ . '.', 'err')->flush_buffer(1) if ($@);
+        }
+
+        $logger->push_to_buffer('Starting the scheduler ...', 'notice')->flush_buffer(1);
 
         eval {
             $scheduler->run($logger);
         };
 
         if ($@) {
-            $logger->bad($@ . '.')->flush_buffer();
+            $logger->bad($@ . '.', 'crit')->flush_buffer();
 
             exit 1;
         }
     } else {
-        $logger->bad($@ . '.')->flush_buffer();
+        $logger->bad($@ . '.', 'crit')->flush_buffer();
 
         exit 1;
     }

@@ -32,6 +32,8 @@ use String::Util qw/
 
 use IO::File;
 
+use Navel::Logger::Severity;
+
 use Navel::Utils qw/
     :all
 /;
@@ -40,10 +42,13 @@ our $VERSION = 0.1;
 
 #-> methods
 
-sub new { # add log level to this package
-    my ($class, $file_path) = @_;
+sub new {
+    my ($class, $default_severity, $file_path, $severity) = @_;
 
     my $self = {
+        __severity => eval {
+            Navel::Logger::Severity->new($severity)
+        } || Navel::Logger::Severity->new($default_severity),
         __file_path => $file_path,
         __buffer => []
     };
@@ -63,50 +68,8 @@ sub new { # add log level to this package
     return bless $self, $class;
 }
 
-sub get_buffer {
-    return shift->{__buffer};
-}
-
-sub push_to_buffer {
-    my ($self, $messages) = @_;
-
-    push @{$self->get_buffer()}, get_a_proper_localtime(time) . ' ' . crunch($messages) if (defined $messages);
-
-    return $self;
-}
-
-sub good {
-    return shift->push_to_buffer(':) ' . shift);
-}
-
-sub bad {
-    return shift->push_to_buffer(':( ' . shift);
-}
-
-sub join_buffer {
-    my ($self, $separator) = @_;
-
-    return join $separator, @{$self->get_buffer()};
-}
-
-sub flush_buffer {
-    my ($self, $clear_buffer) = @_;
-
-    no strict qw/
-        refs
-    /;
-
-    print { $self->get_filehandler() } $self->join_buffer("\n") . "\n";
-
-    return $clear_buffer ? $self->clear_buffer() : $self;
-}
-
-sub clear_buffer {
-    my $self = shift;
-
-    undef @{$self->get_buffer()};
-
-    return $self;
+sub get_severity {
+    shift->{__severity};
 }
 
 sub get_file_path {
@@ -139,6 +102,52 @@ sub on_stderr {
 
 sub is_filehandler_via_lib {
     return blessed(shift->get_filehandler()) eq 'IO::File';
+}
+
+sub get_buffer {
+    return shift->{__buffer};
+}
+
+sub push_to_buffer { # need changes relatives to the comments below
+    my ($self, $messages, $severity) = @_;
+
+    push @{$self->get_buffer()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
+
+    return $self;
+}
+
+sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
+    return shift->push_to_buffer(':) ' . shift, shift);
+}
+
+sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
+    return shift->push_to_buffer(':( ' . shift, shift);
+}
+
+sub join_buffer {
+    my ($self, $separator) = @_;
+
+    return join $separator, @{$self->get_buffer()};
+}
+
+sub flush_buffer {
+    my ($self, $clear_buffer) = @_;
+
+    no strict qw/
+        refs
+    /;
+
+    print { $self->get_filehandler() } $self->join_buffer("\n") . "\n" if (@{$self->get_buffer()});
+
+    return $clear_buffer ? $self->clear_buffer() : $self;
+}
+
+sub clear_buffer {
+    my $self = shift;
+
+    undef @{$self->get_buffer()};
+
+    return $self;
 }
 
 # sub AUTOLOAD {}
