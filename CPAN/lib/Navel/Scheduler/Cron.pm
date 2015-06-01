@@ -108,9 +108,9 @@ sub connect_senders {
                 $sender->{__net}->connect($sender->{__definition}->get_host(), \%options);
             };
 
-            $self->get_logger()->push_to_buffer('Connect sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+            $self->get_logger()->good('Connect sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
         } else {
-            $self->get_logger()->push_to_buffer('Connect sender ' . $sender->{__definition}->get_name() . ' : seem already connected.')->flush_buffer(1);
+            $self->get_logger()->bad('Connect sender ' . $sender->{__definition}->get_name() . ' : seem already connected.')->flush_buffer(1);
         }
     }
 
@@ -135,8 +135,6 @@ sub register_senders {
                             $sender->{__net}->channel_open($channel_id);
 
                             for my $body (@buffer) {
-                                $self->get_logger()->push_to_buffer('Publishing for sender ' . $sender->{__definition}->get_name() . ' on channel number ' . $channel_id . '.')->flush_buffer(1);
-
                                 $sender->{__net}->publish($channel_id, $sender->{__definition}->get_routing_key(), $body,
                                     {
                                         exchange => $sender->{__definition}->get_exchange()
@@ -147,12 +145,12 @@ sub register_senders {
                             $sender->{__net}->channel_close($channel_id);
                         };
 
-                        $self->get_logger()->push_to_buffer('Publish datas for sender ' . $sender->{__definition}->get_name() . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
+                        $self->get_logger()->good('Publish datas for sender ' . $sender->{__definition}->get_name() . ' on channel ' . $channel_id . ' : ' . ($@ ? $@ : 'successful') . '.')->flush_buffer(1);
                     } else {
-                        $self->get_logger()->push_to_buffer('Buffer for sender ' . $sender->{__definition}->get_name() . ' is empty.')->flush_buffer(1);
+                        $self->get_logger()->bad('Buffer for sender ' . $sender->{__definition}->get_name() . ' is empty.')->flush_buffer(1);
                     }
                 } else {
-                    $self->get_logger()->push_to_buffer('Publish datas for sender ' . $sender->{__definition}->get_name() . " : isn't connected.")->flush_buffer(1);
+                    $self->get_logger()->good('Publish datas for sender ' . $sender->{__definition}->get_name() . " : isn't connected.")->flush_buffer(1);
                 }
             }
         );

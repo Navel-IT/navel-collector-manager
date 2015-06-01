@@ -192,7 +192,7 @@ if (defined $general_configuration_file_path) {
                 }
             }
 
-            $logger->push_to_buffer($return->[1] . '.')->flush_buffer(1) unless ($return->[0]);
+            $logger->bad($return->[1] . '.')->flush_buffer(1) unless ($return->[0]);
         }
 
         if ($daemonize) {
@@ -207,19 +207,19 @@ if (defined $general_configuration_file_path) {
             $mojo_server->silent(1)->start() unless ($disable_rest);
         };
 
-        $logger->push_to_buffer($@ . '.')->flush_buffer(1) if ($@);
+        $logger->bad($@ . '.')->flush_buffer(1) if ($@);
 
         eval {
             $scheduler->run($logger);
         };
 
         if ($@) {
-            $logger->push_to_buffer($@ . '.')->flush_buffer();
+            $logger->bad($@ . '.')->flush_buffer();
 
             exit 1;
         }
     } else {
-        $logger->push_to_buffer($@ . '.')->flush_buffer();
+        $logger->bad($@ . '.')->flush_buffer();
 
         exit 1;
     }
