@@ -46,11 +46,6 @@ use Exporter::Easy (
 
 our $VERSION = 0.1;
 
-#-> methods
-
-sub import {
-}
-
 #-> functions
 
 sub blessed($) {
