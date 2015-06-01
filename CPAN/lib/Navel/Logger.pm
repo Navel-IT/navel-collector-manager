@@ -7,6 +7,10 @@
 
 package Navel::Logger;
 
+use 5.10.1;
+
+use utf8;
+
 use strict;
 use warnings;
 
@@ -40,6 +44,12 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
+#-> global
+
+binmode STDOUT, ':utf8';
+
+binmode STDERR, ':utf8';
+
 #-> methods
 
 sub new {
@@ -69,7 +79,7 @@ sub new {
 }
 
 sub get_severity {
-    shift->{__severity};
+    return shift->{__severity};
 }
 
 sub get_file_path {
@@ -117,11 +127,11 @@ sub push_to_buffer { # need changes relatives to the comments below
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[:)] ' . shift, shift);
+    return shift->push_to_buffer('[✓] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[:(] ' . shift, shift);
+    return shift->push_to_buffer('[✗] ' . shift, shift);
 }
 
 sub join_buffer {
@@ -137,7 +147,7 @@ sub flush_buffer {
         refs
     /;
 
-    print { $self->get_filehandler() } $self->join_buffer("\n") . "\n" if (@{$self->get_buffer()});
+    say { $self->get_filehandler() } $self->join_buffer("\n") if (@{$self->get_buffer()});
 
     return $clear_buffer ? $self->clear_buffer() : $self;
 }
