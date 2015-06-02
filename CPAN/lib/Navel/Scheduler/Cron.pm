@@ -83,7 +83,7 @@ sub init_publishers {
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
         $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_buffer(1);
 
-        push @{$self->get_publishers()}, Net::RabbitMQ::Publisher->new();
+        push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
     }
 
     return $self;
@@ -96,7 +96,7 @@ sub connect_publishers {
         my $publisher_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
 
         unless ($publisher->get_net()->is_connected()) {
-            my $connect_message = $self->connect();
+            my $connect_message = $publisher->connect();
 
             if ($connect_message) {
                 $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_buffer(1);
@@ -123,7 +123,7 @@ sub register_publishers {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $channel_id;
 
                 if ($publisher->get_net()->is_connected()) {
-                    my @buffer = @{$self->get_buffer()};
+                    my @buffer = @{$publisher->get_buffer()};
 
                     if (@buffer) {
                         $publisher->clear_buffer();

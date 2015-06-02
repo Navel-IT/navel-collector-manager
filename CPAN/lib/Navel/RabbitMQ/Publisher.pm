@@ -14,6 +14,11 @@ use parent qw/
     Navel::Base
 /;
 
+use Carp qw/
+    carp
+    croak
+/;
+
 use Net::AMQP::RabbitMQ;
 
 use Navel::Utils qw/
@@ -70,13 +75,13 @@ sub get_net {
 }
 
 sub get_buffer {
-    return shift->get_buffer();
+    return shift->{__buffer};
 }
 
 sub push_in_buffer {
     my ($self, $body) = @_;
 
-    push @{$self->get_buffers()}, $body;
+    push @{$self->get_buffer()}, $body;
 
     return $self;
 }
@@ -84,7 +89,7 @@ sub push_in_buffer {
 sub clear_buffer {
     my $self = shift;
 
-    undef @{$self->get_buffers()};
+    undef @{$self->get_buffer()};
 
     return $self;
 }
