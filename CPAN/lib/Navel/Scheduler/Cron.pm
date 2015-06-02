@@ -166,9 +166,13 @@ sub disconnect_publishers {
     my $self = shift;
 
     for (@{$self->get_publishers()}) {
-        $self->get_logger()->good('Disconnect publisher ' . $_->get_definition()->get_name(), 'notice')->flush_buffer(1);
+        my $disconnect_generic_message = 'Disconnect publisher ' . $_->get_definition()->get_name();
 
-        $_->disconnect();
+        if (my $error = $_->disconnect()) {
+            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice')->flush_buffer(1);
+        } else {
+            $self->get_logger()->good($disconnect_generic_message . '.', 'notice')->flush_buffer(1);
+        }
     }
 
     return $self;

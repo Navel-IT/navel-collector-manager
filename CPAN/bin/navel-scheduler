@@ -55,8 +55,8 @@ sub get_help() {
         -v, --version    show version
 
         -c, --general-configuration-file-path <F>    load general configuration from <F>
-        [-l, --log-file-path <F>]   log informations in file <F>
-        [-s, --log-severity <F>]    set severity (syslog format) to <F>
+        [-l, --log-file-path] <F>   log informations in file <F>
+        [-s, --log-severity] <F>    set severity (syslog format) to <F>
         [-n, --no-rest]   disable the REST api
 
         [-d, --daemonize]   run as a standalone daemon (only work on Unix-like systems)
@@ -191,15 +191,20 @@ if (defined $general_configuration_file_path) {
                             if ($action =~ /^(connect|disconnect)$/) {
                                 my $method = $1;
 
-                                $logger->good(ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name(), 'notice')->flush_buffer(1);
+                                my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
 
-                                $publisher->$method();
+                                if (my $error = $publisher->$method()) {
+                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice')->flush_buffer(1);
+                                } else {
+                                    $logger->good($method_generic_message . '.', 'notice')->flush_buffer(1);
+                                }
                             }
 
                             $controller->render(
                                 json => {
-                                    connected => $publisher->get_net()->is_connected() || 0
-                                    }
+                                    connected => $publisher->get_net()->is_connected() || 0,
+                                    messages_in_buffer => scalar @{$publisher->get_buffer()}
+                                }
                             );
                         } else {
                             $controller->render(

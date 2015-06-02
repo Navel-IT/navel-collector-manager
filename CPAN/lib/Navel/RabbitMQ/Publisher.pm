@@ -67,7 +67,13 @@ sub connect {
 }
 
 sub disconnect {
-    shift->get_net()->disconnect();
+    my $self = shift;
+
+    eval {
+        $self->get_net()->disconnect();
+    };
+
+    return $@;
 }
 
 sub get_definition {
