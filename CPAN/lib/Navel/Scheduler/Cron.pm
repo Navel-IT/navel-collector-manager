@@ -168,7 +168,7 @@ sub disconnect_publishers {
     for (@{$self->get_publishers()}) {
         $self->get_logger()->good('Disconnect publisher ' . $_->get_definition()->get_name(), 'notice')->flush_buffer(1);
 
-        $_->get_net()->disconnect();
+        $_->disconnect();
     }
 
     return $self;
@@ -200,6 +200,16 @@ sub get_rabbitmq {
 
 sub get_publishers {
     return shift->{__publishers};
+}
+
+sub get_publisher_by_definition_name {
+    my ($self, $name) = @_;
+
+    for (@{$self->get_publishers()}) {
+        return $_ if ($_->get_definition()->get_name() eq $name);
+    }
+
+    return undef;
 }
 
 sub get_buffers {
