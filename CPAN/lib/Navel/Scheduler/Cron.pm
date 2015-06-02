@@ -49,7 +49,8 @@ sub new {
         };
 
         for my $connector (@{$self->{__connectors}->get_definitions()}) {
-            $self->{__cron}->add($connector->get_scheduling(), # need to be blocking (per item name)
+            $self->{__cron}->add($connector->get_scheduling(),
+                single => 1,
                 sub {
                     my $body = Navel::Scheduler::Cron::Exec->new(
                         $connector,
@@ -129,7 +130,8 @@ sub register_publishers {
     my $channel_id = 1;
 
     for my $publisher (@{$self->get_publishers()}) {
-        $self->get_cron()->add($publisher->{__definition}->get_scheduling(), # need to be blocking (per item name)
+        $self->get_cron()->add($publisher->{__definition}->get_scheduling(),
+            single => 1,
             sub {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->{__definition}->get_name() . ' on channel ' . $channel_id;
 
