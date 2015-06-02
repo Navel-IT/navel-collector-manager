@@ -39,7 +39,7 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $rabbitmq, $logger, $extra_parameters) = @_;
+    my ($class, $connector, $rabbitmq, $logger) = @_;
 
     if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
         my $self = {
