@@ -66,6 +66,10 @@ sub connect {
     return $@;
 }
 
+sub disconnect {
+    shift->get_net()->disconnect();
+}
+
 sub get_definition {
     return shift->{__definition};
 }
@@ -97,7 +101,7 @@ sub clear_buffer {
 # sub AUTOLOAD {}
 
 sub DESTROY {
-    shift->get_net()->disconnect();
+    shift->disconnect();
 }
 
 1;
