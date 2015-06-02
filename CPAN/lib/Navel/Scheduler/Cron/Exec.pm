@@ -124,12 +124,12 @@ sub serialize {
     );
 
     if ($serialize->[0]) {
-        $self->get_logger()->good($message . ' : successful.', 'info')->flush_buffer(1);
+        $self->get_logger()->good($message . '.', 'info')->flush_buffer(1);
 
         return $serialize->[1];
     }
 
-    $self->get_logger()->bad($message . ' : failed.', 'err')->flush_buffer(1);
+    $self->get_logger()->bad($message . '.', 'err')->flush_buffer(1);
 
     return 0;
 }

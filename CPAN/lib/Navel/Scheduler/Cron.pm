@@ -113,7 +113,7 @@ sub connect_publishers {
             if ($@) {
                 $self->get_logger()->bad($publisher_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
             } else {
-                $self->get_logger()->good($publisher_generic_message . ' : successful.', 'notice')->flush_buffer(1);
+                $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_buffer(1);
             }
         } else {
             $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_buffer(1);
@@ -158,7 +158,7 @@ sub register_publishers {
                         if ($@) {
                             $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
                         } else {
-                            $self->get_logger()->good($publish_generic_message . ' : successful', 'notice')->flush_buffer(1);
+                            $self->get_logger()->good($publish_generic_message . '.', 'notice')->flush_buffer(1);
                         }
                     } else {
                         $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.', 'info')->flush_buffer(1);
