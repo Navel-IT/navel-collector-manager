@@ -166,28 +166,10 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api/rabbitmq' => sub {
-                        my $controller = shift;
-
-                        my $action = $controller->req()->query_params()->param('action') || '';
-
-                        if ($action eq 'connect') {
-                            $scheduler->get_core()->connect_publishers();
-
-                            $controller->render(
-                                json => {}
-                            );
-                        } elsif ($action eq 'disconnect') {
-                            $scheduler->get_core()->disconnect_publishers();
-
-                            $controller->render(
-                                json => {}
-                            );
-                        } else {
-                            $controller->render(
-                                json => $scheduler->get_core()->get_rabbitmq()->get_names()
-                            );
-                        }
+                    get '/scheduler/api/(:definition)' => [ definition => qr/(rabbitmq|publishers)/ ] => sub {
+                        shift->render(
+                            json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                        );
                     };
 
                     get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
@@ -196,6 +178,36 @@ if (defined $general_configuration_file_path) {
                         $controller->render(
                             json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
                         );
+                    };
+
+                    get '/scheduler/api/publishers/(:publisher)' => sub {
+                        my $controller = shift;
+
+                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($controller->param('publisher'));
+
+                        if (defined $publisher) {
+                            my $action = $controller->req()->query_params()->param('action') || '';
+
+                            if ($action =~ /^(connect|disconnect)$/) {
+                                my $method = $1;
+
+                                $logger->good(ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name(), 'notice')->flush_buffer(1);
+
+                                $publisher->$method();
+                            }
+
+                            $controller->render(
+                                json => {
+                                    connected => $publisher->get_net()->is_connected() || 0
+                                    }
+                            );
+                        } else {
+                            $controller->render(
+                                json => {
+                                    error_message => 'Publisher ' . $controller->param('publisher') . " don't exists"
+                                }
+                            );
+                        }
                     };
 
                     get '/scheduler/api/webservices' => {
