@@ -75,7 +75,7 @@ sub new {
 }
 
 sub run {
-    my ($self, $logger, $extra_parameters) = @_;
+    my ($self, $logger) = @_;
 
     my $connectors = Navel::Definition::Connector::Etc::Parser->new();
 
@@ -97,9 +97,9 @@ sub run {
                 $return = $rabbitmq->make();
 
                 if ($return->[0]) {
-                    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger, $extra_parameters);
+                    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
 
-                    $self->get_core()->init_publishers()->connect_publishers()->register_publishers()->start();
+                    $self->get_core()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
                 }
             }
         }

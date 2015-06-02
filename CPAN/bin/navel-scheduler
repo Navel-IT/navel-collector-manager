@@ -167,9 +167,27 @@ if (defined $general_configuration_file_path) {
                     };
 
                     get '/scheduler/api/rabbitmq' => sub {
-                        shift->render(
-                            json => $scheduler->get_core()->get_rabbitmq()->get_names()
-                        );
+                        my $controller = shift;
+
+                        my $action = $controller->req()->query_params()->param('action') || '';
+
+                        if ($action eq 'connect') {
+                            $scheduler->get_core()->connect_publishers();
+
+                            $controller->render(
+                                json => {}
+                            );
+                        } elsif ($action eq 'disconnect') {
+                            $scheduler->get_core()->disconnect_publishers();
+
+                            $controller->render(
+                                json => {}
+                            );
+                        } else {
+                            $controller->render(
+                                json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                            );
+                        }
                     };
 
                     get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {

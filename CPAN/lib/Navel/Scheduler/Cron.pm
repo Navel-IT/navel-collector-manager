@@ -21,9 +21,9 @@ use Carp qw/
 
 use AnyEvent::DateTime::Cron;
 
-use Net::AMQP::RabbitMQ;
-
 use Navel::Scheduler::Cron::Exec;
+
+use Navel::RabbitMQ::Publisher;
 
 use Navel::Utils qw/
     :all
@@ -34,7 +34,7 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connectors, $rabbitmq, $logger, $extra_parameters) = @_;
+    my ($class, $connectors, $rabbitmq, $logger) = @_;
 
     if (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
         my $self = {
@@ -48,22 +48,6 @@ sub new {
             )
         };
 
-        for my $connector (@{$self->{__connectors}->get_definitions()}) {
-            $self->{__cron}->add($connector->get_scheduling(),
-                single => 1,
-                sub {
-                    my $body = Navel::Scheduler::Cron::Exec->new(
-                        $connector,
-                        $self->{__rabbitmq},
-                        $self->{__logger},
-                        $extra_parameters
-                    )->exec()->serialize();
-
-                    map { $self->__push_in_a_buffer($_, $body) } keys %{$self->get_buffers()};
-                }
-            );
-        }
-
         $class = ref $class || $class;
 
         return bless $self, $class;
@@ -72,20 +56,34 @@ sub new {
     croak('Object(s) invalid(s).');
 }
 
+sub register_connectors {
+    my $self = shift;
+
+    for my $connector (@{$self->get_connectors()->get_definitions()}) {
+        $self->get_cron()->add($connector->get_scheduling(),
+            single => 1,
+            sub {
+                my $body = Navel::Scheduler::Cron::Exec->new(
+                    $connector,
+                    $self->get_rabbitmq(),
+                    $self->get_logger()
+                )->exec()->serialize();
+
+                map { $_->push_in_buffer($body) } @{$self->get_publishers()};
+            }
+        );
+    }
+
+    return $self;
+}
+
 sub init_publishers {
     my $self = shift;
 
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
         $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_buffer(1);
 
-        $self->__init_a_buffer($rabbitmq->get_name());
-
-        my $publisher = Net::AMQP::RabbitMQ->new();
-
-        push @{$self->get_publishers()}, {
-            __net => $publisher,
-            __definition => $rabbitmq
-        };
+        push @{$self->get_publishers()}, Net::RabbitMQ::Publisher->new();
     }
 
     return $self;
@@ -95,24 +93,13 @@ sub connect_publishers {
     my $self = shift;
 
     for my $publisher (@{$self->get_publishers()}) {
-        my %options = (
-            user => $publisher->{__definition}->get_user(),
-            password => $publisher->{__definition}->get_password(),
-            port => $publisher->{__definition}->get_port(),
-            vhost => $publisher->{__definition}->get_vhost()
-        );
+        my $publisher_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
 
-        $options{timeout} = $publisher->{__definition}->get_timeout() if ($publisher->{__definition}->get_timeout());
+        unless ($publisher->get_net()->is_connected()) {
+            my $connect_message = $self->connect();
 
-        my $publisher_generic_message = 'Connect publisher ' . $publisher->{__definition}->get_name();
-
-        unless ($publisher->{__net}->is_connected()) {
-            eval {
-                $publisher->{__net}->connect($publisher->{__definition}->get_host(), \%options);
-            };
-
-            if ($@) {
-                $self->get_logger()->bad($publisher_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
+            if ($connect_message) {
+                $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_buffer(1);
             } else {
                 $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_buffer(1);
             }
@@ -130,31 +117,31 @@ sub register_publishers {
     my $channel_id = 1;
 
     for my $publisher (@{$self->get_publishers()}) {
-        $self->get_cron()->add($publisher->{__definition}->get_scheduling(),
+        $self->get_cron()->add($publisher->get_definition()->get_scheduling(),
             single => 1,
             sub {
-                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->{__definition}->get_name() . ' on channel ' . $channel_id;
+                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $channel_id;
 
-                if ($publisher->{__net}->is_connected()) {
-                    my @buffer = @{$self->get_a_buffer($publisher->{__definition}->get_name())};
+                if ($publisher->get_net()->is_connected()) {
+                    my @buffer = @{$self->get_buffer()};
 
                     if (@buffer) {
-                        $self->__clear_a_buffer($publisher->{__definition}->get_name());
+                        $publisher->clear_buffer();
 
                         eval {
-                            $publisher->{__net}->channel_open($channel_id);
+                            $publisher->get_net()->channel_open($channel_id);
 
                             for my $body (@buffer) {
                                 $self->get_logger()->push_to_buffer($publish_generic_message . ' : send body.', 'info')->flush_buffer(1);
 
-                                $publisher->{__net}->publish($channel_id, $publisher->{__definition}->get_routing_key(), $body,
+                                $publisher->get_net()->publish($channel_id, $publisher->get_definition()->get_routing_key(), $body,
                                     {
-                                        exchange => $publisher->{__definition}->get_exchange()
+                                        exchange => $publisher->get_definition()->get_exchange()
                                     }
                                 );
                             }
 
-                            $publisher->{__net}->channel_close($channel_id);
+                            $publisher->get_net()->channel_close($channel_id);
                         };
 
                         if ($@) {
@@ -163,7 +150,7 @@ sub register_publishers {
                             $self->get_logger()->good($publish_generic_message . '.', 'notice')->flush_buffer(1);
                         }
                     } else {
-                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->{__definition}->get_name() . ' is empty.', 'info')->flush_buffer(1);
+                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info')->flush_buffer(1);
                     }
                 } else {
                     $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_buffer(1);
@@ -178,10 +165,13 @@ sub register_publishers {
 sub disconnect_publishers {
     my $self = shift;
 
-    $_->{__net}->disconnect() for (@{$self->get_publishers()});
+    for (@{$self->get_publishers()}) {
+        $self->get_logger()->good('Disconnect publisher ' . $_->get_definition()->get_name(), 'notice')->flush_buffer(1);
+
+        $_->get_net()->disconnect();
+    }
 
     return $self;
-
 }
 
 sub start {
@@ -216,36 +206,6 @@ sub get_buffers {
     return shift->{__buffers};
 }
 
-sub get_a_buffer {
-    my ($self, $buffer_name) = @_;
-
-    return $self->get_buffers()->{$buffer_name};
-}
-
-sub __init_a_buffer {
-    my ($self, $buffer_name) = @_;
-
-    $self->get_buffers()->{$buffer_name} = [];
-
-    return $self;
-}
-
-sub __push_in_a_buffer {
-    my ($self, $buffer_name, $body) = @_;
-
-    push @{$self->get_buffers()->{$buffer_name}}, $body;
-
-    return $self;
-}
-
-sub __clear_a_buffer {
-    my ($self, $buffer_name) = @_;
-
-    undef @{$self->get_buffers()->{$buffer_name}};
-
-    return $self;
-}
-
 sub get_logger {
     return shift->{__logger};
 }
@@ -256,9 +216,7 @@ sub get_cron {
 
 # sub AUTOLOAD {}
 
-sub DESTROY {
-    shift->disconnect_publishers();
-}
+# sub DESTROY {}
 
 1;
 
