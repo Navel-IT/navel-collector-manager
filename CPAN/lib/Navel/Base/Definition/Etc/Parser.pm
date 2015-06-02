@@ -116,14 +116,20 @@ sub get_names {
     return shift->__get_all_by_getter('get_name');
 }
 
-sub get_properties_by_name {
+sub get_by_name {
     my ($self, $name) = @_;
 
     for (@{$self->get_definitions()}) {
-        return $_->get_properties() if ($_->get_name() eq $name);
+        return $_ if ($_->get_name() eq $name);
     }
 
     return undef;
+}
+
+sub get_properties_by_name {
+    my $definition = shift->get_by_name(shift);
+
+    return defined $definition ? $definition->get_properties() : undef
 }
 
 # sub AUTOLOAD {}
