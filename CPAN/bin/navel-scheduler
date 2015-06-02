@@ -208,7 +208,12 @@ if (defined $general_configuration_file_path) {
             Proc::Daemon->new(
                 working_directory => getcwd(),
                 pid_file => $pid_dir . '/navel-scheduler.pid',
-                dont_close_fh => $logger->is_filehandler_via_lib() ? [__PACKAGE__ . '::DATA', $logger->get_filehandler()] : [__PACKAGE__ . '::DATA']
+                dont_close_fh => $logger->is_filehandler_via_lib() ? [
+                    __PACKAGE__ . '::DATA',
+                    $logger->get_filehandler()
+                ] : [
+                    __PACKAGE__ . '::DATA'
+                ]
             )->Init();
         }
 
