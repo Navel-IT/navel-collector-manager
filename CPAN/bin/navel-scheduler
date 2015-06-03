@@ -25,7 +25,7 @@ use Cwd;
 
 use Mojolicious::Lite;
 
-use Mojo::Server::Daemon;
+use Mojo::Server::Prefork;
 
 use Mojo::JSON qw/
     decode_json
@@ -49,7 +49,7 @@ my (
     $log_severity,
     $disable_rest,
     $daemonize,
-    $mojo_server
+    $prefork_server
 );
 
 my $pid_dir = '/var/run';
@@ -324,10 +324,14 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    $mojo_server = Mojo::Server::Daemon->new(
+                    $prefork_server = Mojo::Server::Prefork->new(
                         app => app(),
                         listen => $web_services_listeners->get_urls()
                     );
+
+                    # $prefork_server->workers();
+                    # $prefork_server->accepts()
+                    # $prefork_server->multi_accept();
                 }
             }
 
@@ -353,7 +357,7 @@ if (defined $general_configuration_file_path) {
             $logger->push_to_buffer('Starting the webservices ...', 'notice')->flush_buffer(1);
 
             eval {
-                $mojo_server->silent(1)->start();
+                $prefork_server->silent(1)->start();
             };
 
             $logger->bad($@ . '.', 'err')->flush_buffer(1) if ($@);
