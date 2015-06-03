@@ -57,18 +57,24 @@ sub new {
 
                 local $@;
 
-                my $datas = Safe->new()->reval(
-                    "
-                        use 5.10.1;
+                ### !! Safe is not suited for this task, need to remove it and find another solution
 
-                        use strict;
-                        use warnings;
+                my $datas;
 
-                        require '" . $connector->get_exec_file_path() . "';
+                # my $datas = Safe->new()->reval(
+                    # "
+                        # use 5.10.1;
 
-                        connector(shift);
-                    "
-                );
+                        # use strict;
+                        # use warnings;
+
+                        # require '" . $connector->get_exec_file_path() . "';
+
+                        # connector(shift);
+                    # "
+                # );
+
+                ### !
 
                 $self->get_logger()->bad($connector_generic_failed_message . ' ' . $@ . '.', 'err')->flush_buffer(1) if ($@);
 
