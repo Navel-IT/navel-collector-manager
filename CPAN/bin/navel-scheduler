@@ -365,7 +365,7 @@ if (defined $general_configuration_file_path) {
             if ($@) {
                 $logger->bad($@ . '.', 'err')->flush_buffer(1);
             } else {
-                $logger->bad('Webservices successfully started.', 'notice')->flush_buffer(1);
+                $logger->good('Webservices successfully started.', 'notice')->flush_buffer(1);
             }
         }
 
