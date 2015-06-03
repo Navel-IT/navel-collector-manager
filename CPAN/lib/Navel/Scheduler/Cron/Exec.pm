@@ -59,6 +59,11 @@ sub new {
 
                 my $datas = Safe->new()->reval(
                     "
+                        use 5.10.1;
+
+                        use strict;
+                        use warnings;
+
                         require '" . $connector->get_exec_file_path() . "';
 
                         connector(shift);
