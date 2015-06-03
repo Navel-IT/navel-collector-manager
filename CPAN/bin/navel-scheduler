@@ -442,3 +442,10 @@ gID/AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA
     <head><title>Page not found</title></head>
     <body>Page not found</body>
 </html>
+
+@@ exception.html.ep
+<!DOCTYPE html>
+<html>
+    <head><title>Unexcepted error</title><head>
+    <body>Unexcepted error : please report bugs !</body>
+</html>
