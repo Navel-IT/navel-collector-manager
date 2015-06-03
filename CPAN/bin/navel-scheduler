@@ -10,6 +10,10 @@ use 5.10.1;
 
 use lib '/usr/local/share/navel-scheduler/lib';
 
+use String::Util qw/
+    hascontent
+/;
+
 use Getopt::Long qw/
     Configure
     GetOptions
@@ -22,6 +26,10 @@ use Cwd;
 use Mojolicious::Lite;
 
 use Mojo::Server::Daemon;
+
+use Mojo::JSON qw/
+    decode_json
+/;
 
 use EV;
 
@@ -123,7 +131,7 @@ if (defined $general_configuration_file_path) {
 
                             $controller->render(
                                 json => {
-                                    error_message => 'Unauthorized : Access is denied due to invalid credentials'
+                                    error_message => 'Unauthorized : access is denied due to invalid credentials'
                                 },
                                 status => 401
                             );
@@ -144,6 +152,47 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
+                    put '/scheduler/api/general/webservices/(:property)' => [property => qr/(login|password)/] => sub {
+                        my $controller = shift;
+
+                        my $property = $controller->param('property');
+
+                        my $body = eval {
+                            decode_json($controller->req()->body());
+                        };
+
+                        if (ref $body eq 'HASH' && hascontent($body->{$property})) {
+                            my $scheduler_definition = $scheduler->get_configuration()->get_definition();
+
+                            $scheduler->get_configuration()->set_definition(
+                                {
+                                    %{$scheduler_definition},
+                                    %{
+                                        {
+                                            webservices => {
+                                                %{$scheduler_definition->{webservices}},
+                                                %{
+                                                    {
+                                                        $property => $body->{$property}
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                            ?
+                                $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')->flush_buffer(1)
+                            :
+                                $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')->flush_buffer(1)
+                            ;
+                        }
+
+                        $controller->render(
+                            json => $scheduler->get_configuration()->get_definition()
+                        );
+                    };
+
                     get '/scheduler/api/cron/jobs' => sub {
                         shift->render(
                             json => {
@@ -152,31 +201,75 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api/connectors' => sub {
-                        shift->render(
-                            json => $scheduler->get_core()->get_connectors()->get_names()
-                        );
-                    };
-
-                    get '/scheduler/api/connectors/(:connector)' => sub {
+                    any [qw/GET POST/] => '/scheduler/api/connectors' => sub {
                         my $controller = shift;
 
-                        $controller->render(
-                            json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
-                        );
+                        given ($controller->req()->method()) {
+                            when ('POST') {
+                                # create a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_connectors()->get_names()
+                                );
+                            }
+                        }
                     };
 
-                    get '/scheduler/api/(:definition)' => [ definition => qr/(rabbitmq|publishers)/ ] => sub {
-                        shift->render(
-                            json => $scheduler->get_core()->get_rabbitmq()->get_names()
-                        );
-                    };
-
-                    get '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                    any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
                         my $controller = shift;
 
-                        $controller->render(
-                            json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                        given ($controller->req()->method()) {
+                            when ('PUT') {
+                                # modify a resource here
+                            }
+                            when ('DEL') {
+                                # delete a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
+                                );
+                            }
+                        }
+                    };
+
+                    any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
+                        my $controller = shift;
+
+                        given ($controller->req()->method()) {
+                            when ('POST') {
+                                # create a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                                );
+                            }
+                        }
+                    };
+
+                    any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                        my $controller = shift;
+
+                        given ($controller->req()->method()) {
+                            when ('PUT') {
+                                # modify a resource here
+                            }
+                            when ('DEL') {
+                                # delete a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                                );
+                            }
+                        }
+                    };
+
+                    get '/scheduler/api/publishers' => sub {
+                        shift->render(
+                            json => [map { $_->get_definition()->get_name() } @{$scheduler->get_core()->get_publishers()}]
                         );
                     };
 
