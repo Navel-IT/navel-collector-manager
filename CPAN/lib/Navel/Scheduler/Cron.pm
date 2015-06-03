@@ -61,6 +61,7 @@ sub register_connectors {
 
     for my $connector (@{$self->get_connectors()->get_definitions()}) {
         $self->get_cron()->add($connector->get_scheduling(),
+            name => 'connector_' . $connector->get_name(),
             single => 1,
             sub {
                 my $body = Navel::Scheduler::Cron::Exec->new(
@@ -118,6 +119,7 @@ sub register_publishers {
 
     for my $publisher (@{$self->get_publishers()}) {
         $self->get_cron()->add($publisher->get_definition()->get_scheduling(),
+            name => 'publisher_' . $publisher->get_definition()->get_name(),
             single => 1,
             sub {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $channel_id;
