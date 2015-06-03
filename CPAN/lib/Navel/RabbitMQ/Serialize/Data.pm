@@ -34,7 +34,10 @@ use Scalar::Util::Numeric qw/
     isint
 /;
 
-use JSON;
+use Mojo::JSON qw/
+    decode_json
+    encode_json
+/;
 
 use Navel::Definition::Connector qw/
     :all

@@ -25,7 +25,9 @@ use String::Util qw/
 
 use File::Slurp;
 
-use JSON;
+use Mojo::JSON qw/
+    decode_json
+/;
 
 use Navel::Utils qw/
     :all

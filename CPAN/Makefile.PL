@@ -50,7 +50,6 @@ WriteMakefile(
         'Storable' => 0,
         'Data::Validate::Struct' => 0,
         'Scalar::Util' => 0,
-        'JSON' => 0,
         'DateTime::Event::Cron::Quartz' => 0,
         'List::MoreUtils' => 0,
         'String::Util' => 0,
