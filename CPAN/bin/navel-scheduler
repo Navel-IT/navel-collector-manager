@@ -63,11 +63,13 @@ sub get_help() {
         -v, --version    show version
 
         -c, --general-configuration-file-path <F>    load general configuration from <F>
-        [-l, --log-file-path] <F>   log informations in file <F>
-        [-s, --log-severity] <F>    set severity (syslog format) to <F>
-        [-n, --no-rest]   disable the REST api
 
-        [-d, --daemonize]   run as a standalone daemon (only work on Unix-like systems)
+        [--log-file-path] <F>   log informations in file <F>
+        [--log-severity] <F>    set severity (syslog format) to <F>
+
+        [--no-rest]   disable the REST api
+
+        [--daemonize]   run as a standalone daemon (only work on Unix-like systems)
 EOF
 }
 
@@ -87,10 +89,10 @@ GetOptions(
         exit 0;
     },
     'c|general-configuration-file-path=s' => \$general_configuration_file_path,
-    'l|log-file-path=s' => \$log_file_path,
-    's|log-severity=s' => \$log_severity,
-    'n|no-rest' => \$disable_rest,
-    'd|daemonize' => \$daemonize
+    'log-file-path=s' => \$log_file_path,
+    'log-severity=s' => \$log_severity,
+    'no-rest' => \$disable_rest,
+    'daemonize' => \$daemonize
 
 ) || die $!;
 
