@@ -126,6 +126,8 @@ sub register_publishers {
                     my @buffer = @{$publisher->get_buffer()};
 
                     if (@buffer) {
+                        $self->get_logger()->push_to_buffer('Clear buffer for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_buffer(1);
+
                         $publisher->clear_buffer();
 
                         eval {
