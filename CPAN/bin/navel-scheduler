@@ -144,7 +144,7 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api/jobs' => sub {
+                    get '/scheduler/api/cron/jobs' => sub {
                         shift->render(
                             json => {
                                 jobs_count => scalar keys %{$scheduler->get_core()->get_cron()->jobs()}
@@ -198,6 +198,10 @@ if (defined $general_configuration_file_path) {
                                 } else {
                                     $logger->good($method_generic_message . '.', 'notice')->flush_buffer(1);
                                 }
+                            } elsif ($action eq 'clear_buffer') {
+                                $logger->push_to_buffer('Clear buffer for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_buffer(1);
+
+                                $publisher->$action();
                             }
 
                             $controller->render(
