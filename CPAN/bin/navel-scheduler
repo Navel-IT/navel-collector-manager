@@ -360,7 +360,11 @@ if (defined $general_configuration_file_path) {
                 $prefork_server->silent(1)->start();
             };
 
-            $logger->bad($@ . '.', 'err')->flush_buffer(1) if ($@);
+            if ($@) {
+                $logger->bad($@ . '.', 'err')->flush_buffer(1);
+            } else {
+                $logger->bad('Webservices successfully started.', 'notice')->flush_buffer(1);
+            }
         }
 
         $logger->push_to_buffer('Starting the scheduler ...', 'notice')->flush_buffer(1);
