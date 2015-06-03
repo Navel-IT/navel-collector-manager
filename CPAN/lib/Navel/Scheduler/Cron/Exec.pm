@@ -20,8 +20,6 @@ use Scalar::Util::Numeric qw/
 
 use File::Slurp;
 
-use Safe;
-
 use IPC::Cmd qw/
     run
 /;
@@ -51,34 +49,17 @@ sub new {
 
         my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed :';
 
-        if ($connector->is_type_code()) {
+        if ($connector->is_type_code()) { # need a TRUE code type (fork, namespace::clean, "sub connector") ...
             $self->{__exec} = sub {
                 my $self = shift;
 
-                local $@;
+                my ($cr, $error, $buffer, $bufferout, $buffererr) = run(
+                    command => $^X . ' -M5.10.1 -Mstrict -Mwarnings ' . $connector->get_exec_file_path()
+                );
 
-                ### !! Safe is not suited for this task, need to remove it and find another solution
+                $self->get_logger()->bad($connector_generic_failed_message . ' ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
 
-                my $datas;
-
-                # my $datas = Safe->new()->reval(
-                    # "
-                        # use 5.10.1;
-
-                        # use strict;
-                        # use warnings;
-
-                        # require '" . $connector->get_exec_file_path() . "';
-
-                        # connector(shift);
-                    # "
-                # );
-
-                ### !
-
-                $self->get_logger()->bad($connector_generic_failed_message . ' ' . $@ . '.', 'err')->flush_buffer(1) if ($@);
-
-                return $datas;
+                return join '', @{$bufferout};
             };
         } elsif ($connector->is_type_external()) {
             $self->{__exec} = sub {
