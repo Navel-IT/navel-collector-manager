@@ -24,8 +24,6 @@ RPM : `yum localinstall <rpm-archive>.rpm`
 Use it
 ------
 
-Starting/stopping :
-
 `service navel-scheduler <action>`
 
 REST API
