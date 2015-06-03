@@ -1,12 +1,50 @@
 navel-scheduler
 ===============
 
+**WORK-IN-PROGRESS**
+
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
 
-Building
+**Must work on all Unix-like platform but only tested on RHEL/CentOS (6+).**
+
+Build it
 --------
 
 CPAN : `build_cpan_archive.sh <version>`
 
 RPM : `build_cpan_archive.sh <version> <release>`
 
+Install it
+----------
+
+CPAN : `cpanm <cpan-archive>.tar.gz -n`
+
+RPM : `yum localinstall <rpm-archive>.rpm`
+
+Use it
+------
+
+Starting/stopping :
+
+`service navel-scheduler <action>`
+
+REST API
+--------
+
+The following routes are currently availables :
+
+``
+/scheduler/api  GET
+/scheduler/api/general  GET
+/scheduler/api/general/webservices/login PUT
+/scheduler/api/general/webservices/password PUT
+/scheduler/api/cron/jobs    GET
+/scheduler/api/connectors   GET, POST
+/scheduler/api/connectors/(:connector)  GET, PUT, DEL
+/scheduler/api/rabbitmq GET, POST
+/scheduler/api/rabbitmq/(:rabbitmq) GET, PUT, DEL
+/scheduler/api/publishers   GET
+/scheduler/api/publishers/(:publisher)  GET
+/scheduler/api/webservices  GET
+/scheduler/api/webservices/(:webservice)    GET
+``
