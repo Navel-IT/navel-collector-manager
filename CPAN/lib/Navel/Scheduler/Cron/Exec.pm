@@ -7,6 +7,8 @@
 
 package Navel::Scheduler::Cron::Exec;
 
+use 5.10.1;
+
 use strict;
 use warnings;
 
@@ -17,6 +19,10 @@ use parent qw/
 use Scalar::Util::Numeric qw/
     isint
 /;
+
+use AnyEvent::Fork;
+
+use AnyEvent::Fork::RPC;
 
 use File::Slurp;
 
@@ -47,17 +53,64 @@ sub new {
             __logger => $logger
         };
 
-        my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed :';
+        my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed';
 
-        if ($connector->is_type_code()) { # need a TRUE code type (fork, namespace::clean, "sub connector") ...
+        if ($connector->is_type_code()) {
+            $self->{__exec} = sub {
+                my $self = shift;
+
+                my $perl_code_content = eval {
+                    read_file($self->get_connector()->get_exec_file_path());
+                };
+
+                my $proc = AnyEvent::Fork->new_exec()->require(
+                    'strict',
+                    'warnings'
+                )->eval(
+                    $perl_code_content
+                );
+                
+                my $rpc = $proc->AnyEvent::Fork::RPC::run(
+                    'connector',
+                    on_event => sub {
+                        my $event_type = shift;
+
+                        if ($event_type eq 'ae_log') {
+                            my ($severity, $message) = @_;
+
+                            $self->get_logger()->push_to_buffer('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice')->flush_buffer(1);
+                        }
+                    },
+                    on_error => sub {
+                        $self->get_logger()->bad($connector_generic_failed_message . ' : on_error : ' . shift() . '.', 'err')->flush_buffer(1);
+                    },
+                    on_destroy => sub {
+                        $self->get_logger()->push_to_buffer('AnyEvent::Fork::RPC : on_destroy call.', 'debug')->flush_buffer(1);
+                    }
+                );
+                
+                my $datas;
+
+                $rpc->(
+                    $self->get_connector()->get_properties(),
+                    sub {
+                        $datas = shift;
+                    }
+                );
+                
+                # IPC : need to wait for the children to complete here !
+
+                return $datas;
+            };
+        } elsif ($connector->is_type_interpreter()) {
             $self->{__exec} = sub {
                 my $self = shift;
 
                 my ($cr, $error, $buffer, $bufferout, $buffererr) = run(
-                    command => $^X . ' -M5.10.1 -Mstrict -Mwarnings ' . $connector->get_exec_file_path()
+                    command => $^X . ' -M5.10.1 -Mstrict -Mwarnings ' . $self->get_connector()->get_exec_file_path()
                 );
 
-                $self->get_logger()->bad($connector_generic_failed_message . ' ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
+                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
 
                 return join '', @{$bufferout};
             };
@@ -66,10 +119,10 @@ sub new {
                 my $self = shift;
 
                 my ($cr, $error, $buffer, $bufferout, $buffererr) = run(
-                    command => $connector->get_exec_file_path()
+                    command => $self->get_connector()->get_exec_file_path()
                 );
 
-                $self->get_logger()->bad($connector_generic_failed_message . ' ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
+                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
 
                 return join '', @{$bufferout};
             };
@@ -80,10 +133,10 @@ sub new {
                 local $@;
 
                 my $datas = eval {
-                    read_file($connector->get_exec_file_path());
+                    read_file($self->get_connector()->get_exec_file_path());
                 };
 
-                $self->get_logger()->bad($connector_generic_failed_message . ' ' . $@ . '.', 'err')->flush_buffer(1) if ($@);
+                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . $@ . '.', 'err')->flush_buffer(1) if ($@);
 
                 return $datas;
             };
@@ -110,6 +163,8 @@ sub serialize {
 
     my $message = 'Get and serialize datas for connector ' . $self->get_connector()->get_name();
 
+    $self->get_logger()->push_to_buffer($message . ' - raw datas : ' . $self->get_datas() . '.', 'debug')->flush_buffer(1) if (defined $self->get_datas());
+
     my $serialize = to(
         $self->get_connector(),
         $self->get_datas()
@@ -121,7 +176,7 @@ sub serialize {
         return $serialize->[1];
     }
 
-    $self->get_logger()->bad($message . '.', 'err')->flush_buffer(1);
+    $self->get_logger()->bad($message . ' failed.', 'err')->flush_buffer(1);
 
     return 0;
 }
