@@ -15,9 +15,10 @@ use parent qw/
 /;
 
 use constant {
-    CODE => 'code',
-    EXTERNAL => 'external',
-    PLAIN_TEXT => 'text'
+    CONNECTOR_TYPE_CODE => 'code',
+    CONNECTOR_TYPE_INTERPRETER => 'interpreter',
+    CONNECTOR_TYPE_EXTERNAL => 'external',
+    CONNECTOR_TYPE_PLAIN_TEXT => 'text'
 };
 
 use Exporter::Easy (
@@ -61,7 +62,7 @@ sub connector_definition_validator($) {
         connector_type => sub {
             my $value = shift;
 
-            return $value eq CODE || $value eq EXTERNAL || $value eq PLAIN_TEXT;
+            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_INTERPRETER || $value eq CONNECTOR_TYPE_EXTERNAL || $value eq CONNECTOR_TYPE_PLAIN_TEXT;
         },
         connector_cron => sub {
             return eval {
@@ -103,15 +104,19 @@ sub get_type {
 }
 
 sub is_type_code {
-    return shift->get_type() eq CODE;
+    return shift->get_type() eq CONNECTOR_TYPE_CODE;
+}
+
+sub is_type_interpreter {
+    return shift->get_type() eq CONNECTOR_TYPE_INTERPRETER;
 }
 
 sub is_type_external {
-    return shift->get_type() eq EXTERNAL;
+    return shift->get_type() eq CONNECTOR_TYPE_EXTERNAL;
 }
 
 sub is_type_plain_text {
-    return shift->get_type() eq PLAIN_TEXT;
+    return shift->get_type() eq CONNECTOR_TYPE_PLAIN_TEXT;
 }
 
 sub set_type {
