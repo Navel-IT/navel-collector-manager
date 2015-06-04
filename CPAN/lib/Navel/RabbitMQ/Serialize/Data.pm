@@ -54,6 +54,8 @@ our $VERSION = 0.1;
 sub to($$) {
     my ($connector, $datas) = @_;
 
+    $datas = defined $datas ? $datas : '';
+
     $connector = unblessed($connector);
 
     publicize($connector);
@@ -75,6 +77,8 @@ sub to($$) {
 
 sub from($) {
     my $json = shift;
+
+    $json = defined $json ? $json : '';
 
     my $datas = eval {
         decode_json($json);
