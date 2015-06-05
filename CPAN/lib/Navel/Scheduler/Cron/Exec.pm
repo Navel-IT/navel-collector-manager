@@ -50,54 +50,7 @@ sub new {
 
         my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed';
 
-        if ($connector->is_type_code()) {
-            $self->{__exec} = sub {
-                my $self = shift;
-
-                my $perl_code_content = eval {
-                    read_file($self->get_connector()->get_exec_file_path());
-                };
-
-                my $proc = AnyEvent::Fork->new_exec()->require(
-                    'strict',
-                    'warnings'
-                )->eval(
-                    $perl_code_content
-                );
-                
-                my $rpc = $proc->AnyEvent::Fork::RPC::run(
-                    'connector',
-                    on_event => sub {
-                        my $event_type = shift;
-
-                        if ($event_type eq 'ae_log') {
-                            my ($severity, $message) = @_;
-
-                            $self->get_logger()->push_to_buffer('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice')->flush_buffer(1);
-                        }
-                    },
-                    on_error => sub {
-                        $self->get_logger()->bad($connector_generic_failed_message . ' : on_error : ' . shift() . '.', 'err')->flush_buffer(1);
-                    },
-                    on_destroy => sub {
-                        $self->get_logger()->push_to_buffer('AnyEvent::Fork::RPC : on_destroy call.', 'debug')->flush_buffer(1);
-                    }
-                );
-                
-                my $datas;
-
-                $rpc->(
-                    $self->get_connector()->get_properties(),
-                    sub {
-                        $datas = shift;
-                    }
-                );
-                
-                # IPC : need to wait for the children to complete here !
-
-                return $datas;
-            };
-        } elsif ($connector->is_type_interpreter()) {
+        if ($connector->is_type_interpreter()) {
             $self->{__exec} = sub {
                 my $self = shift;
 
@@ -156,9 +109,15 @@ sub exec {
 sub serialize {
     my $self = shift;
 
-    my $message = 'Get and serialize datas for connector ' . $self->get_connector()->get_name();
+    my $generic_message = 'Get and serialize datas for connector ' . $self->get_connector()->get_name();
 
-    $self->get_logger()->push_to_buffer($message . ' - raw datas : ' . $self->get_datas() . '.', 'debug')->flush_buffer(1) if (defined $self->get_datas());
+    if (defined $self->get_datas()) {
+        $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : ' . $self->get_datas() . '.', 'debug');
+    } else {
+        $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : raw datas are undefined.', 'debug');
+    }
+
+    $self->get_logger()->flush_buffer(1);
 
     my $serialize = to(
         $self->get_connector(),
@@ -166,12 +125,12 @@ sub serialize {
     );
 
     if ($serialize->[0]) {
-        $self->get_logger()->good($message . '.', 'info')->flush_buffer(1);
+        $self->get_logger()->good($generic_message . '.', 'info')->flush_buffer(1);
 
         return $serialize->[1];
     }
 
-    $self->get_logger()->bad($message . ' failed.', 'err')->flush_buffer(1);
+    $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_buffer(1);
 
     return 0;
 }

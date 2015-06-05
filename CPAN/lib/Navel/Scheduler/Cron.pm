@@ -23,7 +23,13 @@ use AnyEvent::DateTime::Cron;
 
 use Navel::Scheduler::Cron::Exec;
 
+use Navel::Scheduler::Cron::Fork;
+
 use Navel::RabbitMQ::Publisher;
+
+use Navel::RabbitMQ::Serialize::Data qw/
+    to
+/;
 
 use Navel::Utils qw/
     :all
@@ -64,12 +70,46 @@ sub register_connectors {
             name => 'connector_' . $connector->get_name(),
             single => 1,
             sub {
-                my $body = Navel::Scheduler::Cron::Exec->new(
-                    $connector,
-                    $self->get_logger()
-                )->exec()->serialize();
+                if ($connector->is_type_code()) {
+                    Navel::Scheduler::Cron::Fork->new(
+                        $connector,
+                        $self->get_logger()
+                    )->rpc(
+                        sub {
+                            my $datas = shift;
 
-                map { $_->push_in_buffer($body) } @{$self->get_publishers()};
+                            my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
+
+                            if (defined $datas) {
+                                $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $connector->get_name() . ' : ' . $datas . '.', 'debug');
+                            } else {
+                                $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $connector->get_name() . ' : raw datas are undefined.', 'debug');
+                            }
+
+                            $self->get_logger()->flush_buffer(1);
+
+                            my $serialize = to(
+                                $connector,
+                                $datas
+                            );
+
+                            if ($serialize->[0]) {
+                                $self->get_logger()->good($generic_message . '.', 'info')->flush_buffer(1);
+
+                                map { $_->push_in_buffer($serialize->[1]) } @{$self->get_publishers()};
+                            } else {
+                                $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_buffer(1);
+                            }
+                        }
+                    );
+                } else {
+                    my $body = Navel::Scheduler::Cron::Exec->new(
+                        $connector,
+                        $self->get_logger()
+                    )->exec()->serialize();
+
+                    map { $_->push_in_buffer($body) } @{$self->get_publishers()};
+                }
             }
         );
     }
