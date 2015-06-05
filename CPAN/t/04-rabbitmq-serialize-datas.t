@@ -20,9 +20,9 @@ my $return = eval {
     to(
         Navel::Definition::Connector->new(
             {
-                name => 'nagios_host_and_services_1',
-                collection => 'nagios_host_and_services',
-                type => 'external',
+                name => 'test-1',
+                collection => 'test',
+                type => 'code',
                 scheduling => '0 * * * * ?',
                 exec_directory_path => ''
             }
