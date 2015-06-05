@@ -45,6 +45,8 @@ WriteMakefile(
         'Carp' => 0,
         'EV' => 0,
         'AnyEvent::DateTime::Cron' => 0,
+        'AnyEvent::Fork' => 0,
+        'AnyEvent::Fork::RPC' => 0,
         'Exporter::Easy' => 0,
         'Storable' => 0,
         'Data::Validate::Struct' => 0,
