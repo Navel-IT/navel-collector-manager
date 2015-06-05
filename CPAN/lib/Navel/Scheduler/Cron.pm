@@ -66,7 +66,6 @@ sub register_connectors {
             sub {
                 my $body = Navel::Scheduler::Cron::Exec->new(
                     $connector,
-                    $self->get_rabbitmq(),
                     $self->get_logger()
                 )->exec()->serialize();
 

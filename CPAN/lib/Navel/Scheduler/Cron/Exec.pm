@@ -20,10 +20,6 @@ use Scalar::Util::Numeric qw/
     isint
 /;
 
-use AnyEvent::Fork;
-
-use AnyEvent::Fork::RPC;
-
 use File::Slurp;
 
 use IPC::Cmd qw/
@@ -43,13 +39,12 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $rabbitmq, $logger) = @_;
+    my ($class, $connector, $logger) = @_;
 
-    if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
+    if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger') {
         my $self = {
             __datas => undef,
             __connector => $connector,
-            __rabbitmq => $rabbitmq,
             __logger => $logger
         };
 
@@ -195,10 +190,6 @@ sub get_datas {
 
 sub get_connector {
     return shift->{__connector};
-}
-
-sub get_rabbitmq {
-    return shift->{__rabbitmq};
 }
 
 sub get_logger {
