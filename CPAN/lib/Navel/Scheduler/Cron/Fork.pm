@@ -91,7 +91,8 @@ sub when_done {
 
     if (defined $self->get_rpc()) {
         $self->get_rpc()->(
-            $self->get_connector->get_properties(),
+            $self->get_connector()->get_properties(),
+            $self->get_connector()->get_input,
             $callback
         );
 

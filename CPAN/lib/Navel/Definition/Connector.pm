@@ -16,8 +16,6 @@ use parent qw/
 
 use constant {
     CONNECTOR_TYPE_CODE => 'code',
-    CONNECTOR_TYPE_INTERPRETER => 'interpreter',
-    CONNECTOR_TYPE_EXTERNAL => 'external',
     CONNECTOR_TYPE_PLAIN_TEXT => 'text'
 };
 
@@ -62,7 +60,7 @@ sub connector_definition_validator($) {
         connector_type => sub {
             my $value = shift;
 
-            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_INTERPRETER || $value eq CONNECTOR_TYPE_EXTERNAL || $value eq CONNECTOR_TYPE_PLAIN_TEXT;
+            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_PLAIN_TEXT;
         },
         connector_cron => sub {
             return eval {
@@ -71,7 +69,7 @@ sub connector_definition_validator($) {
         }
     );
 
-    return $validator->validate($parameters);
+    return $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef value
 }
 
 #-> methods
@@ -107,14 +105,6 @@ sub is_type_code {
     return shift->get_type() eq CONNECTOR_TYPE_CODE;
 }
 
-sub is_type_interpreter {
-    return shift->get_type() eq CONNECTOR_TYPE_INTERPRETER;
-}
-
-sub is_type_external {
-    return shift->get_type() eq CONNECTOR_TYPE_EXTERNAL;
-}
-
 sub is_type_plain_text {
     return shift->get_type() eq CONNECTOR_TYPE_PLAIN_TEXT;
 }
@@ -131,6 +121,22 @@ sub set_scheduling {
     return shift->set_generic('scheduling', shift);
 }
 
+sub get_source {
+    return shift->{__source};
+}
+
+sub set_source {
+    return shift->set_generic('source', shift);
+}
+
+sub get_input {
+    return shift->{__input};
+}
+
+sub set_input {
+    return shift->set_generic('input', shift);
+}
+
 sub get_exec_directory_path {
     return shift->{__exec_directory_path};
 }
@@ -138,7 +144,7 @@ sub get_exec_directory_path {
 sub get_exec_file_path {
     my $self = shift;
 
-    return $self->get_exec_directory_path() . '/' . $self->get_name();
+    return $self->get_exec_directory_path() . '/' . $self->get_source() || $self->get_name();
 }
 
 # sub AUTOLOAD {}

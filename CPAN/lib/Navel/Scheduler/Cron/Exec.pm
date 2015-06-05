@@ -16,15 +16,7 @@ use parent qw/
     Navel::Base
 /;
 
-use Scalar::Util::Numeric qw/
-    isint
-/;
-
 use File::Slurp;
-
-use IPC::Cmd qw/
-    run
-/;
 
 use Navel::RabbitMQ::Serialize::Data qw/
     to
@@ -50,31 +42,7 @@ sub new {
 
         my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed';
 
-        if ($connector->is_type_interpreter()) {
-            $self->{__exec} = sub {
-                my $self = shift;
-
-                my ($cr, $error, $buffer, $bufferout, $buffererr) = run(
-                    command => $^X . ' -M5.10.1 -Mstrict -Mwarnings ' . $self->get_connector()->get_exec_file_path()
-                );
-
-                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
-
-                return join '', @{$bufferout};
-            };
-        } elsif ($connector->is_type_external()) {
-            $self->{__exec} = sub {
-                my $self = shift;
-
-                my ($cr, $error, $buffer, $bufferout, $buffererr) = run(
-                    command => $self->get_connector()->get_exec_file_path()
-                );
-
-                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . join('', @{$buffererr}) . '.', 'err')->flush_buffer(1) if ($error);
-
-                return join '', @{$bufferout};
-            };
-        } elsif ($connector->is_type_plain_text()) {
+        if ($connector->is_type_plain_text()) {
             $self->{__exec} = sub {
                 my $self = shift;
 

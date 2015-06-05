@@ -31,11 +31,19 @@ sub get_collections {
 }
 
 sub get_types {
-     return shift->__get_all_by_getter('get_type');
+    return shift->__get_all_by_getter('get_type');
 }
 
 sub get_schedulings {
-     return shift->__get_all_by_getter('get_scheduling');
+    return shift->__get_all_by_getter('get_scheduling');
+}
+
+sub get_sources {
+    return shift->__get_all_by_getter('get_source');
+}
+
+sub get_inputs {
+    return shift->__get_all_by_getter('get_input');
 }
 
 sub get_exec_directory_paths {

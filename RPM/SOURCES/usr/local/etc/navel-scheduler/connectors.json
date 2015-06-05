@@ -3,6 +3,8 @@
         "name" : "test-1",
         "collection" : "test",
         "type" : "text",
-        "scheduling" : "0 * * * * ?"
+        "scheduling" : "0 * * * * ?",
+        "source" : null,
+        "input" : null
     }
 ]
