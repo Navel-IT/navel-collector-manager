@@ -42,7 +42,7 @@ sub new {
         }, $class;
     }
 
-    croak('Object(s) invalid(s)');
+    croak('One or more objects are invalids');
 }
 
 sub connect {

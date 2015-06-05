@@ -83,7 +83,7 @@ sub new {
         return bless $self, $class;
     }
 
-    croak('Object(s) invalid(s).');
+    croak('One or more objects are invalids.');
 }
 
 sub when_done {
