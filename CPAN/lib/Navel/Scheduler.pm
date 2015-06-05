@@ -70,7 +70,7 @@ sub new {
 
         croak($return->[1]);
     } else {
-        croak('general.json path is missing');
+        croak('<general>.json path is missing');
     }
 }
 
