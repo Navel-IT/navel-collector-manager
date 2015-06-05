@@ -144,7 +144,7 @@ sub get_exec_directory_path {
 sub get_exec_file_path {
     my $self = shift;
 
-    return $self->get_exec_directory_path() . '/' . $self->get_source() || $self->get_name();
+    return $self->get_exec_directory_path() . '/' . ($self->get_source() || $self->get_name());
 }
 
 # sub AUTOLOAD {}
