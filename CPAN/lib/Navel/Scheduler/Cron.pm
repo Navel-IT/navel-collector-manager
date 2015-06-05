@@ -74,7 +74,7 @@ sub register_connectors {
                     Navel::Scheduler::Cron::Fork->new(
                         $connector,
                         $self->get_logger()
-                    )->rpc(
+                    )->when_done(
                         sub {
                             my $datas = shift;
 

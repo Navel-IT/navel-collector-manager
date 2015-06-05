@@ -86,7 +86,7 @@ sub new {
     croak('Object(s) invalid(s).');
 }
 
-sub rpc {
+sub when_done {
     my ($self, $callback) = @_;
 
     if (defined $self->get_rpc()) {
