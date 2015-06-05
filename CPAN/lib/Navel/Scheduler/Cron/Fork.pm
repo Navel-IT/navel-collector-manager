@@ -90,9 +90,10 @@ sub when_done {
     my ($self, $callback) = @_;
 
     if (defined $self->get_rpc()) {
+
         $self->get_rpc()->(
             $self->get_connector()->get_properties(),
-            $self->get_connector()->get_input,
+            $self->get_connector()->get_input(),
             $callback
         );
 
