@@ -5,7 +5,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
 
-**Must work on all Unix-like platform but only tested on RHEL/CentOS (6+).**
+**Must work on all Unix-like platforms but only tested on RHEL/CentOS (6+).**
 
 Build it
 --------
