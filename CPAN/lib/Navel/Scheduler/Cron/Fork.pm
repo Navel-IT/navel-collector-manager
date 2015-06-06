@@ -20,10 +20,6 @@ use AnyEvent::Fork;
 
 use AnyEvent::Fork::RPC;
 
-use Mojo::JSON qw/
-    encode_json
-/;
-
 use Navel::Utils qw/
     :all
 /;
@@ -53,7 +49,7 @@ sub new {
             $self->{__fork} = AnyEvent::Fork->new()->require(
                 'strict',
                 'warnings',
-                'Mojo::JSON'
+                'Navel::Utils'
             )->eval(
                 $self->{__code}
             );

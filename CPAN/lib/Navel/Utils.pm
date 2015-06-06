@@ -29,6 +29,12 @@ use Exporter::Easy (
         publicize
         privasize
         unblessed
+        encode_json
+        decode_json
+    /],
+    EXPORT => [qw/
+        encode_json
+        decode_json
     /],
     TAGS => [
         all => [qw/
@@ -40,9 +46,16 @@ use Exporter::Easy (
             publicize
             privasize
             unblessed
+            encode_json
+            decode_json
         /]
     ]
 );
+
+use Mojo::JSON qw/
+    encode_json
+    decode_json
+/;
 
 our $VERSION = 0.1;
 

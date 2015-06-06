@@ -27,10 +27,6 @@ use Mojolicious::Lite;
 
 use Mojo::Server::Prefork;
 
-use Mojo::JSON qw/
-    decode_json
-/;
-
 use EV;
 
 use Navel::Logger;
@@ -40,6 +36,10 @@ use Navel::Scheduler qw/
 /;
 
 use Navel::Definition::WebService::Etc::Parser;
+
+use Navel::Utils qw/
+    :all
+/;
 
 #-> defaults
 
