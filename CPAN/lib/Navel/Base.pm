@@ -10,14 +10,6 @@ package Navel::Base;
 use strict;
 use warnings;
 
-use Storable qw/
-    dclone
-/;
-
-use Navel::Utils qw/
-    :all
-/;
-
 our $VERSION = 0.1;
 
 #-> methods
