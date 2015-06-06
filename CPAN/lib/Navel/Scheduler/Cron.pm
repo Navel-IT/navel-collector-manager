@@ -80,14 +80,6 @@ sub register_connectors {
 
                             my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
 
-                            if (defined $datas) {
-                                $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $connector->get_name() . ' : ' . $datas . '.', 'debug');
-                            } else {
-                                $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $connector->get_name() . ' : raw datas are undefined.', 'debug');
-                            }
-
-                            $self->get_logger()->flush_queue(1);
-
                             my $serialize = to(
                                 $connector,
                                 $datas

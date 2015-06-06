@@ -79,14 +79,6 @@ sub serialize {
 
     my $generic_message = 'Get and serialize datas for connector ' . $self->get_connector()->get_name();
 
-    if (defined $self->get_datas()) {
-        $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : ' . $self->get_datas() . '.', 'debug');
-    } else {
-        $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : raw datas are undefined.', 'debug');
-    }
-
-    $self->get_logger()->flush_queue(1);
-
     my $serialize = to(
         $self->get_connector(),
         $self->get_datas()

@@ -32,10 +32,6 @@ use Exporter::Easy (
         encode_json
         decode_json
     /],
-    EXPORT => [qw/
-        encode_json
-        decode_json
-    /],
     TAGS => [
         all => [qw/
             blessed
@@ -52,7 +48,7 @@ use Exporter::Easy (
     ]
 );
 
-use Mojo::JSON qw/
+use JSON qw/
     encode_json
     decode_json
 /;

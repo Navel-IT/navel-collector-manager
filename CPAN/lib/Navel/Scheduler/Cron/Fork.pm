@@ -70,7 +70,8 @@ sub new {
                 },
                 on_destroy => sub {
                     $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug')->flush_queue(1);
-                }
+                },
+                serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
             );
         } else {
             $self->{__logger}->bad('An error occured while reading from file ' . $self->{__connector}->get_exec_file_path() . '.', 'err')->flush_queue(1);
@@ -89,8 +90,8 @@ sub when_done {
 
     if (defined $self->get_rpc()) {
         $self->get_rpc()->(
-            encode_json($self->get_connector()->get_properties()),
-            encode_json($self->get_connector()->get_input()),
+            $self->get_connector()->get_properties(),
+            $self->get_connector()->get_input(),
             $callback
         );
 

@@ -40,6 +40,7 @@ WriteMakefile(
         'Scalar::Util::Numeric' => 0,
         'IO::File' => 0,
         'File::Slurp' => 0,
+        'JSON' => 0,
         'IPC::Cmd' => 0,
         'Net::AMQP::RabbitMQ' => 0,
         'Carp' => 0,

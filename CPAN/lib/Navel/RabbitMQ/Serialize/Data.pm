@@ -49,31 +49,23 @@ our $VERSION = 0.1;
 sub to($$) {
     my ($connector, $datas) = @_;
 
-    $datas = defined $datas ? $datas : '';
-
     $connector = unblessed($connector);
 
     publicize($connector);
-
-    eval {
-        decode_json($datas);
-    };
 
     my $json = encode_json(
         {
             connector => $connector,
             time => time,
-            datas => $@ ? undef : $datas
+            datas => $datas
         }
     );
 
-    return $@ ? [0, $json] : [1, $json];
+    return [1, $json];
 }
 
 sub from($) {
     my $json = shift;
-
-    $json = defined $json ? $json : '';
 
     my $datas = eval {
         decode_json($json);

@@ -29,12 +29,10 @@ my $return = eval {
                 exec_directory_path => ''
             }
         ),
-        '
         {
-            "a" : 0,
-            "b" : 1
+            a => 0,
+            b => 1
         }
-        '
     );
 };
 

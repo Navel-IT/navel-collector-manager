@@ -159,10 +159,8 @@ if (defined $general_configuration_file_path) {
 
                         my $property = $controller->param('property');
 
-                        my $body = $controller->req()->body();
-
-                        $body = eval {
-                            decode_json(defined $body ? $body : '');
+                        my $body = eval {
+                            decode_json($controller->req()->body());
                         };
 
                         if (ref $body eq 'HASH' && hascontent($body->{$property})) {
