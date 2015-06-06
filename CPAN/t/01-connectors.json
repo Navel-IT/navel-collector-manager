@@ -10,7 +10,7 @@
     {
         "name" : "test-2",
         "collection" : "test",
-        "type" : "text",
+        "type" : "json",
         "scheduling" : "45 * * * * ?",
         "source" : null,
         "input" : null

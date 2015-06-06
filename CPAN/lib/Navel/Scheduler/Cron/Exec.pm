@@ -42,7 +42,7 @@ sub new {
 
         my $connector_generic_failed_message = 'Execution of connector ' . $connector->get_name() . ' failed';
 
-        if ($connector->is_type_plain_text()) {
+        if ($connector->is_type_json()) {
             $self->{__exec} = sub {
                 my $self = shift;
 

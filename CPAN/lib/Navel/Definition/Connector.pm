@@ -16,7 +16,7 @@ use parent qw/
 
 use constant {
     CONNECTOR_TYPE_CODE => 'code',
-    CONNECTOR_TYPE_PLAIN_TEXT => 'text'
+    CONNECTOR_TYPE_JSON => 'json'
 };
 
 use Exporter::Easy (
@@ -60,7 +60,7 @@ sub connector_definition_validator($) {
         connector_type => sub {
             my $value = shift;
 
-            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_PLAIN_TEXT;
+            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_JSON;
         },
         connector_cron => sub {
             return eval {
@@ -105,8 +105,8 @@ sub is_type_code {
     return shift->get_type() eq CONNECTOR_TYPE_CODE;
 }
 
-sub is_type_plain_text {
-    return shift->get_type() eq CONNECTOR_TYPE_PLAIN_TEXT;
+sub is_type_json {
+    return shift->get_type() eq CONNECTOR_TYPE_JSON;
 }
 
 sub set_type {
