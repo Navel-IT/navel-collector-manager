@@ -186,9 +186,9 @@ if (defined $general_configuration_file_path) {
                                 }
                             )
                             ?
-                                $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')->flush_buffer(1)
+                                $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')->flush_queue(1)
                             :
-                                $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')->flush_buffer(1)
+                                $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')->flush_queue(1)
                             ;
                         }
 
@@ -291,12 +291,12 @@ if (defined $general_configuration_file_path) {
                                 my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
 
                                 if (my $error = $publisher->$method()) {
-                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice')->flush_buffer(1);
+                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice')->flush_queue(1);
                                 } else {
-                                    $logger->good($method_generic_message . '.', 'notice')->flush_buffer(1);
+                                    $logger->good($method_generic_message . '.', 'notice')->flush_queue(1);
                                 }
-                            } elsif ($action eq 'clear_buffer') {
-                                $logger->push_to_buffer('Clear buffer for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_buffer(1);
+                            } elsif ($action eq 'clear_queue') {
+                                $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_queue(1);
 
                                 $publisher->$action();
                             }
@@ -304,7 +304,7 @@ if (defined $general_configuration_file_path) {
                             $controller->render(
                                 json => {
                                     connected => $publisher->get_net()->is_connected() || 0,
-                                    messages_in_buffer => scalar @{$publisher->get_buffer()}
+                                    messages_in_queue => scalar @{$publisher->get_queue()}
                                 }
                             );
                         } else {
@@ -339,11 +339,11 @@ if (defined $general_configuration_file_path) {
                 }
             }
 
-            $logger->bad($return->[1] . '.', 'err')->flush_buffer(1) unless ($return->[0]);
+            $logger->bad($return->[1] . '.', 'err')->flush_queue(1) unless ($return->[0]);
         }
 
         if ($daemonize) {
-            $logger->push_to_buffer('Daemonizing ...', 'info')->flush_buffer(1);
+            $logger->push_to_queue('Daemonizing ...', 'info')->flush_queue(1);
 
             Proc::Daemon->new(
                 working_directory => getcwd(),
@@ -358,32 +358,32 @@ if (defined $general_configuration_file_path) {
         }
 
         unless ($disable_rest) {
-            $logger->push_to_buffer('Starting the webservices ...', 'notice')->flush_buffer(1);
+            $logger->push_to_queue('Starting the webservices ...', 'notice')->flush_queue(1);
 
             eval {
                 $prefork_server->silent(1)->start();
             };
 
             if ($@) {
-                $logger->bad($@ . '.', 'err')->flush_buffer(1);
+                $logger->bad($@ . '.', 'err')->flush_queue(1);
             } else {
-                $logger->good('Webservices successfully started.', 'notice')->flush_buffer(1);
+                $logger->good('Webservices successfully started.', 'notice')->flush_queue(1);
             }
         }
 
-        $logger->push_to_buffer('Starting the scheduler ...', 'notice')->flush_buffer(1);
+        $logger->push_to_queue('Starting the scheduler ...', 'notice')->flush_queue(1);
 
         eval {
             $scheduler->run($logger);
         };
 
         if ($@) {
-            $logger->bad($@ . '.', 'crit')->flush_buffer();
+            $logger->bad($@ . '.', 'crit')->flush_queue();
 
             exit 1;
         }
     } else {
-        $logger->bad($@ . '.', 'crit')->flush_buffer();
+        $logger->bad($@ . '.', 'crit')->flush_queue();
 
         exit 1;
     }

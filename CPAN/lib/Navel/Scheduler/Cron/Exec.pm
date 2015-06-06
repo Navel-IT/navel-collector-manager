@@ -52,7 +52,7 @@ sub new {
                     read_file($self->get_connector()->get_exec_file_path());
                 };
 
-                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . $@ . '.', 'err')->flush_buffer(1) if ($@);
+                $self->get_logger()->bad($connector_generic_failed_message . ' : ' . $@ . '.', 'err')->flush_queue(1) if ($@);
 
                 return $datas;
             };
@@ -69,7 +69,7 @@ sub new {
 sub exec {
     my $self = shift;
 
-    $self->get_logger()->push_to_buffer('Execution of connector ' . $self->get_connector()->get_name() . '.', 'info')->flush_buffer(1);
+    $self->get_logger()->push_to_queue('Execution of connector ' . $self->get_connector()->get_name() . '.', 'info')->flush_queue(1);
 
     return $self->set_datas($self->get_exec()->($self));
 }
@@ -80,12 +80,12 @@ sub serialize {
     my $generic_message = 'Get and serialize datas for connector ' . $self->get_connector()->get_name();
 
     if (defined $self->get_datas()) {
-        $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : ' . $self->get_datas() . '.', 'debug');
+        $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : ' . $self->get_datas() . '.', 'debug');
     } else {
-        $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : raw datas are undefined.', 'debug');
+        $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $self->get_connector()->get_name() . ' : raw datas are undefined.', 'debug');
     }
 
-    $self->get_logger()->flush_buffer(1);
+    $self->get_logger()->flush_queue(1);
 
     my $serialize = to(
         $self->get_connector(),
@@ -93,12 +93,12 @@ sub serialize {
     );
 
     if ($serialize->[0]) {
-        $self->get_logger()->good($generic_message . '.', 'info')->flush_buffer(1);
+        $self->get_logger()->good($generic_message . '.', 'info')->flush_queue(1);
 
         return $serialize->[1];
     }
 
-    $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_buffer(1);
+    $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_queue(1);
 
     return 0;
 }

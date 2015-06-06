@@ -38,7 +38,7 @@ sub new {
         return bless {
             __definition => $definition,
             __net => Net::AMQP::RabbitMQ->new(),
-            __buffer => []
+            __queue => []
         }, $class;
     }
 
@@ -84,22 +84,22 @@ sub get_net {
     return shift->{__net};
 }
 
-sub get_buffer {
-    return shift->{__buffer};
+sub get_queue {
+    return shift->{__queue};
 }
 
-sub push_in_buffer {
+sub push_in_queue {
     my ($self, $body) = @_;
 
-    push @{$self->get_buffer()}, $body;
+    push @{$self->get_queue()}, $body;
 
     return $self;
 }
 
-sub clear_buffer {
+sub clear_queue {
     my $self = shift;
 
-    undef @{$self->get_buffer()};
+    undef @{$self->get_queue()};
 
     return $self;
 }

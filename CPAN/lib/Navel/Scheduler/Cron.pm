@@ -47,7 +47,7 @@ sub new {
             __connectors => $connectors,
             __rabbitmq => $rabbitmq,
             __publishers => [],
-            __buffers => {},
+            __queues => {},
             __logger => $logger,
             __cron => AnyEvent::DateTime::Cron->new(
                 quartz => 1
@@ -81,12 +81,12 @@ sub register_connectors {
                             my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
 
                             if (defined $datas) {
-                                $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $connector->get_name() . ' : ' . $datas . '.', 'debug');
+                                $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $connector->get_name() . ' : ' . $datas . '.', 'debug');
                             } else {
-                                $self->get_logger()->push_to_buffer('Raw datas returned by connector ' . $connector->get_name() . ' : raw datas are undefined.', 'debug');
+                                $self->get_logger()->push_to_queue('Raw datas returned by connector ' . $connector->get_name() . ' : raw datas are undefined.', 'debug');
                             }
 
-                            $self->get_logger()->flush_buffer(1);
+                            $self->get_logger()->flush_queue(1);
 
                             my $serialize = to(
                                 $connector,
@@ -94,11 +94,11 @@ sub register_connectors {
                             );
 
                             if ($serialize->[0]) {
-                                $self->get_logger()->good($generic_message . '.', 'info')->flush_buffer(1);
+                                $self->get_logger()->good($generic_message . '.', 'info')->flush_queue(1);
 
-                                map { $_->push_in_buffer($serialize->[1]) } @{$self->get_publishers()};
+                                map { $_->push_in_queue($serialize->[1]) } @{$self->get_publishers()};
                             } else {
-                                $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_buffer(1);
+                                $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_queue(1);
                             }
                         }
                     );
@@ -108,7 +108,7 @@ sub register_connectors {
                         $self->get_logger()
                     )->exec()->serialize();
 
-                    map { $_->push_in_buffer($body) } @{$self->get_publishers()};
+                    map { $_->push_in_queue($body) } @{$self->get_publishers()};
                 }
             }
         );
@@ -121,7 +121,7 @@ sub init_publishers {
     my $self = shift;
 
     for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
-        $self->get_logger()->push_to_buffer('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_buffer(1);
+        $self->get_logger()->push_to_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_queue(1);
 
         push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
     }
@@ -139,12 +139,12 @@ sub connect_publishers {
             my $connect_message = $publisher->connect();
 
             if ($connect_message) {
-                $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_buffer(1);
+                $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_queue(1);
             } else {
-                $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_buffer(1);
+                $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_queue(1);
             }
         } else {
-            $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_buffer(1);
+            $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_queue(1);
         }
     }
 
@@ -164,18 +164,18 @@ sub register_publishers {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $channel_id;
 
                 if ($publisher->get_net()->is_connected()) {
-                    my @buffer = @{$publisher->get_buffer()};
+                    my @queue = @{$publisher->get_queue()};
 
-                    if (@buffer) {
-                        $self->get_logger()->push_to_buffer('Clear buffer for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_buffer(1);
+                    if (@queue) {
+                        $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_queue(1);
 
-                        $publisher->clear_buffer();
+                        $publisher->clear_queue();
 
                         eval {
                             $publisher->get_net()->channel_open($channel_id);
 
-                            for my $body (@buffer) {
-                                $self->get_logger()->push_to_buffer($publish_generic_message . ' : send body.', 'info')->flush_buffer(1);
+                            for my $body (@queue) {
+                                $self->get_logger()->push_to_queue($publish_generic_message . ' : send body.', 'info')->flush_queue(1);
 
                                 $publisher->get_net()->publish($channel_id, $publisher->get_definition()->get_routing_key(), $body,
                                     {
@@ -188,15 +188,15 @@ sub register_publishers {
                         };
 
                         if ($@) {
-                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn')->flush_buffer(1);
+                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn')->flush_queue(1);
                         } else {
-                            $self->get_logger()->good($publish_generic_message . '.', 'notice')->flush_buffer(1);
+                            $self->get_logger()->good($publish_generic_message . '.', 'notice')->flush_queue(1);
                         }
                     } else {
-                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info')->flush_buffer(1);
+                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info')->flush_queue(1);
                     }
                 } else {
-                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_buffer(1);
+                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_queue(1);
                 }
             }
         );
@@ -212,9 +212,9 @@ sub disconnect_publishers {
         my $disconnect_generic_message = 'Disconnect publisher ' . $_->get_definition()->get_name();
 
         if (my $error = $_->disconnect()) {
-            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice')->flush_buffer(1);
+            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice')->flush_queue(1);
         } else {
-            $self->get_logger()->good($disconnect_generic_message . '.', 'notice')->flush_buffer(1);
+            $self->get_logger()->good($disconnect_generic_message . '.', 'notice')->flush_queue(1);
         }
     }
 
@@ -259,8 +259,8 @@ sub get_publisher_by_definition_name {
     return undef;
 }
 
-sub get_buffers {
-    return shift->{__buffers};
+sub get_queues {
+    return shift->{__queues};
 }
 
 sub get_logger {

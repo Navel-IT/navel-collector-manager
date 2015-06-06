@@ -58,7 +58,7 @@ sub new {
             Navel::Logger::Severity->new($severity)
         } || Navel::Logger::Severity->new($default_severity),
         __file_path => $file_path,
-        __buffer => []
+        __queue => []
     };
 
     if (defined $self->{__file_path}) {
@@ -112,48 +112,48 @@ sub is_filehandler_via_lib {
     return blessed(shift->get_filehandler()) eq 'IO::File';
 }
 
-sub get_buffer {
-    return shift->{__buffer};
+sub get_queue {
+    return shift->{__queue};
 }
 
-sub push_to_buffer { # need changes relatives to the comments below
+sub push_to_queue { # need changes relatives to the comments below
     my ($self, $messages, $severity) = @_;
 
-    push @{$self->get_buffer()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
+    push @{$self->get_queue()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
 
     return $self;
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[OK] ' . shift, shift);
+    return shift->push_to_queue('[OK] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    return shift->push_to_buffer('[KO] ' . shift, shift);
+    return shift->push_to_queue('[KO] ' . shift, shift);
 }
 
-sub join_buffer {
+sub join_queue {
     my ($self, $separator) = @_;
 
-    return join $separator, @{$self->get_buffer()};
+    return join $separator, @{$self->get_queue()};
 }
 
-sub flush_buffer {
-    my ($self, $clear_buffer) = @_;
+sub flush_queue {
+    my ($self, $clear_queue) = @_;
 
     no strict qw/
         refs
     /;
 
-    say { $self->get_filehandler() } $self->join_buffer("\n") if (@{$self->get_buffer()});
+    say { $self->get_filehandler() } $self->join_queue("\n") if (@{$self->get_queue()});
 
-    return $clear_buffer ? $self->clear_buffer() : $self;
+    return $clear_queue ? $self->clear_queue() : $self;
 }
 
-sub clear_buffer {
+sub clear_queue {
     my $self = shift;
 
-    undef @{$self->get_buffer()};
+    undef @{$self->get_queue()};
 
     return $self;
 }
