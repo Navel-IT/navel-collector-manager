@@ -16,11 +16,13 @@ use parent qw/
 
 use File::Slurp;
 
-no Mojo::JSON;
-
 use AnyEvent::Fork;
 
 use AnyEvent::Fork::RPC;
+
+use Mojo::JSON qw/
+    encode_json
+/;
 
 use Navel::Utils qw/
     :all
@@ -90,10 +92,9 @@ sub when_done {
     my ($self, $callback) = @_;
 
     if (defined $self->get_rpc()) {
-
         $self->get_rpc()->(
-            $self->get_connector()->get_properties(),
-            $self->get_connector()->get_input(),
+            encode_json($self->get_connector()->get_properties()),
+            encode_json($self->get_connector()->get_input()),
             $callback
         );
 
