@@ -21,6 +21,8 @@ use Carp qw/
 
 use AnyEvent::DateTime::Cron;
 
+use File::Slurp;
+
 use Navel::Scheduler::Cron::Exec;
 
 use Navel::Scheduler::Cron::Fork;
@@ -36,6 +38,27 @@ use Navel::Utils qw/
 /;
 
 our $VERSION = 0.1;
+
+#-> functions
+
+my $__serialize_log_and_push_in_queues = sub {
+    my ($logger, $connector, $publishers, $datas) = @_;
+
+    my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
+
+    my $serialize = to(
+        $connector,
+        $datas
+    );
+
+    if ($serialize->[0]) {
+        $logger->good($generic_message . '.', 'info')->flush_queue(1);
+
+        map { $_->push_in_queue($serialize->[1]) } @{$publishers};
+    } else {
+        $logger->bad($generic_message . ' failed.', 'err')->flush_queue(1);
+    }
+}
 
 #-> methods
 
@@ -70,37 +93,36 @@ sub register_connectors {
             name => 'connector_' . $connector->get_name(),
             single => 1,
             sub {
-                if ($connector->is_type_code()) {
-                    Navel::Scheduler::Cron::Fork->new(
-                        $connector,
-                        $self->get_logger()
-                    )->when_done(
-                        sub {
-                            my $datas = shift;
-
-                            my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
-
-                            my $serialize = to(
-                                $connector,
-                                $datas
-                            );
-
-                            if ($serialize->[0]) {
-                                $self->get_logger()->good($generic_message . '.', 'info')->flush_queue(1);
-
-                                map { $_->push_in_queue($serialize->[1]) } @{$self->get_publishers()};
-                            } else {
-                                $self->get_logger()->bad($generic_message . ' failed.', 'err')->flush_queue(1);
+                local $@;
+                
+                my $connector_content = eval {
+                    read_file($connector->get_exec_file_path());
+                };
+                
+                unless ($@) {
+                    if ($connector->is_type_code()) {
+                        Navel::Scheduler::Cron::Fork->new(
+                            $connector,
+                            $self->get_logger(),
+                            $connector_content
+                        )->when_done(
+                            sub {
+                                $__serialize_log_and_push_in_queues->(
+                                    $self->get_logger(),
+                                    $connector,
+                                    $self->get_publishers(),
+                                    shift
+                                );
                             }
-                        }
-                    );
-                } else {
-                    my $body = Navel::Scheduler::Cron::Exec->new(
-                        $connector,
-                        $self->get_logger()
-                    )->exec()->serialize();
-
-                    map { $_->push_in_queue($body) } @{$self->get_publishers()};
+                        );
+                    } else {
+                        $__serialize_log_and_push_in_queues->(
+                            $self->get_logger(),
+                            $connector,
+                            $self->get_publishers(),
+                            $connector_content
+                        );
+                    }
                 }
             }
         );

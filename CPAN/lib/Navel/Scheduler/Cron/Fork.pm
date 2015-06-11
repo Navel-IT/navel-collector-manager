@@ -14,8 +14,6 @@ use parent qw/
     Navel::Base
 /;
 
-use File::Slurp;
-
 use AnyEvent::Fork;
 
 use AnyEvent::Fork::RPC;
@@ -29,31 +27,26 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $logger) = @_;
-    
+    my ($class, $connector, $logger, $perl_code_string) = @_;
+
     local $@;
 
     if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger') {
-        my $code = eval {
-            read_file($connector->get_exec_file_path())
-        };
-
         my $self = {
             __connector => $connector,
             __logger => $logger,
+            __perl_code_string => $perl_code_string,
             __fork => undef,
             __rpc => undef
         };
 
         unless ($@) {
-            $self->{__code} = $code;
-
             $self->{__fork} = AnyEvent::Fork->new()->require(
                 'strict',
                 'warnings',
                 'Navel::Utils'
             )->eval(
-                $self->{__code}
+                $self->{__perl_code_string}
             );
 
             $self->{__rpc} = $self->{__fork}->AnyEvent::Fork::RPC::run(
@@ -111,6 +104,10 @@ sub get_connector {
 
 sub get_logger {
     shift->{__logger};
+}
+
+sub get_perl_code_string {
+    shift->{__perl_code_string};
 }
 
 sub get_fork {
