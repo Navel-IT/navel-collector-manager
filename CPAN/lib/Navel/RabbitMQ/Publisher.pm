@@ -14,10 +14,6 @@ use parent qw/
     Navel::Base
 /;
 
-use constant {
-    CHANNEL_ID => 1
-};
-
 use Carp qw/
     carp
     croak
@@ -30,6 +26,8 @@ use Navel::Utils qw/
 /;
 
 our $VERSION = 0.1;
+
+our $CHANNEL_ID = 1;
 
 #-> methods
 
@@ -66,7 +64,7 @@ sub connect {
     eval {
         $self->get_net()->connect($self->get_definition()->get_host(), \%options);
 
-        $self->get_net()->channel_open(CHANNEL_ID);
+        $self->get_net()->channel_open($CHANNEL_ID);
     };
 
     return $@;
@@ -117,7 +115,7 @@ sub clear_queue {
 sub DESTROY {
     my $self = shift;
 
-    $self->channel_close(CHANNEL_ID);
+    $self->channel_close($CHANNEL_ID);
 
     $self->disconnect();
 }
