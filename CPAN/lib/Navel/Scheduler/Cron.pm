@@ -94,11 +94,11 @@ sub register_connectors {
             single => 1,
             sub {
                 local $@;
-                
+
                 my $connector_content = eval {
                     read_file($connector->get_exec_file_path());
                 };
-                
+
                 unless ($@) {
                     if ($connector->is_type_code()) {
                         Navel::Scheduler::Cron::Fork->new(
@@ -175,7 +175,7 @@ sub register_publishers {
             name => 'publisher_' . $publisher->get_definition()->get_name(),
             single => 1,
             sub {
-                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID;
+                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
 
                 if ($publisher->get_net()->is_connected()) {
                     my @queue = @{$publisher->get_queue()};
@@ -186,12 +186,10 @@ sub register_publishers {
                         $publisher->clear_queue();
 
                         eval {
-                            $publisher->get_net()->channel_open($Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID);
-
                             for my $body (@queue) {
-                                $self->get_logger()->push_to_queue($publish_generic_message . ' : send body.', 'info')->flush_queue(1);
+                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'info')->flush_queue(1);
 
-                                $publisher->get_net()->publish($Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID, $publisher->get_definition()->get_routing_key(), $body,
+                                $publisher->get_net()->publish($Navel::RabbitMQ::Publisher::CHANNEL_ID, $publisher->get_definition()->get_routing_key(), $body,
                                     {
                                         exchange => $publisher->get_definition()->get_exchange()
                                     }
