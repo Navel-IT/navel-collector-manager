@@ -23,8 +23,6 @@ use AnyEvent::DateTime::Cron;
 
 use File::Slurp;
 
-use Navel::Scheduler::Cron::Exec;
-
 use Navel::Scheduler::Cron::Fork;
 
 use Navel::RabbitMQ::Publisher;
