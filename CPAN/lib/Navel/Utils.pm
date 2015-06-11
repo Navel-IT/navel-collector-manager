@@ -86,6 +86,8 @@ sub replace_key($$$) {
 sub substitute_all_keys($$$@) {
     my ($hash, $old, $new, $recursive) = @_;
 
+    local $@;
+
     for (keys %{$hash}) {
         my $new_key = $_;
 

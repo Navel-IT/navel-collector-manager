@@ -30,6 +30,8 @@ our $VERSION = 0.1;
 
 sub new {
     my ($class, $connector, $logger) = @_;
+    
+    local $@;
 
     if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger') {
         my $code = eval {

@@ -35,6 +35,8 @@ our $VERSION = 0.1;
 
 sub load {
     my ($self, $file_path) = @_;
+    
+    local $@;
 
     if (hascontent($file_path)) {
             my $json = eval {

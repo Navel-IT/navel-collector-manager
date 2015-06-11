@@ -50,6 +50,8 @@ sub new {
 sub set_generic {
     my ($self, $validator, $property, $value) = @_;
 
+    local $@;
+
     eval {
         $self = $self->new(
             $validator,

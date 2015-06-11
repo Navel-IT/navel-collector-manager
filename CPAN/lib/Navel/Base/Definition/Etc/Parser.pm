@@ -48,6 +48,8 @@ sub load {
 
 sub make {
     my ($self, $definition_package, $do_not_need_at_least_one, $extra_parameters) = @_;
+    
+    local $@;
 
     if (eval 'require ' . $definition_package) {
         if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $do_not_need_at_least_one) {

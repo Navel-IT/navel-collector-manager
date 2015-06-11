@@ -69,6 +69,8 @@ sub connect {
 sub disconnect {
     my $self = shift;
 
+    local $@;
+
     eval {
         $self->get_net()->disconnect();
     };

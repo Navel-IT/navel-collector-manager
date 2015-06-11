@@ -146,6 +146,8 @@ sub connect_publishers {
 sub register_publishers {
     my $self = shift;
 
+    local $@;
+
     my $channel_id = 1;
 
     for my $publisher (@{$self->get_publishers()}) {

@@ -66,6 +66,8 @@ sub to($$) {
 
 sub from($) {
     my $json = shift;
+    
+    local $@;
 
     my $datas = eval {
         decode_json($json);
