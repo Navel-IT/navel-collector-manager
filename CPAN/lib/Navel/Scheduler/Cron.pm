@@ -1,5 +1,5 @@
 # Copyright 2015 Navel-IT
-# Navel Scheduler is developped by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
+# Navel Scheduler is developed by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
 
 #-> BEGIN
 
@@ -148,14 +148,12 @@ sub register_publishers {
 
     local $@;
 
-    my $channel_id = 1;
-
     for my $publisher (@{$self->get_publishers()}) {
         $self->get_cron()->add($publisher->get_definition()->get_scheduling(),
             name => 'publisher_' . $publisher->get_definition()->get_name(),
             single => 1,
             sub {
-                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $channel_id;
+                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID;
 
                 if ($publisher->get_net()->is_connected()) {
                     my @queue = @{$publisher->get_queue()};
@@ -166,19 +164,17 @@ sub register_publishers {
                         $publisher->clear_queue();
 
                         eval {
-                            $publisher->get_net()->channel_open($channel_id);
+                            $publisher->get_net()->channel_open(Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID);
 
                             for my $body (@queue) {
                                 $self->get_logger()->push_to_queue($publish_generic_message . ' : send body.', 'info')->flush_queue(1);
 
-                                $publisher->get_net()->publish($channel_id, $publisher->get_definition()->get_routing_key(), $body,
+                                $publisher->get_net()->publish(Navel::Scheduler::RabbitMQ::Publisher::CHANNEL_ID, $publisher->get_definition()->get_routing_key(), $body,
                                     {
                                         exchange => $publisher->get_definition()->get_exchange()
                                     }
                                 );
                             }
-
-                            $publisher->get_net()->channel_close($channel_id);
                         };
 
                         if ($@) {

@@ -1,5 +1,5 @@
 # Copyright 2015 Navel-IT
-# Navel Scheduler is developped by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
+# Navel Scheduler is developed by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
 
 #-> BEGIN
 
@@ -13,6 +13,10 @@ use warnings;
 use parent qw/
     Navel::Base
 /;
+
+use constant {
+    CHANNEL_ID => 1
+};
 
 use Carp qw/
     carp
@@ -61,6 +65,8 @@ sub connect {
 
     eval {
         $self->get_net()->connect($self->get_definition()->get_host(), \%options);
+
+        $self->get_net()->channel_open(CHANNEL_ID);
     };
 
     return $@;
@@ -109,7 +115,11 @@ sub clear_queue {
 # sub AUTOLOAD {}
 
 sub DESTROY {
-    shift->disconnect();
+    my $self = shift;
+
+    $self->channel_close(CHANNEL_ID);
+
+    $self->disconnect();
 }
 
 1;
