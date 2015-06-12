@@ -91,8 +91,6 @@ sub substitute_all_keys($$$@) {
     for (keys %{$hash}) {
         my $new_key = $_;
 
-        my $a = $recursive && reftype($hash->{$_}) eq 'HASH';
-
         eval '$new_key =~ s/' . $old . '/' . $new . '/g';
 
         $@ ? return 0 : replace_key($hash, $_, $new_key);
