@@ -187,9 +187,15 @@ sub register_publishers {
                             for my $body (@queue) {
                                 $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'info')->flush_queue(1);
 
-                                $publisher->get_net()->publish($Navel::RabbitMQ::Publisher::CHANNEL_ID, $publisher->get_definition()->get_routing_key(), $body,
+                                $publisher->get_net()->publish(
+                                    $Navel::RabbitMQ::Publisher::CHANNEL_ID,
+                                    $publisher->get_definition()->get_routing_key(),
+                                    $body,
                                     {
                                         exchange => $publisher->get_definition()->get_exchange()
+                                    },
+                                    {
+                                        delivery_mode => 2
                                     }
                                 );
                             }
