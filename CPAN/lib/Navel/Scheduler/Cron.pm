@@ -21,7 +21,9 @@ use Carp qw/
 
 use AnyEvent::DateTime::Cron;
 
-use File::Slurp;
+use AnyEvent::AIO;
+
+use IO::AIO;
 
 use Navel::Scheduler::Cron::Fork;
 
@@ -91,37 +93,51 @@ sub register_connectors {
             name => 'connector_' . $connector->get_name(),
             single => 1,
             sub {
-                local $@;
+                local $@, $!;
 
-                my $connector_content = eval {
-                    read_file($connector->get_exec_file_path());
-                };
+                aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
+                    sub {
+                        my $fh = shift;
 
-                unless ($@) {
-                    if ($connector->is_type_code()) {
-                        Navel::Scheduler::Cron::Fork->new(
-                            $connector,
-                            $self->get_logger(),
-                            $connector_content
-                        )->when_done(
-                            sub {
-                                $__serialize_log_and_push_in_queues->(
-                                    $self->get_logger(),
-                                    $connector,
-                                    $self->get_publishers(),
-                                    shift
-                                );
-                            }
-                        );
-                    } else {
-                        $__serialize_log_and_push_in_queues->(
-                            $self->get_logger(),
-                            $connector,
-                            $self->get_publishers(),
-                            $connector_content
-                        );
+                        if ($fh) {
+                            my $connector_content = '';
+
+                            $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug')->flush_queue(1);
+
+                            aio_read($fh, 0, -s $fh, $connector_content, 0,
+                                sub {
+                                    close $fh;
+
+                                    if ($connector->is_type_code()) {
+                                        Navel::Scheduler::Cron::Fork->new(
+                                            $connector,
+                                            $self->get_logger(),
+                                            $connector_content
+                                        )->when_done(
+                                            sub {
+                                                $__serialize_log_and_push_in_queues->(
+                                                    $self->get_logger(),
+                                                    $connector,
+                                                    $self->get_publishers(),
+                                                    shift
+                                                );
+                                            }
+                                        );
+                                    } else {
+                                        $__serialize_log_and_push_in_queues->(
+                                            $self->get_logger(),
+                                            $connector,
+                                            $self->get_publishers(),
+                                            $connector_content
+                                        );
+                                    }
+                                }
+                            )
+                        } else {
+                            $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
+                        }
                     }
-                }
+                );
             }
         );
     }
@@ -185,7 +201,7 @@ sub register_publishers {
 
                         eval {
                             for my $body (@queue) {
-                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'info')->flush_queue(1);
+                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug')->flush_queue(1);
 
                                 $publisher->get_net()->publish(
                                     $Navel::RabbitMQ::Publisher::CHANNEL_ID,
@@ -195,7 +211,7 @@ sub register_publishers {
                                         exchange => $publisher->get_definition()->get_exchange()
                                     },
                                     {
-                                        delivery_mode => 2
+                                        delivery_mode => $publisher->get_definition()->get_delivery_mode()
                                     }
                                 );
                             }

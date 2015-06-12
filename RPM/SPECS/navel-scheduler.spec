@@ -13,7 +13,7 @@ Prefix:    /opt
 BuildRoot:      %{_tmppath}/%{name}
 BuildArch:    noarch
 
-Requires:    perl => 5.10.1-1, perl(Scalar::Util::Numeric), perl(IO::File), perl(File::Slurp), perl(JSON), perl(IPC::Cmd), perl(Net::AMQP::RabbitMQ), perl(Carp), perl(EV), perl(AnyEvent::Datetime::Cron), perl(AnyEvent::Fork), perl(AnyEvent::Fork::RPC), perl(Exporter::Easy), perl(Storable), perl(Data::Validate::Struct), perl(Scalar::Util), perl(DateTime::Event::Cron::Quartz), perl(List::MoreUtils), perl(String::Util), perl(Cwd), perl(Proc::Daemon), perl(Mojolicious)
+Requires:    perl => 5.10.1-1, perl(Scalar::Util::Numeric), perl(IO::File), perl(File::Slurp), perl(IO::AIO), perl(JSON), perl(IPC::Cmd), perl(Net::AMQP::RabbitMQ), perl(Carp), perl(EV), perl(AnyEvent::Datetime::Cron), perl(AnyEvent::AIO), perl(AnyEvent::Fork), perl(AnyEvent::Fork::RPC), perl(Exporter::Easy), perl(Storable), perl(Data::Validate::Struct), perl(Scalar::Util), perl(DateTime::Event::Cron::Quartz), perl(List::MoreUtils), perl(String::Util), perl(Cwd), perl(Proc::Daemon), perl(Mojolicious)
 
 %description
 "navel-scheduler's purpose is to get back datas from connectors at scheduled time then encode and push it through RabbbitMQ to navel-router"
