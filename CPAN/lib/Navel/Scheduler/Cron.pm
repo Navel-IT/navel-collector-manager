@@ -91,7 +91,7 @@ sub register_connectors {
     for my $connector (@{$self->get_connectors()->get_definitions()}) {
         $self->get_cron()->add($connector->get_scheduling(),
             sub {
-                local $@, $!;
+                local ($@, $!);
 
                 aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
                     sub {
