@@ -52,11 +52,17 @@ sub rabbitmq_definition_validator($) {
             vhost => 'text',
             exchange => 'text',
             routing_key => 'text',
+            delivery_mode => 'connector_props_delivery_mode',
             scheduling => 'connector_cron'
         }
     );
 
     $validator->type(
+        connector_props_delivery_mode => sub {
+            my $value = shift;
+
+            return $value == 1 || $value == 2;
+        },
         connector_cron => sub {
             return eval {
                 DateTime::Event::Cron::Quartz->new(shift);
@@ -146,6 +152,14 @@ sub get_routing_key {
 
 sub set_routing_key {
     return shift->set_generic('routing_key', shift);
+}
+
+sub get_delivery_mode {
+    return shift->{__delivery_mode};
+}
+
+sub set_delivery_mode {
+    return shift->set_generic('delivery_mode', shift);
 }
 
 sub get_scheduling {

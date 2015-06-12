@@ -54,6 +54,10 @@ sub get_routing_keys {
     return shift->__get_all_by_getter('get_routing_key');
 }
 
+sub get_delivery_modes {
+    return shift->__get_all_by_getter('get_delivery_mode');
+}
+
 sub get_schedulings {
     return shift->__get_all_by_getter('get_scheduling');
 }

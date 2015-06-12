@@ -9,6 +9,7 @@
         "vhost" : "/",
         "exchange" : "navel-scheduler.E.direct.events",
         "routing_key" : "navel-scheduler.collections",
+        "delivery_mode" : 2,
         "scheduling" : "*/15 * * * * ?"
     }
 ]
