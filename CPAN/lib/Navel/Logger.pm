@@ -53,6 +53,8 @@ binmode STDERR, ':utf8';
 sub new {
     my ($class, $default_severity, $file_path, $severity) = @_;
 
+    local $!;
+
     my $self = {
         __severity => eval {
             Navel::Logger::Severity->new($severity)
@@ -162,6 +164,8 @@ sub clear_queue {
 
 sub DESTROY {
     my $self = shift;
+
+    local $!;
 
     $self->get_filehandler()->close() if ($self->is_filehandler_via_lib());
 }
