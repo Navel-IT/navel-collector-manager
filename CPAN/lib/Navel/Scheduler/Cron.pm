@@ -74,7 +74,8 @@ sub new {
             __logger => $logger,
             __cron => AnyEvent::DateTime::Cron->new(
                 quartz => 1
-            )
+            ),
+            __locks => {}
         };
 
         $class = ref $class || $class;
@@ -89,53 +90,67 @@ sub register_connectors {
     my $self = shift;
 
     for my $connector (@{$self->get_connectors()->get_definitions()}) {
+        $self->get_locks()->{$connector->get_name()} = 0;
+
         $self->get_cron()->add($connector->get_scheduling(),
             sub {
                 local ($@, $!);
+                
+                unless ($self->get_locks()->{$connector->get_name()}) {
+                    $self->get_locks()->{$connector->get_name()} = 1;
 
-                aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
-                    sub {
-                        my $fh = shift;
+                    aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
+                        sub {
+                            my $fh = shift;
 
-                        if ($fh) {
-                            my $connector_content = '';
+                            if ($fh) {
+                                my $connector_content = '';
 
-                            $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug')->flush_queue(1);
+                                $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug')->flush_queue(1);
 
-                            aio_read($fh, 0, -s $fh, $connector_content, 0,
-                                sub {
-                                    close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);;
+                                aio_read($fh, 0, -s $fh, $connector_content, 0,
+                                    sub {
+                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);;
 
-                                    if ($connector->is_type_code()) {
-                                        Navel::Scheduler::Cron::Fork->new(
-                                            $connector,
-                                            $self->get_logger(),
-                                            $connector_content
-                                        )->when_done(
-                                            sub {
-                                                $__serialize_log_and_push_in_queues->(
-                                                    $self->get_logger(),
-                                                    $connector,
-                                                    $self->get_publishers(),
-                                                    shift
-                                                );
-                                            }
-                                        );
-                                    } else {
-                                        $__serialize_log_and_push_in_queues->(
-                                            $self->get_logger(),
-                                            $connector,
-                                            $self->get_publishers(),
-                                            $connector_content
-                                        );
+                                        if ($connector->is_type_code()) {
+                                            Navel::Scheduler::Cron::Fork->new(
+                                                $connector,
+                                                $self->get_logger(),
+                                                $connector_content
+                                            )->when_done(
+                                                sub {
+                                                    $__serialize_log_and_push_in_queues->(
+                                                        $self->get_logger(),
+                                                        $connector,
+                                                        $self->get_publishers(),
+                                                        shift
+                                                    );
+                                                    
+                                                    $self->get_locks()->{$connector->get_name()} = 0;
+                                                }
+                                            );
+                                        } else {
+                                            $__serialize_log_and_push_in_queues->(
+                                                $self->get_logger(),
+                                                $connector,
+                                                $self->get_publishers(),
+                                                $connector_content
+                                            );
+                                            
+                                            $self->get_locks()->{$connector->get_name()} = 0;
+                                        }
                                     }
-                                }
-                            )
-                        } else {
-                            $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
+                                )
+                            } else {
+                                $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
+                                
+                                $self->get_locks()->{$connector->get_name()} = 0;
+                            }
                         }
-                    }
-                );
+                    );
+                } else {
+                    $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info')->flush_queue(1);
+                }
             }
         );
     }
@@ -296,6 +311,10 @@ sub get_logger {
 
 sub get_cron {
     return shift->{__cron};
+}
+
+sub get_locks {
+    return shift->{__locks};
 }
 
 # sub AUTOLOAD {}
