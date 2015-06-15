@@ -110,7 +110,7 @@ sub register_connectors {
 
                                 aio_read($fh, 0, -s $fh, $connector_content, 0,
                                     sub {
-                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);;
+                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
 
                                         if ($connector->is_type_code()) {
                                             Navel::Scheduler::Cron::Fork->new(

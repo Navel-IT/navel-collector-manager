@@ -23,6 +23,7 @@ my $return = eval {
                 name => 'test-1',
                 collection => 'test',
                 type => 'code',
+                singleton => 1,
                 scheduling => '0 * * * * ?',
                 source => undef,
                 input => undef,
