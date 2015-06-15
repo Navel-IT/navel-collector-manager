@@ -34,6 +34,10 @@ sub get_types {
     return shift->__get_all_by_getter('get_type');
 }
 
+sub get_singletons {
+    return shift->__get_all_by_getter('get_singleton');
+}
+
 sub get_schedulings {
     return shift->__get_all_by_getter('get_scheduling');
 }

@@ -2,7 +2,8 @@
     {
         "name" : "test-1",
         "collection" : "test",
-        "type" : "text",
+        "type" : "json",
+        "singleton" : 1,
         "scheduling" : "0 * * * * ?",
         "source" : null,
         "input" : null

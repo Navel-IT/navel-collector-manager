@@ -51,6 +51,7 @@ sub connector_definition_validator($) {
             name => 'word',
             collection => 'word',
             type => 'connector_type',
+            singleton => 'connector_singleton',
             scheduling => 'connector_cron',
             exec_directory_path => 'text'
         }
@@ -62,6 +63,11 @@ sub connector_definition_validator($) {
 
             return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_JSON;
         },
+        connector_singleton => sub {
+            my $value = shift;
+
+            return $value == 0 || $value == 1;
+        },
         connector_cron => sub {
             return eval {
                 DateTime::Event::Cron::Quartz->new(shift);
@@ -69,7 +75,7 @@ sub connector_definition_validator($) {
         }
     );
 
-    return $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef value
+    return $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef (JSON's null) value
 }
 
 #-> methods
@@ -111,6 +117,14 @@ sub is_type_json {
 
 sub set_type {
     return shift->set_generic('type', shift);
+}
+
+sub get_singleton {
+    return shift->{__singleton};
+}
+
+sub set_singleton {
+    return shift->set_generic('singleton', shift);
 }
 
 sub get_scheduling {

@@ -97,7 +97,7 @@ sub register_connectors {
                 local ($@, $!);
 
                 unless ($self->get_locks()->{$connector->get_name()}) {
-                    $self->get_locks()->{$connector->get_name()} = 1;
+                    $self->get_locks()->{$connector->get_name()} = $connector->get_singleton();
 
                     aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
                         sub {

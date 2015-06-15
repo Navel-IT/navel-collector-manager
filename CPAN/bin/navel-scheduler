@@ -109,7 +109,7 @@ if (defined $general_configuration_file_path) {
 
     if ($daemonize) {
         $logger->push_to_queue('Daemonizing ...', 'info')->flush_queue(1);
-        
+
         my $mojo_templates_fh = __PACKAGE__ . '::DATA';
 
         Proc::Daemon->new(
