@@ -95,7 +95,7 @@ sub register_connectors {
         $self->get_cron()->add($connector->get_scheduling(),
             sub {
                 local ($@, $!);
-                
+
                 unless ($self->get_locks()->{$connector->get_name()}) {
                     $self->get_locks()->{$connector->get_name()} = 1;
 
@@ -125,7 +125,7 @@ sub register_connectors {
                                                         $self->get_publishers(),
                                                         shift
                                                     );
-                                                    
+
                                                     $self->get_locks()->{$connector->get_name()} = 0;
                                                 }
                                             );
@@ -136,14 +136,14 @@ sub register_connectors {
                                                 $self->get_publishers(),
                                                 $connector_content
                                             );
-                                            
+
                                             $self->get_locks()->{$connector->get_name()} = 0;
                                         }
                                     }
                                 )
                             } else {
                                 $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
-                                
+
                                 $self->get_locks()->{$connector->get_name()} = 0;
                             }
                         }

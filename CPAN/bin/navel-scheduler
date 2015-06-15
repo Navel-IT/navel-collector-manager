@@ -107,6 +107,23 @@ if (defined $general_configuration_file_path) {
         Navel::Scheduler->new($general_configuration_file_path);
     };
 
+    if ($daemonize) {
+        $logger->push_to_queue('Daemonizing ...', 'info')->flush_queue(1);
+
+        Proc::Daemon->new(
+            working_directory => getcwd(),
+            pid_file => $pid_dir . '/navel-scheduler.pid',
+            dont_close_fh => $logger->is_filehandler_via_lib() ? [
+                __PACKAGE__ . '::DATA',
+                $logger->get_filehandler()
+            ] : [
+                __PACKAGE__ . '::DATA'
+            ]
+        )->Init();
+
+        IO::AIO::reinit();
+    }
+
     unless ($@) {
         unless ($disable_rest) {
             my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
@@ -338,21 +355,6 @@ if (defined $general_configuration_file_path) {
             }
 
             $logger->bad($return->[1] . '.', 'err')->flush_queue(1) unless ($return->[0]);
-        }
-
-        if ($daemonize) {
-            $logger->push_to_queue('Daemonizing ...', 'info')->flush_queue(1);
-
-            Proc::Daemon->new(
-                working_directory => getcwd(),
-                pid_file => $pid_dir . '/navel-scheduler.pid',
-                dont_close_fh => $logger->is_filehandler_via_lib() ? [
-                    __PACKAGE__ . '::DATA',
-                    $logger->get_filehandler()
-                ] : [
-                    __PACKAGE__ . '::DATA'
-                ]
-            )->Init();
         }
 
         unless ($disable_rest) {
