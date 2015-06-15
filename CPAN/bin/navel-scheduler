@@ -121,7 +121,7 @@ if (defined $general_configuration_file_path) {
             ]
         )->Init();
 
-        IO::AIO::reinit();
+        IO::AIO::reinit(); # IO::AIO loaded by Navel::Scheduler
     }
 
     unless ($@) {
