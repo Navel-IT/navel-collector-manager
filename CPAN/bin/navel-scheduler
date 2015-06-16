@@ -203,9 +203,9 @@ if (defined $general_configuration_file_path) {
                                 }
                             )
                             ?
-                                $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')->flush_queue(1)
+                                $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')
                             :
-                                $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')->flush_queue(1)
+                                $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')
                             ;
                         }
 
@@ -308,12 +308,12 @@ if (defined $general_configuration_file_path) {
                                 my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
 
                                 if (my $error = $publisher->$method()) {
-                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice')->flush_queue(1);
+                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
                                 } else {
-                                    $logger->good($method_generic_message . '.', 'notice')->flush_queue(1);
+                                    $logger->good($method_generic_message . '.', 'notice');
                                 }
                             } elsif ($action eq 'clear_queue') {
-                                $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_queue(1);
+                                $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
                                 $publisher->$action();
                             }

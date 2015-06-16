@@ -99,7 +99,7 @@ sub run {
                 if ($return->[0]) {
                     $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
 
-                    $self->get_core()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
+                    $self->get_core()->register_logger()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
                 }
             }
         }

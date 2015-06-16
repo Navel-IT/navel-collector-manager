@@ -52,11 +52,11 @@ my $__serialize_log_and_push_in_queues = sub {
     );
 
     if ($serialize->[0]) {
-        $logger->good($generic_message . '.', 'info')->flush_queue(1);
+        $logger->good($generic_message . '.', 'info');
 
         map { $_->push_in_queue($serialize->[1]) } @{$publishers};
     } else {
-        $logger->bad($generic_message . ' failed.', 'err')->flush_queue(1);
+        $logger->bad($generic_message . ' failed.', 'err');
     }
 };
 
@@ -86,13 +86,28 @@ sub new {
     croak('One or more objects are invalids.');
 }
 
+sub register_logger {
+    my $self = shift;
+
+    $self->get_cron()->add(
+        '* * * * * ?',
+        single => 1,
+        sub {
+            $self->get_logger()->flush_queue(1);
+        }
+    );
+
+    return $self;
+}
+
 sub register_connectors {
     my $self = shift;
 
     for my $connector (@{$self->get_connectors()->get_definitions()}) {
         $self->get_locks()->{$connector->get_name()} = 0;
 
-        $self->get_cron()->add($connector->get_scheduling(),
+        $self->get_cron()->add(
+            $connector->get_scheduling(),
             sub {
                 local ($@, $!);
 
@@ -106,11 +121,11 @@ sub register_connectors {
                             if ($fh) {
                                 my $connector_content = '';
 
-                                $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug')->flush_queue(1);
+                                $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug');
 
                                 aio_read($fh, 0, -s $fh, $connector_content, 0,
                                     sub {
-                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
+                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
                                         if ($connector->is_type_code()) {
                                             Navel::Scheduler::Cron::Fork->new(
@@ -142,14 +157,14 @@ sub register_connectors {
                                     }
                                 )
                             } else {
-                                $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err')->flush_queue(1);
+                                $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
                                 $self->get_locks()->{$connector->get_name()} = 0;
                             }
                         }
                     );
                 } else {
-                    $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info')->flush_queue(1);
+                    $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
                 }
             }
         );
@@ -198,7 +213,8 @@ sub register_publishers {
     local $@;
 
     for my $publisher (@{$self->get_publishers()}) {
-        $self->get_cron()->add($publisher->get_definition()->get_scheduling(),
+        $self->get_cron()->add(
+            $publisher->get_definition()->get_scheduling(),
             single => 1,
             sub {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
@@ -207,13 +223,13 @@ sub register_publishers {
                     my @queue = @{$publisher->get_queue()};
 
                     if (@queue) {
-                        $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice')->flush_queue(1);
+                        $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
                         $publisher->clear_queue();
 
                         eval {
                             for my $body (@queue) {
-                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug')->flush_queue(1);
+                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug');
 
                                 $publisher->get_net()->publish(
                                     $Navel::RabbitMQ::Publisher::CHANNEL_ID,
@@ -230,15 +246,15 @@ sub register_publishers {
                         };
 
                         if ($@) {
-                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn')->flush_queue(1);
+                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
                         } else {
-                            $self->get_logger()->good($publish_generic_message . '.', 'notice')->flush_queue(1);
+                            $self->get_logger()->good($publish_generic_message . '.', 'notice');
                         }
                     } else {
-                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info')->flush_queue(1);
+                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
                     }
                 } else {
-                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn')->flush_queue(1);
+                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
                 }
             }
         );
@@ -254,9 +270,9 @@ sub disconnect_publishers {
         my $disconnect_generic_message = 'Disconnect publisher ' . $_->get_definition()->get_name();
 
         if (my $error = $_->disconnect()) {
-            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice')->flush_queue(1);
+            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice');
         } else {
-            $self->get_logger()->good($disconnect_generic_message . '.', 'notice')->flush_queue(1);
+            $self->get_logger()->good($disconnect_generic_message . '.', 'notice');
         }
     }
 

@@ -57,19 +57,19 @@ sub new {
                     if ($event_type eq 'ae_log') {
                         my ($severity, $message) = @_;
 
-                        $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice')->flush_queue(1);
+                        $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
                     }
                 },
                 on_error => sub {
-                    $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err')->flush_queue(1);
+                    $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err');
                 },
                 on_destroy => sub {
-                    $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug')->flush_queue(1);
+                    $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
                 },
                 serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
             );
         } else {
-            $self->{__logger}->bad('An error occured while reading from file ' . $self->{__connector}->get_exec_file_path() . '.', 'err')->flush_queue(1);
+            $self->{__logger}->bad('An error occured while reading from file ' . $self->{__connector}->get_exec_file_path() . '.', 'err');
         }
 
         $class = ref $class || $class;
@@ -90,7 +90,7 @@ sub when_done {
             $callback
         );
 
-        $self->get_logger()->push_to_queue('Spawned a new process.', 'debug')->flush_queue(1);
+        $self->get_logger()->push_to_queue('Spawned a new process.', 'debug');
 
         undef $self->{__rpc};
     }
