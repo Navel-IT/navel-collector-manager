@@ -22,8 +22,8 @@ our $VERSION = 0.1;
 
 #-> methods
 
-sub make {
-    return shift->SUPER::make('Navel::Definition::Connector', 1, shift);
+sub new {
+    return shift->SUPER::new('Navel::Definition::Connector', 1);
 }
 
 sub get_collections {

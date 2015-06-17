@@ -28,9 +28,11 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my $class = shift;
+    my ($class, $definition_package, $do_not_need_at_least_one) = @_;
 
     return bless {
+        __do_not_need_at_least_one => 0,
+        __definition_package = $definition_package,
         __raw => [],
         __definitions => []
     }, ref $class || $class;
@@ -47,16 +49,18 @@ sub load {
 }
 
 sub make {
-    my ($self, $definition_package, $do_not_need_at_least_one, $extra_parameters) = @_;
-    
+    my ($self, $extra_parameters) = @_;
+
     local $@;
 
-    if (eval 'require ' . $definition_package) {
-        if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $do_not_need_at_least_one) {
+    if (eval 'require ' . $self->get_definition_package()) {
+        if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $self->get_do_not_need_at_least_one()) {
             my (@definitions, @names);
 
             for my $parameters (@{$self->get_raw()}) {
                 my $connector = eval {
+                    my $definition_package = $self->get_definition_package();
+
                     $definition_package->new(reftype($extra_parameters) eq 'HASH' ? { %{$parameters}, %{$extra_parameters} } : $parameters);
                 };
 
@@ -65,7 +69,7 @@ sub make {
 
                     push @names, $connector->get_name();
                 } else {
-                    return [0, $definition_package . ' : one or more definitions are invalids'];
+                    return [0, $self->get_definition_package() . ' : one or more definitions are invalids'];
                 }
             }
 
@@ -74,14 +78,22 @@ sub make {
 
                 return [1, undef];
             } else {
-                return [0, $definition_package . ' : duplicate definition detected']
+                return [0, $self->get_definition_package() . ' : duplicate definition detected']
             }
         } else {
-            return [0, $definition_package . ' : raw datas need to exists and to be encapsulated in an array'];
+            return [0, $self->get_definition_package() . ' : raw datas need to exists and to be encapsulated in an array'];
         }
     } else {
-        return [0, $definition_package . ' : require failed'];
+        return [0, $self->get_definition_package() . ' : require failed'];
     }
+}
+
+sub get_do_not_need_at_least_one {
+    return shift->{__do_not_need_at_least_one};
+}
+
+sub get_definition_package {
+    return shift->{__definition_package};
 }
 
 sub get_raw {
