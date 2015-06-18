@@ -10,10 +10,6 @@ package Navel::Utils;
 use strict;
 use warnings;
 
-use parent qw/
-    Scalar::Util
-/;
-
 use subs qw/
     substitute_all_keys
 /;
@@ -31,6 +27,7 @@ use Exporter::Easy (
         unblessed
         encode_json
         decode_json
+        encode_json_pretty
     /],
     TAGS => [
         all => [qw/
@@ -44,9 +41,12 @@ use Exporter::Easy (
             unblessed
             encode_json
             decode_json
+            encode_json_pretty
         /]
     ]
 );
+
+require Scalar::Util;
 
 use JSON qw/
     encode_json
@@ -113,6 +113,10 @@ sub publicize($@) {
 
 sub unblessed($) {
     return { %{+shift} };
+}
+
+sub encode_json_pretty($) {
+    return JSON->new()->utf8()->pretty()->encode(shift);
 }
 
 1;
