@@ -73,10 +73,15 @@ sub get_help() {
 EOF
 }
 
-sub ok_ko($$) {
+sub ok_ko($$$) {
+    my ($logger, $ok, $ko) = @_;
+
+    $logger->good($ok, 'notice') if (defined $ok);
+    $logger->bad($ko, 'notice') if (defined $ko);
+
     return {
-        ok => shift,
-        ko => shift
+        ok => $ok,
+        ko => $ko
     };
 }
 
@@ -155,7 +160,7 @@ if (defined $general_configuration_file_path) {
                         $controller->res()->headers()->www_authenticate('Basic');
 
                         $controller->render(
-                            json => ok_ko(undef, 'Unauthorized : access is denied due to invalid credentials'),
+                            json => ok_ko($logger, undef, 'Unauthorized : access is denied due to invalid credentials'),
                             status => 401
                         );
 
@@ -207,21 +212,15 @@ if (defined $general_configuration_file_path) {
                             }
                         )) {
                             $ok = ucfirst($property) . ' of webservices successfully changed.';
-
-                            $logger->good($ok, 'notice');
                         } else {
                             $ko = 'An error occurred while modifying ' . $property . ' of webservices.';
-
-                            $logger->bad($ko, 'notice');
                         }
                     } else {
                         $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
-
-                        $logger->bad($ko, 'notice');
                     }
 
                     $controller->render(
-                        json => ok_ko($ok, $ko)
+                        json => ok_ko($logger, $ok, $ko)
                     );
                 };
 
@@ -259,7 +258,7 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 unless ($@) {
-                                    $ok = 'Connector ' . $definition_name . ' added to runtime.';
+                                    $ok = 'Connector ' . $definition_name . ' successfuly added to runtime.';
                                 } else {
                                     $ko = $@;
                                 }
@@ -268,7 +267,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($ok, $ko)
+                                json => ok_ko($logger, $ok, $ko)
                             );
                         }
                         default {
@@ -368,7 +367,7 @@ if (defined $general_configuration_file_path) {
                         );
                     } else {
                         $controller->render(
-                            json => ok_ko(undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
+                            json => ok_ko($logger, undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
                         );
                     }
                 };
