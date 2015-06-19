@@ -167,7 +167,7 @@ sub add_definition {
         croak($self->get_definition_package() . ' : duplicate definition detected');
     }
 
-    return $self;
+    return $definition->get_name();
 }
 
 sub del_definition {
@@ -187,7 +187,7 @@ sub del_definition {
         croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
     }
 
-    return $self;
+    return $definition_name;
 }
 
 # sub AUTOLOAD {}
