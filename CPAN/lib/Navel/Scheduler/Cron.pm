@@ -292,6 +292,18 @@ sub disconnect_publishers {
     return $self;
 }
 
+sub unregister_job_by_name {
+    my ($self, $job_name) = @_;
+
+    my $jobs = $self->get_cron()->jobs();
+
+    for my $job_id (keys %{$jobs}) {
+        return $self->get_cron()->delete($job_id) if ($jobs->{$job_id}->{name} eq $job_name);
+    }
+
+    return 0;
+}
+
 sub start {
     my $self = shift;
 

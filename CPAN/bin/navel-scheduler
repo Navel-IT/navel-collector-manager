@@ -76,8 +76,8 @@ EOF
 sub ok_ko($$$) {
     my ($logger, $ok, $ko) = @_;
 
-    $logger->good($ok, 'notice') if (defined $ok);
-    $logger->bad($ko, 'notice') if (defined $ko);
+    $logger->good($ok . '.', 'notice') if (defined $ok);
+    $logger->bad($ko . '.', 'notice') if (defined $ko);
 
     return {
         ok => $ok,
@@ -211,9 +211,9 @@ if (defined $general_configuration_file_path) {
                                 }
                             }
                         )) {
-                            $ok = ucfirst($property) . ' of webservices successfully changed.';
+                            $ok = ucfirst($property) . ' of webservices successfully changed';
                         } else {
-                            $ko = 'An error occurred while modifying ' . $property . ' of webservices.';
+                            $ko = 'An error occurred while modifying ' . $property . ' of webservices';
                         }
                     } else {
                         $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
@@ -258,7 +258,7 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
-                                    $ok = 'Connector ' . $definition_name . ' successfuly added and registered.';
+                                    $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
                                 } else {
                                     $ko = $@;
                                 }
@@ -286,7 +286,27 @@ if (defined $general_configuration_file_path) {
                             # modify a resource here
                         }
                         when ('DEL') {
-                            # delete a resource here
+                            my $connector_name = $controller->param('connector');
+
+                            my ($ok, $ko);
+
+                            if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
+                                eval {
+                                    $scheduler->get_core()->get_connectors()->delete_definition($connector_name);
+                                };
+
+                                unless ($@) {
+                                    $ok = 'Connector ' . $connector_name . ' successfuly unregistered and deleted';
+                                } else {
+                                    $ko = $@;
+                                }
+                            } else {
+                                $ko = 'Connector ' . $connector_name . " don't exists";
+                            }
+
+                            $controller->render(
+                                json => ok_ko($logger, $ok, $ko)
+                            );
                         }
                         default {
                             $controller->render(
