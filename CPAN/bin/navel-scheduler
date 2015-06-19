@@ -183,13 +183,13 @@ if (defined $general_configuration_file_path) {
                 put '/scheduler/api/general/webservices/(:property)' => [property => qr/(login|password)/] => sub {
                     my $controller = shift;
 
+                    my ($ok, $ko);
+
                     my $property = $controller->param('property');
 
                     my $body = eval {
                         decode_json($controller->req()->body());
                     };
-
-                    my ($ok, $ko);
 
                     if (hascontent($body->{$property})) {
                         my $scheduler_definition = $scheduler->get_configuration()->get_definition();
@@ -237,11 +237,11 @@ if (defined $general_configuration_file_path) {
 
                     given ($controller->req()->method()) {
                         when ('POST') {
+                            my ($ok, $ko);
+
                             my $body = eval {
                                 decode_json($controller->req()->body());
                             };
-
-                            my ($ok, $ko);
 
                             unless ($@) {
                                 my $definition_name = eval {
@@ -281,13 +281,39 @@ if (defined $general_configuration_file_path) {
                 any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
                     my $controller = shift;
 
+                    my $connector_name = $controller->param('connector');
+
                     given ($controller->req()->method()) {
                         when ('PUT') {
-                            # modify a resource here
+                            my ($ok, $ko);
+
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            unless ($@) {
+                                my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
+
+                                if (defined $connector_definition) {
+                                    delete $body->{name};
+
+                                    if ($connector_definition->merge($body)) {
+                                        $ok = 'Connector ' . $connector_name . ' successfully changed';
+                                    } else {
+                                        $ko = 'An error occurred while modifying connector ' . $connector_name;
+                                    }
+                                } else {
+                                    $ko = 'Connector ' . $connector_name . " don't exists";
+                                }
+                            } else {
+                                $ko = $@;
+                            }
+
+                            $controller->render(
+                                json => ok_ko($logger, $ok, $ko)
+                            );
                         }
                         when ('DEL') {
-                            my $connector_name = $controller->param('connector');
-
                             my ($ok, $ko);
 
                             if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
@@ -310,7 +336,7 @@ if (defined $general_configuration_file_path) {
                         }
                         default {
                             $controller->render(
-                                json => $scheduler->get_core()->get_connectors()->get_properties_by_name($controller->param('connector')) || {}
+                                json => $scheduler->get_core()->get_connectors()->get_properties_by_name($connector_name) || {}
                             );
                         }
                     }

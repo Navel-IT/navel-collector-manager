@@ -106,7 +106,9 @@ sub set_definition {
 
         privasize($value);
 
-        return $self->{__definition} = $value;
+        $self->{__definition} = $value;
+        
+        return 1;
     }
 
     return 0;

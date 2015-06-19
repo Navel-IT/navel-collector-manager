@@ -96,12 +96,19 @@ sub new {
     );
 }
 
-sub set_generic {
-   return shift->SUPER::set_generic(
+sub merge {
+   return shift->SUPER::merge(
         \&rabbitmq_definition_validator,
-        shift,
         shift
    );
+}
+
+sub set_name {
+    return shift->merge(
+        {
+            name => shift
+        }
+    );
 }
 
 sub get_host {
@@ -109,7 +116,11 @@ sub get_host {
 }
 
 sub set_host {
-    return shift->set_generic('host', shift);
+    return shift->merge(
+        {
+            host => shift
+        }
+    );
 }
 
 sub get_port {
@@ -117,7 +128,11 @@ sub get_port {
 }
 
 sub set_port {
-    return shift->set_generic('port', shift);
+    return shift->merge(
+        {
+            port => shift
+        }
+    );
 }
 
 sub get_user {
@@ -125,7 +140,11 @@ sub get_user {
 }
 
 sub set_user {
-    return shift->set_generic('user', shift);
+    return shift->merge(
+        {
+            user => shift
+        }
+    );
 }
 
 sub get_password {
@@ -133,7 +152,11 @@ sub get_password {
 }
 
 sub set_password {
-    return shift->set_generic('password', shift);
+    return shift->merge(
+        {
+            password => shift
+        }
+    );
 }
 
 sub get_timeout {
@@ -141,7 +164,11 @@ sub get_timeout {
 }
 
 sub set_timeout {
-    return shift->set_generic('timeout', shift);
+    return shift->merge(
+        {
+            timeout => shift
+        }
+    );
 }
 
 sub get_vhost {
@@ -149,7 +176,11 @@ sub get_vhost {
 }
 
 sub set_vhost {
-    return shift->set_generic('vhost', shift);
+    return shift->merge(
+        {
+            vhost => shift
+        }
+    );
 }
 
 sub get_exchange {
@@ -157,7 +188,11 @@ sub get_exchange {
 }
 
 sub set_exchange {
-    return shift->set_generic('exchange', shift);
+    return shift->merge(
+        {
+            exchange => shift
+        }
+    );
 }
 
 sub get_routing_key {
@@ -165,7 +200,11 @@ sub get_routing_key {
 }
 
 sub set_routing_key {
-    return shift->set_generic('routing_key', shift);
+    return shift->merge(
+        {
+            routing_key => shift
+        }
+    );
 }
 
 sub get_delivery_mode {
@@ -173,7 +212,11 @@ sub get_delivery_mode {
 }
 
 sub set_delivery_mode {
-    return shift->set_generic('delivery_mode', shift);
+    return shift->merge(
+        {
+            delivery_mode => shift
+        }
+    );
 }
 
 sub get_scheduling {
@@ -181,7 +224,11 @@ sub get_scheduling {
 }
 
 sub set_scheduling {
-    return shift->set_generic('scheduling', shift);
+    return shift->merge(
+        {
+            scheduling => shift
+        }
+    );
 }
 
 # sub AUTOLOAD {}

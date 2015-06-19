@@ -63,34 +63,28 @@ sub get_original_properties {
     return $self_copy;
 }
 
-sub set_generic {
-    my ($self, $validator, $property, $value) = @_;
+sub merge {
+    my ($self, $validator, $properties_values) = @_;
 
     if ($validator->(
         {
             %{$self->get_properties()},
-            %{
-                {
-                    $property => $value
-                }
-            }
+            %{$properties_values}
         }
     )) {
-        $self->{$property} = $value;
-        
+        while (my ($property, $value) = each %{$properties_values}) {
+            $self->{'__' . $property} = $value;
+        }
+
         return 1;
     }
-    
+
     return 0;
 
 }
 
 sub get_name {
     return shift->{__name};
-}
-
-sub set_name {
-    return shift->set_generic('name', shift);
 }
 
 # sub AUTOLOAD {}

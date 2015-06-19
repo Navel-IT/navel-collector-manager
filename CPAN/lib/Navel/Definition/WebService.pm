@@ -84,9 +84,16 @@ sub new {
 sub set_generic {
    return shift->SUPER::set_generic(
         \&web_service_definition_validator,
-        shift,
         shift
    );
+}
+
+sub set_name {
+    return shift->merge(
+        {
+            name => shift
+        }
+    );
 }
 
 sub get_interface_mask {
@@ -94,7 +101,11 @@ sub get_interface_mask {
 }
 
 sub set_interface_mask {
-    return shift->set_generic('interface_mask', shift);
+    return shift->merge(
+        {
+            interface_mask => shift
+        }
+    );
 }
 
 sub get_port {
@@ -102,7 +113,11 @@ sub get_port {
 }
 
 sub set_port {
-    return shift->set_generic('port', shift);
+    return shift->merge(
+        {
+            port => shift
+        }
+    );
 }
 
 sub get_tls {
@@ -110,7 +125,11 @@ sub get_tls {
 }
 
 sub set_tls {
-    return shift->set_generic('tls', shift);
+    return shift->merge(
+        {
+            tls => shift
+        }
+    );
 }
 
 sub get_url {

@@ -97,12 +97,19 @@ sub new {
     );
 }
 
-sub set_generic {
-   return shift->SUPER::set_generic(
+sub merge {
+   return shift->SUPER::merge(
         \&connector_definition_validator,
-        shift,
         shift
    );
+}
+
+sub set_name {
+    return shift->merge(
+        {
+            name => shift
+        }
+    );
 }
 
 sub get_collection {
@@ -110,7 +117,11 @@ sub get_collection {
 }
 
 sub set_collection {
-    return shift->set_generic('collection', shift);
+    return shift->merge(
+        {
+            collection => shift
+        }
+    );
 }
 
 sub get_type {
@@ -126,7 +137,11 @@ sub is_type_json {
 }
 
 sub set_type {
-    return shift->set_generic('type', shift);
+    return shift->merge(
+        {
+            type => shift
+        }
+    );
 }
 
 sub get_singleton {
@@ -134,7 +149,11 @@ sub get_singleton {
 }
 
 sub set_singleton {
-    return shift->set_generic('singleton', shift);
+    return shift->merge(
+        {
+            singleton => shift
+        }
+    );
 }
 
 sub get_scheduling {
@@ -142,7 +161,11 @@ sub get_scheduling {
 }
 
 sub set_scheduling {
-    return shift->set_generic('scheduling', shift);
+    return shift->merge(
+        {
+            scheduling => shift
+        }
+    );
 }
 
 sub get_source {
@@ -150,7 +173,11 @@ sub get_source {
 }
 
 sub set_source {
-    return shift->set_generic('source', shift);
+    return shift->merge(
+        {
+            source => shift
+        }
+    );
 }
 
 sub get_input {
@@ -158,11 +185,23 @@ sub get_input {
 }
 
 sub set_input {
-    return shift->set_generic('input', shift);
+    return shift->merge(
+        {
+            input => shift
+        }
+    );
 }
 
 sub get_exec_directory_path {
     return shift->{__exec_directory_path};
+}
+
+sub set_exec_directory_path {
+    return shift->merge(
+        {
+            exec_directory_path => shift
+        }
+    );
 }
 
 sub get_exec_file_path {
