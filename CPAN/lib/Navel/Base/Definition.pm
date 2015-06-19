@@ -47,22 +47,6 @@ sub new {
     croak('definition is invalid');
 }
 
-sub set_generic {
-    my ($self, $validator, $property, $value) = @_;
-
-    $self = $self->new(
-        $validator,
-        {
-            %{$self->get_properties()},
-            %{{
-                $property => $value
-            }}
-        }
-    );
-
-    return $self;
-}
-
 sub get_properties {
     my $self_copy = unblessed(shift);
 
@@ -77,6 +61,28 @@ sub get_original_properties {
     exists $self_copy->{$_} || delete $self_copy->{$_} for (keys %{$original_properties});
 
     return $self_copy;
+}
+
+sub set_generic {
+    my ($self, $validator, $property, $value) = @_;
+
+    if ($validator->(
+        {
+            %{$self->get_properties()},
+            %{
+                {
+                    $property => $value
+                }
+            }
+        }
+    )) {
+        $self->{$property} = $value;
+        
+        return 1;
+    }
+    
+    return 0;
+
 }
 
 sub get_name {
