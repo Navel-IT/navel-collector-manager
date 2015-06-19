@@ -93,6 +93,7 @@ sub register_logger {
 
     $self->get_cron()->add(
         '* * * * * ?',
+        name => 'logger',
         single => 1,
         sub {
             $self->get_logger()->flush_queue(1);
@@ -110,6 +111,7 @@ sub register_connector {
     if (defined $connector) {
         return $self->get_cron()->add(
             $connector->get_scheduling(),
+            name => 'connector_' . $connector->get_name(),
             sub {
                 local ($@, $!);
 
@@ -225,6 +227,7 @@ sub register_publishers {
     for my $publisher (@{$self->get_publishers()}) {
         $self->get_cron()->add(
             $publisher->get_definition()->get_scheduling(),
+            name => 'publisher_' . $publisher->get_definition()->get_name(),
             single => 1,
             sub {
                 my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
