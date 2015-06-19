@@ -85,7 +85,7 @@ sub new {
         return bless $self, $class;
     }
 
-    croak('One or more objects are invalids.');
+    croak('one or more objects are invalids.');
 }
 
 sub register_logger {

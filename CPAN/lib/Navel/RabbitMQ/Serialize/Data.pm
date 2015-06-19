@@ -81,7 +81,7 @@ sub from($) {
         };
     }
 
-    croak('Some datas are incorrects');
+    croak('some datas are incorrects');
 }
 
 # sub AUTOLOAD {}

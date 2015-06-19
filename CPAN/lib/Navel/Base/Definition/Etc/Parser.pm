@@ -61,8 +61,6 @@ sub write {
 sub make_definition {
     my ($self, $raw_definition) = @_;
 
-    local $@;
-
     my $definition = eval {
         my $definition_package = $self->get_definition_package();
 
@@ -153,7 +151,7 @@ sub get_by_name {
 sub get_properties_by_name {
     my $definition = shift->get_by_name(shift);
 
-    return defined $definition ? $definition->get_properties() : undef
+    return defined $definition ? $definition->get_properties() : undef;
 }
 
 sub add_definition {
@@ -161,7 +159,7 @@ sub add_definition {
 
     my $definition = $self->make_definition($raw_definition);
 
-    if (defined $self->get_by_name($definition->get_name())) {
+    unless (defined $self->get_by_name($definition->get_name())) {
         push @{$self->get_definitions()}, $definition;
     } else {
         croak($self->get_definition_package() . ' : duplicate definition detected');

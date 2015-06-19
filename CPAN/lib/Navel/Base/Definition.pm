@@ -44,7 +44,7 @@ sub new {
         return bless $self, $class;
     }
 
-    croak('Definition is invalid');
+    croak('definition is invalid');
 }
 
 sub set_generic {

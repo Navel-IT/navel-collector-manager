@@ -52,10 +52,10 @@ sub new {
             }, $class;
         }
 
-        croak('Severity ' . $severity . ' is incorrect');
+        croak('severity ' . $severity . ' is incorrect');
     }
 
-    croak('Severity must be defined');
+    croak('severity must be defined');
 }
 
 sub does_it_log {

@@ -46,7 +46,7 @@ sub read {
             return $datas;
     }
 
-    croak('File path missing');
+    croak('file path missing');
 }
 
 # sub AUTOLOAD {}

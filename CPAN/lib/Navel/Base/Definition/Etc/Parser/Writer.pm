@@ -45,7 +45,7 @@ sub write {
         return $self;
     }
 
-    croak('File path missing');
+    croak('file path missing');
 }
 
 # sub AUTOLOAD {}

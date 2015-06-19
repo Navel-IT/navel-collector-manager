@@ -73,7 +73,7 @@ sub get_help() {
 EOF
 }
 
-sub get_messages_json($$) {
+sub ok_ko($$) {
     return {
         ok => shift,
         ko => shift
@@ -155,7 +155,7 @@ if (defined $general_configuration_file_path) {
                         $controller->res()->headers()->www_authenticate('Basic');
 
                         $controller->render(
-                            json => get_messages_json(undef, 'Unauthorized : access is denied due to invalid credentials'),
+                            json => ok_ko(undef, 'Unauthorized : access is denied due to invalid credentials'),
                             status => 401
                         );
 
@@ -184,9 +184,9 @@ if (defined $general_configuration_file_path) {
                         decode_json($controller->req()->body());
                     };
 
-                    if ( ! $@ && hascontent($body->{$property})) {
-                        my $message;
+                    my ($ok, $ko);
 
+                    if (hascontent($body->{$property})) {
                         my $scheduler_definition = $scheduler->get_configuration()->get_definition();
 
                         if ($scheduler->get_configuration()->set_definition(
@@ -206,23 +206,23 @@ if (defined $general_configuration_file_path) {
                                 }
                             }
                         )) {
-                            $message = ucfirst($property) . ' of webservices successfully changed.';
+                            $ok = ucfirst($property) . ' of webservices successfully changed.';
 
-                            $logger->good($message, 'notice');
-
-                            $controller->render(
-                                json => get_messages_json($message, undef)
-                            );
+                            $logger->good($ok, 'notice');
                         } else {
-                            $message = ucfirst($property) . ' of webservices successfully changed.';
+                            $ko = 'An error occurred while modifying ' . $property . ' of webservices.';
 
-                            $logger->bad($message, 'notice');
-
-                            $controller->render(
-                                json => get_messages_json(undef, $message)
-                            );
+                            $logger->bad($ko, 'notice');
                         }
+                    } else {
+                        $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
+
+                        $logger->bad($ko, 'notice');
                     }
+
+                    $controller->render(
+                        json => ok_ko($ok, $ko)
+                    );
                 };
 
                 get '/scheduler/api/cron/jobs' => sub {
@@ -238,7 +238,38 @@ if (defined $general_configuration_file_path) {
 
                     given ($controller->req()->method()) {
                         when ('POST') {
-                            # modify a resource here
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            my ($ok, $ko);
+
+                            unless ($@) {
+                                my $definition_name = eval {
+                                    $scheduler->get_core()->get_connectors()->add_definition(
+                                        {
+                                            %{$body},
+                                            %{
+                                                {
+                                                    exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+                                                }
+                                            }
+                                        }
+                                    );
+                                };
+
+                                unless ($@) {
+                                    $ok = 'Connector ' . $definition_name . ' added to runtime.';
+                                } else {
+                                    $ko = $@;
+                                }
+                            } else {
+                                $ko = $@;
+                            }
+
+                            $controller->render(
+                                json => ok_ko($ok, $ko)
+                            );
                         }
                         default {
                             $controller->render(
@@ -337,7 +368,7 @@ if (defined $general_configuration_file_path) {
                         );
                     } else {
                         $controller->render(
-                            json => get_messages_json(undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
+                            json => ok_ko(undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
                         );
                     }
                 };
