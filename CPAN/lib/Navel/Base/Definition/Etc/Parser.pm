@@ -168,7 +168,7 @@ sub add_definition {
     return $definition->get_name();
 }
 
-sub del_definition {
+sub delete_definition {
     my ($self, $definition_name) = @_;
 
     my $definitions = $self->get_definitions();
