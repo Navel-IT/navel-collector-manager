@@ -108,7 +108,7 @@ sub register_connector {
     my $connector = $self->get_connectors()->get_by_name($definition_name);
 
     if (defined $connector) {
-        $self->get_cron()->add(
+        return $self->get_cron()->add(
             $connector->get_scheduling(),
             sub {
                 local ($@, $!);
@@ -170,8 +170,6 @@ sub register_connector {
                 }
             }
         );
-
-        return 1;
     }
 
     return 0;
