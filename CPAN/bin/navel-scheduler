@@ -258,7 +258,7 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 unless ($@) {
-                                    $ok = 'Connector ' . $definition_name . ' successfuly added to runtime.';
+                                    $ok = 'Connector ' . $definition_name . ' successfuly added.';
                                 } else {
                                     $ko = $@;
                                 }
