@@ -73,6 +73,13 @@ sub get_help() {
 EOF
 }
 
+sub get_messages_json($$) {
+    return {
+        ok => shift,
+        ko => shift
+    };
+}
+
 #-> main
 
 Configure('bundling');
@@ -148,9 +155,7 @@ if (defined $general_configuration_file_path) {
                         $controller->res()->headers()->www_authenticate('Basic');
 
                         $controller->render(
-                            json => {
-                                error_message => 'Unauthorized : access is denied due to invalid credentials'
-                            },
+                            json => get_messages_json(undef, 'Unauthorized : access is denied due to invalid credentials'),
                             status => 401
                         );
 
@@ -179,10 +184,12 @@ if (defined $general_configuration_file_path) {
                         decode_json($controller->req()->body());
                     };
 
-                    if (hascontent($body->{$property})) {
+                    if ( ! $@ && hascontent($body->{$property})) {
+                        my $message;
+
                         my $scheduler_definition = $scheduler->get_configuration()->get_definition();
 
-                        $scheduler->get_configuration()->set_definition(
+                        if ($scheduler->get_configuration()->set_definition(
                             {
                                 %{$scheduler_definition},
                                 %{
@@ -198,17 +205,24 @@ if (defined $general_configuration_file_path) {
                                     }
                                 }
                             }
-                        )
-                        ?
-                            $logger->good(ucfirst($property) . ' of webservices successfully changed.', 'notice')
-                        :
-                            $logger->bad('Provided ' . $property . ' for webservices is incorrect.', 'notice')
-                        ;
-                    }
+                        )) {
+                            $message = ucfirst($property) . ' of webservices successfully changed.';
 
-                    $controller->render(
-                        json => $scheduler->get_configuration()->get_definition()
-                    );
+                            $logger->good($message, 'notice');
+
+                            $controller->render(
+                                json => get_messages_json($message, undef)
+                            );
+                        } else {
+                            $message = ucfirst($property) . ' of webservices successfully changed.';
+
+                            $logger->bad($message, 'notice');
+
+                            $controller->render(
+                                json => get_messages_json(undef, $message)
+                            );
+                        }
+                    }
                 };
 
                 get '/scheduler/api/cron/jobs' => sub {
@@ -224,7 +238,7 @@ if (defined $general_configuration_file_path) {
 
                     given ($controller->req()->method()) {
                         when ('POST') {
-                            # create a resource here
+                            # modify a resource here
                         }
                         default {
                             $controller->render(
@@ -323,9 +337,7 @@ if (defined $general_configuration_file_path) {
                         );
                     } else {
                         $controller->render(
-                            json => {
-                                error_message => 'Publisher ' . $controller->param('publisher') . " don't exists"
-                            }
+                            json => get_messages_json(undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
                         );
                     }
                 };
