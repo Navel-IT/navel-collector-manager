@@ -12,7 +12,8 @@ use warnings;
 
 use parent qw/
     Navel::Base
-    Navel::Base::Definition::Etc::Parser::Loader
+    Navel::Base::Definition::Etc::Parser::Reader
+    Navel::Base::Definition::Etc::Parser::Writer
 /;
 
 use Exporter::Easy (
@@ -71,14 +72,20 @@ sub new {
     }, ref $class || $class;
 }
 
-sub load {
-    my ($self, $file_path) = @_;
+sub read {
+    my $self = shift;
 
-    my $return = $self->SUPER::load($file_path);
+    $self->set_definition($self->SUPER::read(shift));
 
-    $self->set_definition($return->[1]) if ($return->[0]);
+    return $self;
+}
 
-    return $return;
+sub write {
+    my $self = shift;
+
+    $self->SUPER::write(shift, $self->get_definitions());
+
+    return $self;
 }
 
 sub get_definition {

@@ -62,7 +62,8 @@ WriteMakefile(
         'Mojolicious' => 0
     },
     TEST_REQUIRES => {
-        'Test::More' => 0
+        'Test::More' => 0,
+        'Test::Exception' => 0
     },
     EXE_FILES => ['bin/navel-scheduler'],
     test => {

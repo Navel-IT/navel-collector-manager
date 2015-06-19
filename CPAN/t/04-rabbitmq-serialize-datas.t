@@ -10,14 +10,19 @@ use warnings;
 
 use Test::More;
 
+use Test::Exception;
+
 BEGIN {
     use_ok('Navel::RabbitMQ::Serialize::Data', ':all');
 }
 
 #-> main
 
-my $return = eval {
-    to(
+my $serialized;
+
+
+if (lives_ok {
+    $serialized = to(
         Navel::Definition::Connector->new(
             {
                 name => 'test-1',
@@ -35,10 +40,11 @@ my $return = eval {
             b => 1
         }
     );
-};
-
-
-ok(from($return->[1])->[0], 'from() : deserialize datas') if (ok($return->[0], 'to() : serialize datas'));
+} 'to() : serialize') {
+    lives_ok {
+        from($serialized);
+    } 'from() : deserialize';
+}
 
 done_testing();
 

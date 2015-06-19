@@ -40,6 +40,13 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
+our $ORIGINAL_PROPERTIES = [qw/
+    name
+    interface_mask
+    port
+    tls
+/];
+
 #-> functions
 
 sub web_service_definition_validator($) {

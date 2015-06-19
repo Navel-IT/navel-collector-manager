@@ -46,17 +46,19 @@ my $__serialize_log_and_push_in_queues = sub {
 
     my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
 
-    my $serialize = to(
-        $connector,
-        $datas
-    );
+    my $serialized = eval {
+        to(
+            $connector,
+            $datas
+        );
+    };
 
-    if ($serialize->[0]) {
+    unless ($@) {
         $logger->good($generic_message . '.', 'info');
 
-        map { $_->push_in_queue($serialize->[1]) } @{$publishers};
+        map { $_->push_in_queue($serialized) } @{$publishers};
     } else {
-        $logger->bad($generic_message . ' failed.', 'err');
+        $logger->bad($generic_message . ' failed : ' . $@ . ' .', 'err');
     }
 };
 
@@ -308,10 +310,10 @@ sub get_publishers {
 }
 
 sub get_publisher_by_definition_name {
-    my ($self, $name) = @_;
+    my ($self, $definition_name) = @_;
 
     for (@{$self->get_publishers()}) {
-        return $_ if ($_->get_definition()->get_name() eq $name);
+        return $_ if ($_->get_definition()->get_name() eq $definition_name);
     }
 
     return undef;

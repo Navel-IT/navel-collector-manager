@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Base::Definition::Etc::Parser::Loader;
+package Navel::Base::Definition::Etc::Parser::Writer;
 
 use strict;
 use warnings;
@@ -33,19 +33,16 @@ our $VERSION = 0.1;
 
 #-> methods
 
-sub load {
-    my ($self, $file_path) = @_;
-    
-    local $@;
+sub write {
+    my ($self, $file_path, $definitions) = @_;
 
     if (hascontent($file_path)) {
-            my $json = eval {
-                decode_json(
-                    scalar read_file($file_path)
-                );
-            };
+        write_file(
+            $file_path,
+            encode_json_pretty($definitions)
+        );
 
-            return $@ ? [0, 'JSON decode failed for file ' . $file_path . ' : ' . $@] : [1, $json];
+        return $self;
     }
 
     croak('File path missing');
@@ -65,7 +62,7 @@ __END__
 
 =head1 NAME
 
-Navel::Base::Definition::Etc::Parser::Loader
+Navel::Base::Definition::Etc::Parser::Writer
 
 =head1 AUTHOR
 

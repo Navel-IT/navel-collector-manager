@@ -12,7 +12,13 @@ use warnings;
 
 use parent qw/
     Navel::Base
-    Navel::Base::Definition::Etc::Parser::Loader
+    Navel::Base::Definition::Etc::Parser::Reader
+    Navel::Base::Definition::Etc::Parser::Writer
+/;
+
+use Carp qw/
+    carp
+    croak
 /;
 
 use List::MoreUtils qw/
@@ -31,69 +37,73 @@ sub new {
     my ($class, $definition_package, $do_not_need_at_least_one) = @_;
 
     return bless {
-        __do_not_need_at_least_one => 0,
-        __definition_package = $definition_package,
+        __definition_package => $definition_package,
+        __do_not_need_at_least_one => $do_not_need_at_least_one,
         __raw => [],
         __definitions => []
     }, ref $class || $class;
 }
 
-sub load {
-    my ($self, $file_path) = @_;
+sub read {
+    my $self = shift;
 
-    my $return = $self->SUPER::load($file_path);
-
-    $self->__set_raw($return->[1]) if ($return->[0]);
-
-    return $return;
+    return $self->__set_raw($self->SUPER::read(shift));
 }
+
+sub write {
+    my $self = shift;
+
+    $self->SUPER::write(shift, [map { $_->get_original_properties(eval '$' . $self->get_definition_package() . '::ORIGINAL_PROPERTIES') } $self->get_definitions()]);
+
+    return $self;
+}
+
+sub make_definition {
+    my ($self, $raw_definition) = @_;
+
+    local $@;
+
+    my $definition = eval {
+        my $definition_package = $self->get_definition_package();
+
+        $definition_package->new($raw_definition);
+    };
+
+    $@ ? croak($self->get_definition_package() . ' : ' . $@) : return $definition;
+};
 
 sub make {
     my ($self, $extra_parameters) = @_;
-
-    local $@;
 
     if (eval 'require ' . $self->get_definition_package()) {
         if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $self->get_do_not_need_at_least_one()) {
             my (@definitions, @names);
 
             for my $parameters (@{$self->get_raw()}) {
-                my $connector = eval {
-                    my $definition_package = $self->get_definition_package();
+                my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$parameters}, %{$extra_parameters} } : $parameters);
 
-                    $definition_package->new(reftype($extra_parameters) eq 'HASH' ? { %{$parameters}, %{$extra_parameters} } : $parameters);
-                };
+                push @definitions, $definition;
 
-                unless ($@) {
-                    push @definitions, $connector;
-
-                    push @names, $connector->get_name();
-                } else {
-                    return [0, $self->get_definition_package() . ' : one or more definitions are invalids'];
-                }
+                push @names, $definition->get_name();
             }
 
-            if (@names == uniq(@names)) {
-                $self->__set_definitions(\@definitions);
-
-                return [1, undef];
-            } else {
-                return [0, $self->get_definition_package() . ' : duplicate definition detected']
-            }
+            @names == uniq(@names) ? $self->__set_definitions(\@definitions) : croak($self->get_definition_package() . ' : duplicate definition detected');
         } else {
-            return [0, $self->get_definition_package() . ' : raw datas need to exists and to be encapsulated in an array'];
+            croak($self->get_definition_package() . ' : raw datas need to exists and to be encapsulated in an array');
         }
     } else {
-        return [0, $self->get_definition_package() . ' : require failed'];
+        croak($self->get_definition_package() . ' : require failed');
     }
-}
 
-sub get_do_not_need_at_least_one {
-    return shift->{__do_not_need_at_least_one};
+    return $self;
 }
 
 sub get_definition_package {
     return shift->{__definition_package};
+}
+
+sub get_do_not_need_at_least_one {
+    return shift->{__do_not_need_at_least_one};
 }
 
 sub get_raw {
@@ -131,10 +141,10 @@ sub get_names {
 }
 
 sub get_by_name {
-    my ($self, $name) = @_;
+    my ($self, $definition_name) = @_;
 
     for (@{$self->get_definitions()}) {
-        return $_ if ($_->get_name() eq $name);
+        return $_ if ($_->get_name() eq $definition_name);
     }
 
     return undef;
@@ -144,6 +154,40 @@ sub get_properties_by_name {
     my $definition = shift->get_by_name(shift);
 
     return defined $definition ? $definition->get_properties() : undef
+}
+
+sub add_definition {
+    my ($self, $raw_definition) = @_;
+
+    my $definition = $self->make_definition($raw_definition);
+
+    if (defined $self->get_by_name($definition->get_name())) {
+        push @{$self->get_definitions()}, $definition;
+    } else {
+        croak($self->get_definition_package() . ' : duplicate definition detected');
+    }
+
+    return $self;
+}
+
+sub del_definition {
+    my ($self, $definition_name) = @_;
+
+    my $definitions = $self->get_definitions();
+
+    my $definition_to_delete_index = 0;
+
+    my $finded;
+
+    $definition_to_delete_index++ until ($finded = $definitions->[$definition_to_delete_index]->get_name() eq $definition_name);
+
+    if ($finded) {
+        splice @{$definitions}, $definition_to_delete_index, 1;
+    } else {
+        croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
+    }
+
+    return $self;
 }
 
 # sub AUTOLOAD {}

@@ -36,6 +36,20 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
+our $ORIGINAL_PROPERTIES = [qw/
+    name
+    host
+    port
+    user
+    password
+    timeout
+    vhost
+    exchange
+    routing_key
+    delivery_mode
+    scheduling
+/];
+
 #-> functions
 
 sub rabbitmq_definition_validator($) {

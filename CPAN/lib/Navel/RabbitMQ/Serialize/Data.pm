@@ -26,6 +26,11 @@ use Exporter::Easy (
     ]
 );
 
+use Carp qw/
+    carp
+    croak
+/;
+
 use String::Util qw/
     hascontent
 /;
@@ -53,41 +58,30 @@ sub to($$) {
 
     publicize($connector);
 
-    my $json = encode_json(
+    return encode_json(
         {
             connector => $connector,
             time => time,
             datas => $datas
         }
     );
-
-    return [1, $json];
 }
 
 sub from($) {
-    my $json = shift;
-    
-    local $@;
+    my $serialized = shift;
 
-    my $datas = eval {
-        decode_json($json);
-    };
+    my $datas = decode_json($serialized);
 
-    unless ($@) {
-        if (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && isint($datas->{time}) && exists $datas->{datas}) {
-            return [
-                1,
-                {
-                    connector => Navel::Definition::Connector->new(
-                        $datas->{connector}
-                    ),
-                    datas => $datas->{datas}
-                }
-            ];
-        }
+    if (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && isint($datas->{time}) && exists $datas->{datas}) {
+        return {
+            connector => Navel::Definition::Connector->new(
+                $datas->{connector}
+            ),
+            datas => $datas->{datas}
+        };
     }
 
-    return [0, 'Some datas are incorrects'];
+    croak('Some datas are incorrects');
 }
 
 # sub AUTOLOAD {}

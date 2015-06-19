@@ -50,29 +50,33 @@ sub new {
 sub set_generic {
     my ($self, $validator, $property, $value) = @_;
 
-    local $@;
+    $self = $self->new(
+        $validator,
+        {
+            %{$self->get_properties()},
+            %{{
+                $property => $value
+            }}
+        }
+    );
 
-    eval {
-        $self = $self->new(
-            $validator,
-            {
-                %{$self->get_properties()},
-                %{{
-                    $property => $value
-                }}
-            }
-        );
-    };
-
-    return $@;
+    return $self;
 }
 
 sub get_properties {
-    my $self = unblessed(shift);
+    my $self_copy = unblessed(shift);
 
-    publicize($self);
+    publicize($self_copy);
 
-    return $self;
+    return $self_copy;
+}
+
+sub get_original_properties {
+    my ($self_copy, $original_properties) = (shift->get_properties(), shift);
+
+    exists $self_copy->{$_} || delete $self_copy->{$_} for (keys %{$original_properties});
+
+    return $self_copy;
 }
 
 sub get_name {

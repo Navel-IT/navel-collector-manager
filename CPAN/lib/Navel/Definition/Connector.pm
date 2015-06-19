@@ -41,6 +41,16 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
+our $ORIGINAL_PROPERTIES = [qw/
+    name
+    collection
+    type
+    singleton
+    scheduling
+    source
+    input
+/];
+
 #-> functions
 
 sub connector_definition_validator($) {

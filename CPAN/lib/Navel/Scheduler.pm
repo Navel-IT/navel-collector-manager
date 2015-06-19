@@ -55,20 +55,12 @@ sub new {
     my ($class, $configuration_path) = @_;
 
     if (hascontent($configuration_path)) {
-        my $configuration = Navel::Scheduler::Etc::Parser->new();
+        $class = ref $class || $class;
 
-        my $return = $configuration->load($configuration_path);
-
-        if ($return->[0]) {
-            $class = ref $class || $class;
-
-            return bless {
-                __core => undef,
-                __configuration => $configuration
-            }, $class;
-        }
-
-        croak($return->[1]);
+        return bless {
+            __core => undef,
+            __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)
+        }, $class;
     } else {
         croak('<general>.json path is missing');
     }
@@ -77,35 +69,19 @@ sub new {
 sub run {
     my ($self, $logger) = @_;
 
-    my $connectors = Navel::Definition::Connector::Etc::Parser->new();
-
-    my $return = $connectors->load($self->get_configuration()->get_definition()->{definitions_path}->{connectors});
-
-    if ($return->[0]) {
-        $return = $connectors->make(
-            {
-                exec_directory_path => $self->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
-            }
-        );
-
-        if ($return->[0]) {
-            my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new();
-
-            $return = $rabbitmq->load($self->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
-
-            if ($return->[0]) {
-                $return = $rabbitmq->make();
-
-                if ($return->[0]) {
-                    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
-
-                    $self->get_core()->register_logger()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
-                }
-            }
+    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{definitions_path}->{connectors})->make(
+        {
+            exec_directory_path => $self->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
         }
-    }
+    );
 
-    croak($return->[1]);
+    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{definitions_path}->{rabbitmq})->make();
+
+    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
+
+    $self->get_core()->register_logger()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
+
+    return $self;
 }
 
 sub get_core {

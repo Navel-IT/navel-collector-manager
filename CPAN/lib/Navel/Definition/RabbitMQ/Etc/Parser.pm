@@ -23,7 +23,7 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    return shift->SUPER::new('Navel::Definition::RabbitMQ');
+    return shift->SUPER::new('Navel::Definition::RabbitMQ', 0);
 }
 
 sub get_hosts {

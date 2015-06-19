@@ -8,7 +8,9 @@
 use strict;
 use warnings;
 
-use Test::More;
+use Test::More tests => 2;
+
+use Test::Exception;
 
 BEGIN {
     use_ok('Navel::Definition::WebService::Etc::Parser');
@@ -18,17 +20,9 @@ BEGIN {
 
 my $web_services_definitions_path = 't/02-webservices.json';
 
-my $web_services_listeners = Navel::Definition::WebService::Etc::Parser->new();
-
-my $return = $web_services_listeners->load($web_services_definitions_path);
-
-if (ok($return->[0], 'load() : loading definition from ' . $web_services_definitions_path)) {
-    my $return = $web_services_listeners->make();
-
-    ok($return->[0], 'make() : making definitions');
-}
-
-done_testing();
+lives_ok {
+    Navel::Definition::WebService::Etc::Parser->new()->read($web_services_definitions_path)->make();
+} 'making configuration from ' . $web_services_definitions_path;
 
 #-> END
 
