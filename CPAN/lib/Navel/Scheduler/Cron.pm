@@ -102,12 +102,12 @@ sub register_logger {
     return $self;
 }
 
-sub register_connectors {
-    my $self = shift;
+sub register_connector {
+    my ($self, $definition_name) = @_;
 
-    for my $connector (@{$self->get_connectors()->get_definitions()}) {
-        $self->get_locks()->{$connector->get_name()} = 0;
+    my $connector = $self->get_connectors()->get_by_name($definition_name);
 
+    if (defined $connector) {
         $self->get_cron()->add(
             $connector->get_scheduling(),
             sub {
@@ -170,7 +170,17 @@ sub register_connectors {
                 }
             }
         );
+
+        return 1;
     }
+
+    return 0;
+}
+
+sub register_connectors {
+    my $self = shift;
+
+    $self->register_connector($_->get_name()) for (@{$self->get_connectors()->get_definitions()});
 
     return $self;
 }
