@@ -257,8 +257,8 @@ if (defined $general_configuration_file_path) {
                                     );
                                 };
 
-                                unless ($@) {
-                                    $ok = 'Connector ' . $definition_name . ' successfuly added.';
+                                if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
+                                    $ok = 'Connector ' . $definition_name . ' successfuly added and registered.';
                                 } else {
                                     $ko = $@;
                                 }
@@ -498,6 +498,6 @@ AVGtTAdPrkt3T61L30+tS/1PrUv/T61L/0+tS/1PrUvfT61Ld1GtTAf///8B////Af///wH///8B
 @@ exception.html.ep
 <!DOCTYPE html>
 <html>
-    <head><title>Unexcepted error</title><head>
-    <body>Unexcepted error : please report bugs !</body>
+    <head><title>Unexpected error</title><head>
+    <body>Unexpected error : please report bugs !</body>
 </html>

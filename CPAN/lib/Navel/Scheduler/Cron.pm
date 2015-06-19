@@ -103,9 +103,9 @@ sub register_logger {
 }
 
 sub register_connector {
-    my ($self, $definition_name) = @_;
+    my $self = shift;
 
-    my $connector = $self->get_connectors()->get_by_name($definition_name);
+    my $connector = $self->get_connectors()->get_by_name(shift);
 
     if (defined $connector) {
         return $self->get_cron()->add(
