@@ -41,7 +41,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our $ORIGINAL_PROPERTIES = [qw/
+our @ORIGINAL_PROPERTIES = qw/
     name
     collection
     type
@@ -49,7 +49,7 @@ our $ORIGINAL_PROPERTIES = [qw/
     scheduling
     source
     input
-/];
+/;
 
 #-> functions
 
@@ -102,6 +102,10 @@ sub merge {
         \&connector_definition_validator,
         shift
    );
+}
+
+sub get_original_properties {
+    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {

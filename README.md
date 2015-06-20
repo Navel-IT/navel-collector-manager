@@ -33,7 +33,7 @@ The following routes are currently availables :
 
 ```
 /scheduler/api    GET
-/scheduler/api/general    GET
+/scheduler/api/general(?action=/^write_configuration$/)    GET
 /scheduler/api/general/webservices/login    PUT
 /scheduler/api/general/webservices/password    PUT
 /scheduler/api/cron/jobs    GET
@@ -42,7 +42,7 @@ The following routes are currently availables :
 /scheduler/api/rabbitmq    GET, POST
 /scheduler/api/rabbitmq/(:rabbitmq)    GET, PUT, DEL
 /scheduler/api/publishers    GET
-/scheduler/api/publishers/(:publisher)    GET
+/scheduler/api/publishers/(:publisher)(?action=/^(clear_queue|connect|disconnect)$/)    GET
 /scheduler/api/webservices    GET
 /scheduler/api/webservices/(:webservice)    GET
 ```

@@ -53,7 +53,14 @@ sub read {
 sub write {
     my $self = shift;
 
-    $self->SUPER::write(shift, [map { $_->get_original_properties(eval '$' . $self->get_definition_package() . '::ORIGINAL_PROPERTIES') } $self->get_definitions()]);
+    $self->SUPER::write(
+        shift,
+        [
+            map {
+                $_->get_original_properties(eval '$' . $self->get_definition_package() . '::ORIGINAL_PROPERTIES')
+            } @{$self->get_definitions()}
+        ]
+    );
 
     return $self;
 }

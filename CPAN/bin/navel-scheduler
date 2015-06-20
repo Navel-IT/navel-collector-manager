@@ -168,10 +168,40 @@ if (defined $general_configuration_file_path) {
                     }
                 };
 
-                get '/scheduler/api' => {
-                    json => {
-                        version => $VERSION
+                get '/scheduler/api' => sub {
+                    my $controller = shift;
+
+                    my $action = $controller->req()->query_params()->param('action') || '';
+
+                    if ($action eq 'write_configuration') {
+                        my ($ok, $ko);
+
+                        eval {
+                            $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
+
+                            $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors});
+
+                            $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
+
+                            $scheduler->get_configuration()->write($general_configuration_file_path);
+                        };
+
+                        unless ($@) {
+                            $ok = 'Runtime configuration successfully saved';
+                        } else {
+                            $ko = 'Cannot save the runtime configuration : ' . $@;
+                        }
+
+                        return $controller->render(
+                            json => ok_ko($logger, $ok, $ko)
+                        );
                     }
+
+                    $controller->render(
+                        json => {
+                            version => $VERSION
+                        }
+                    );
                 };
 
                 get '/scheduler/api/general' => sub {

@@ -36,7 +36,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our $ORIGINAL_PROPERTIES = [qw/
+our @ORIGINAL_PROPERTIES = qw/
     name
     host
     port
@@ -48,7 +48,7 @@ our $ORIGINAL_PROPERTIES = [qw/
     routing_key
     delivery_mode
     scheduling
-/];
+/;
 
 #-> functions
 
@@ -101,6 +101,10 @@ sub merge {
         \&rabbitmq_definition_validator,
         shift
    );
+}
+
+sub get_original_properties {
+    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {

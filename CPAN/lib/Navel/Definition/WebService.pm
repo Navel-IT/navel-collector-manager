@@ -40,12 +40,12 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our $ORIGINAL_PROPERTIES = [qw/
+our @ORIGINAL_PROPERTIES = qw/
     name
     interface_mask
     port
     tls
-/];
+/;
 
 #-> functions
 
@@ -81,11 +81,15 @@ sub new {
     );
 }
 
-sub set_generic {
-   return shift->SUPER::set_generic(
+sub merge {
+   return shift->SUPER::merge(
         \&web_service_definition_validator,
         shift
    );
+}
+
+sub get_original_properties {
+    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {

@@ -83,7 +83,7 @@ sub read {
 sub write {
     my $self = shift;
 
-    $self->SUPER::write(shift, $self->get_definitions());
+    $self->SUPER::write(shift, $self->get_definition());
 
     return $self;
 }
@@ -107,7 +107,7 @@ sub set_definition {
         privasize($value);
 
         $self->{__definition} = $value;
-        
+
         return 1;
     }
 

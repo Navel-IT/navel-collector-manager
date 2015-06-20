@@ -58,7 +58,7 @@ sub get_properties {
 sub get_original_properties {
     my ($self_copy, $original_properties) = (shift->get_properties(), shift);
 
-    exists $self_copy->{$_} || delete $self_copy->{$_} for (keys %{$original_properties});
+    exists $self_copy->{$_} || delete $self_copy->{$_} for (@{$original_properties});
 
     return $self_copy;
 }
