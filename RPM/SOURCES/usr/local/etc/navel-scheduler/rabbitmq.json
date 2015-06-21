@@ -1,15 +1,1 @@
-[
-    {
-        "name" : "rabbitmq-1",
-        "host" : "localhost",
-        "port" : 5672,
-        "user" : "guest",
-        "password" : "guest",
-        "timeout" : 0,
-        "vhost" : "/",
-        "exchange" : "navel-scheduler.E.direct.events",
-        "routing_key" : "navel-scheduler.collections",
-        "delivery_mode" : 2,
-        "scheduling" : "*/15 * * * * ?"
-    }
-]
+[]

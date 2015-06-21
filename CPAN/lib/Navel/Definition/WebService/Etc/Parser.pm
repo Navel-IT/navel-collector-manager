@@ -23,7 +23,7 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    return shift->SUPER::new('Navel::Definition::WebService', 0);
+    return shift->SUPER::new('Navel::Definition::WebService', 1);
 }
 
 sub get_interface_masks {
