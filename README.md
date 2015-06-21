@@ -5,7 +5,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
 
-**Must work on all Unix-like platforms but only tested on RHEL/CentOS (6+).**
+**Must work on all Linux (perhaps Unix) platforms but only tested on RHEL/CentOS 6.x.**
 
 Build it
 --------
@@ -34,8 +34,7 @@ The following routes are currently availables :
 ```
 /scheduler/api    GET
 /scheduler/api/general(?action=/^write_configuration$/)    GET
-/scheduler/api/general/webservices/login    PUT
-/scheduler/api/general/webservices/password    PUT
+/scheduler/api/general/webservices    PUT
 /scheduler/api/cron/jobs    GET
 /scheduler/api/connectors    GET, POST
 /scheduler/api/connectors/(:connector)    GET, PUT, DEL

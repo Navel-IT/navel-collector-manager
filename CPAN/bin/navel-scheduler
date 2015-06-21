@@ -211,43 +211,41 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    put '/scheduler/api/general/webservices/(:property)' => [property => qr/(login|password)/] => sub {
+                    put '/scheduler/api/general/webservices' => sub {
                         my $controller = shift;
 
                         my ($ok, $ko);
-
-                        my $property = $controller->param('property');
 
                         my $body = eval {
                             decode_json($controller->req()->body());
                         };
 
-                        if (hascontent($body->{$property})) {
-                            my $scheduler_definition = $scheduler->get_configuration()->get_definition();
+                        unless ($@) {
+                            if (ref $body eq 'HASH') {
+                                my $scheduler_definition = $scheduler->get_configuration()->get_definition();
 
-                            if ($scheduler->get_configuration()->set_definition(
-                                {
-                                    %{$scheduler_definition},
-                                    %{
-                                        {
-                                            webservices => {
-                                                %{$scheduler_definition->{webservices}},
-                                                %{
-                                                    {
-                                                        $property => $body->{$property}
-                                                    }
+                                if ($scheduler->get_configuration()->set_definition(
+                                    {
+                                        %{$scheduler_definition},
+                                        %{
+                                            {
+                                                webservices => {
+                                                    %{$scheduler_definition->{webservices}},
+                                                    %{$body}
                                                 }
                                             }
                                         }
                                     }
+                                )) {
+                                    $ok = 'Credentials of webservices successfully changed';
+                                } else {
+                                    $ko = 'An error occurred while modifying the credentials of webservices';
                                 }
-                            )) {
-                                $ok = ucfirst($property) . ' of webservices successfully changed';
                             } else {
-                                $ko = 'An error occurred while modifying ' . $property . ' of webservices';
+                                $ko = 'Body need to be a hashtable';
                             }
                         } else {
-                            $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
+                            $ko = $@;
                         }
 
                         $controller->render(
@@ -275,23 +273,27 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 unless ($@) {
-                                    my $definition_name = eval {
-                                        $scheduler->get_core()->get_connectors()->add_definition(
-                                            {
-                                                %{$body},
-                                                %{
-                                                    {
-                                                        exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+                                    if ($body eq 'HASH') {
+                                        my $definition_name = eval {
+                                            $scheduler->get_core()->get_connectors()->add_definition(
+                                                {
+                                                    %{$body},
+                                                    %{
+                                                        {
+                                                            exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+                                                        }
                                                     }
                                                 }
-                                            }
-                                        );
-                                    };
+                                            );
+                                        };
 
-                                    if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
-                                        $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
+                                        if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
+                                            $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
+                                        } else {
+                                            $ko = $@;
+                                        }
                                     } else {
-                                        $ko = $@;
+                                        $ko = 'Body need to be a hashtable';
                                     }
                                 } else {
                                     $ko = $@;
@@ -323,18 +325,22 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 unless ($@) {
-                                    my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
+                                    if ($body eq 'HASH') {
+                                        my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
 
-                                    if (defined $connector_definition) {
-                                        delete $body->{name};
+                                        if (defined $connector_definition) {
+                                            delete $body->{name};
 
-                                        if ($connector_definition->merge($body)) {
-                                            $ok = 'Connector ' . $connector_name . ' successfully changed';
+                                            if ($connector_definition->merge($body)) {
+                                                $ok = 'Connector ' . $connector_name . ' successfully changed';
+                                            } else {
+                                                $ko = 'An error occurred while modifying connector ' . $connector_name;
+                                            }
                                         } else {
-                                            $ko = 'An error occurred while modifying connector ' . $connector_name;
+                                            $ko = 'Connector ' . $connector_name . " don't exists";
                                         }
                                     } else {
-                                        $ko = 'Connector ' . $connector_name . " don't exists";
+                                        $ko = 'Body need to be a hashtable';
                                     }
                                 } else {
                                     $ko = $@;
