@@ -12,7 +12,7 @@ Build it
 
 CPAN : `build_cpan_archive.sh <version>`
 
-RPM : `build_cpan_archive.sh <version> <release>`
+RPM : `build_rpm_archive.sh <version> <release>`
 
 Install it
 ----------
