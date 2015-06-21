@@ -14,10 +14,9 @@ use String::Util qw/
     hascontent
 /;
 
-use Getopt::Long qw/
-    Configure
-    GetOptions
-/;
+use Getopt::Long;
+
+use Pod::Usage;
 
 use Proc::Daemon;
 
@@ -56,23 +55,6 @@ my $pid_dir = '/var/run';
 
 #-> functions
 
-sub get_help() {
-    return <<EOF;
-
-        -h, --help    show help
-        -v, --version    show version
-
-        -c, --general-configuration-file-path <F>    load general configuration from <F>
-
-        [--log-file-path] <F>   log informations in file <F>
-        [--log-severity] <F>    set severity (syslog format) to <F>
-
-        [--no-rest]   disable the REST api
-
-        [--daemonize]   run as a standalone daemon (only work on Unix-like systems)
-EOF
-}
-
 sub ok_ko($$$) {
     my ($logger, $ok, $ko) = @_;
 
@@ -87,13 +69,13 @@ sub ok_ko($$$) {
 
 #-> main
 
-Configure('bundling');
+my $getopts = Getopt::Long::Parser->new();
 
-GetOptions(
+$getopts->configure('bundling');
+
+$getopts->getoptions(
     'h|help' => sub {
-        say get_help();
-
-        exit 0;
+        pod2usage(0);
     },
     'v|version' => sub {
         say $VERSION;
@@ -106,7 +88,7 @@ GetOptions(
     'no-rest' => \$disable_rest,
     'daemonize' => \$daemonize
 
-) || die $!;
+) || pod2usage(1);
 
 if (defined $general_configuration_file_path) {
     my $logger = Navel::Logger->new(
@@ -511,9 +493,7 @@ if (defined $general_configuration_file_path) {
         exit 1;
     }
 } else {
-    say get_help();
-
-    exit 1;
+    pod2usage(1);
 }
 
 exit 0;
@@ -524,15 +504,28 @@ exit 0;
 
 =head1 NAME
 
-navel-scheduler
+navel-scheduler - Control and run Navel::Scheduler
 
 =head1 SYNOPSIS
 
-Control and run Navel::Scheduler
+navel-scheduler [options]
 
-=head1 USAGE
+ Options :
+     -h, --help    show help
+     -v, --version    show version
 
-navel-scheduler -h
+     -c, --general-configuration-file-path <F>    load general configuration from <F>
+
+     [--log-file-path] <F>   log informations in file <F>
+     [--log-severity] <F>    set severity (syslog format) to <F>
+
+     [--no-rest]   disable the REST api
+
+     [--daemonize]   run as a standalone daemon (only work on Unix-like systems)
+
+=head1 DESCRIPTION
+
+navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
 
 =head1 AUTHOR
 
