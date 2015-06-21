@@ -34,17 +34,13 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $validator, $parameters) = @_;
 
-    if ($validator->($parameters)) {
-        my $self = dclone($parameters);
+    croak('definition is invalid') unless ($validator->($parameters));
 
-        privasize($self);
+    my $self = dclone($parameters);
 
-        $class = ref $class || $class;
+    privasize($self);
 
-        return bless $self, $class;
-    }
-
-    croak('definition is invalid');
+    bless $self, ref $class || $class;
 }
 
 sub get_properties {
@@ -52,7 +48,7 @@ sub get_properties {
 
     publicize($self_copy);
 
-    return $self_copy;
+    $self_copy;
 }
 
 sub get_original_properties {
@@ -60,7 +56,7 @@ sub get_original_properties {
 
     exists $self_copy->{$_} || delete $self_copy->{$_} for (@{$original_properties});
 
-    return $self_copy;
+    $self_copy;
 }
 
 sub merge {
@@ -78,13 +74,10 @@ sub merge {
 
         return 1;
     }
-
-    return 0;
-
 }
 
 sub get_name {
-    return shift->{__name};
+    shift->{__name};
 }
 
 # sub AUTOLOAD {}

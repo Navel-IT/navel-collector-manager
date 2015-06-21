@@ -73,21 +73,19 @@ sub new {
 
     $self->{__filehandler} ||= *STDOUT;
 
-    $class = ref $class || $class;
-
-    return bless $self, $class;
+    bless $self, ref $class || $class;
 }
 
 sub get_severity {
-    return shift->{__severity};
+    shift->{__severity};
 }
 
 sub get_file_path {
-    return shift->{__file_path};
+    shift->{__file_path};
 }
 
 sub get_filehandler {
-    return shift->{__filehandler};
+    shift->{__filehandler};
 }
 
 sub __set_filehandler {
@@ -99,7 +97,7 @@ sub on_stdout {
 
     $self->__set_filehandler(*STDOUT);
 
-    return $self;
+    $self;
 }
 
 sub on_stderr {
@@ -107,15 +105,15 @@ sub on_stderr {
 
     $self->__set_filehandler(*STDERR);
 
-    return $self;
+    $self;
 }
 
 sub is_filehandler_via_lib {
-    return blessed(shift->get_filehandler()) eq 'IO::File';
+    blessed(shift->get_filehandler()) eq 'IO::File';
 }
 
 sub get_queue {
-    return shift->{__queue};
+    shift->{__queue};
 }
 
 sub push_to_queue { # need changes relatives to the comments below
@@ -123,21 +121,21 @@ sub push_to_queue { # need changes relatives to the comments below
 
     push @{$self->get_queue()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
 
-    return $self;
+    $self;
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    return shift->push_to_queue('[OK] ' . shift, shift);
+    shift->push_to_queue('[OK] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    return shift->push_to_queue('[KO] ' . shift, shift);
+    shift->push_to_queue('[KO] ' . shift, shift);
 }
 
 sub join_queue {
     my ($self, $separator) = @_;
 
-    return join $separator, @{$self->get_queue()};
+    join $separator, @{$self->get_queue()};
 }
 
 sub flush_queue {
@@ -149,7 +147,7 @@ sub flush_queue {
 
     say { $self->get_filehandler() } $self->join_queue("\n") if (@{$self->get_queue()});
 
-    return $clear_queue ? $self->clear_queue() : $self;
+    $clear_queue ? $self->clear_queue() : $self;
 }
 
 sub clear_queue {
@@ -157,7 +155,7 @@ sub clear_queue {
 
     undef @{$self->get_queue()};
 
-    return $self;
+    $self;
 }
 
 # sub AUTOLOAD {}

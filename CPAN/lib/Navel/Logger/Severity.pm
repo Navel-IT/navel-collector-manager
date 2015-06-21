@@ -43,29 +43,22 @@ my %severities = (
 sub new {
     my ($class, $severity) = @_;
 
-    if (defined $severity) {
-        if (exists $severities{$severity}) {
-            $class = ref $class || $class;
+    croak('severity must be defined') unless (defined $severity);
+    croak('severity ' . $severity . ' is incorrect') unless (exists $severities{$severity});
 
-            return bless {
-                __severity => $severity
-            }, $class;
-        }
-
-        croak('severity ' . $severity . ' is incorrect');
-    }
-
-    croak('severity must be defined');
+    bless {
+        __severity => $severity
+    }, ref $class || $class;
 }
 
 sub does_it_log {
     my ($self, $severity) = @_;
 
-    return defined $severity && exists $severities{$severity} && $severities{$self->get_severity()} >= $severities{$severity};
+    defined $severity && exists $severities{$severity} && $severities{$self->get_severity()} >= $severities{$severity};
 }
 
 sub get_severity {
-    return shift->{__severity};
+    shift->{__severity};
 }
 
 # sub AUTOLOAD {}

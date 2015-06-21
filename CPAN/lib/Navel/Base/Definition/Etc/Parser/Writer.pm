@@ -36,16 +36,14 @@ our $VERSION = 0.1;
 sub write {
     my ($self, $file_path, $definitions) = @_;
 
-    if (hascontent($file_path)) {
-        write_file(
-            $file_path,
-            encode_json_pretty($definitions)
-        );
+    croak('file path missing') unless (hascontent($file_path));
 
-        return $self;
-    }
+    write_file(
+        $file_path,
+        encode_json_pretty($definitions)
+    );
 
-    croak('file path missing');
+    $self;
 }
 
 # sub AUTOLOAD {}

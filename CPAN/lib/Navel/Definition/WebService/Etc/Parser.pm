@@ -23,31 +23,31 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    return shift->SUPER::new('Navel::Definition::WebService', 1);
+    shift->SUPER::new('Navel::Definition::WebService', 1);
 }
 
 sub get_interface_masks {
-    return shift->__get_all_by_getter('get_interface_mask');
+    shift->__get_all_by_getter('get_interface_mask');
 }
 
 sub get_ports {
-    return shift->__get_all_by_getter('get_port');
+    shift->__get_all_by_getter('get_port');
 }
 
 sub get_tls {
-    return shift->__get_all_by_getter('get_tls');
+    shift->__get_all_by_getter('get_tls');
 }
 
 sub get_logins {
-    return shift->__get_all_by_getter('get_login');
+    shift->__get_all_by_getter('get_login');
 }
 
 sub get_passwords {
-    return shift->__get_all_by_getter('get_password');
+    shift->__get_all_by_getter('get_password');
 }
 
 sub get_urls {
-    return shift->__get_all_by_getter('get_url');
+    shift->__get_all_by_getter('get_url');
 }
 
 # sub AUTOLOAD {}

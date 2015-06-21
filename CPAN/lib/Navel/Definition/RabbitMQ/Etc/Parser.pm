@@ -23,43 +23,43 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    return shift->SUPER::new('Navel::Definition::RabbitMQ', 1);
+    shift->SUPER::new('Navel::Definition::RabbitMQ', 1);
 }
 
 sub get_hosts {
-    return shift->__get_all_by_getter('get_host');
+    shift->__get_all_by_getter('get_host');
 }
 
 sub get_ports {
-    return shift->__get_all_by_getter('get_port');
+    shift->__get_all_by_getter('get_port');
 }
 
 sub get_users {
-    return shift->__get_all_by_getter('get_user');
+    shift->__get_all_by_getter('get_user');
 }
 
 sub get_passwords {
-    return shift->__get_all_by_getter('get_password');
+    shift->__get_all_by_getter('get_password');
 }
 
 sub get_vhosts {
-    return shift->__get_all_by_getter('get_vhost');
+    shift->__get_all_by_getter('get_vhost');
 }
 
 sub get_exchanges {
-    return shift->__get_all_by_getter('get_exchanges');
+    shift->__get_all_by_getter('get_exchanges');
 }
 
 sub get_routing_keys {
-    return shift->__get_all_by_getter('get_routing_key');
+    shift->__get_all_by_getter('get_routing_key');
 }
 
 sub get_delivery_modes {
-    return shift->__get_all_by_getter('get_delivery_mode');
+    shift->__get_all_by_getter('get_delivery_mode');
 }
 
 sub get_schedulings {
-    return shift->__get_all_by_getter('get_scheduling');
+    shift->__get_all_by_getter('get_scheduling');
 }
 
 # sub AUTOLOAD {}

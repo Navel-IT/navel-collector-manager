@@ -36,7 +36,7 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $definition_package, $do_not_need_at_least_one) = @_;
 
-    return bless {
+    bless {
         __definition_package => $definition_package,
         __do_not_need_at_least_one => $do_not_need_at_least_one,
         __raw => [],
@@ -47,7 +47,7 @@ sub new {
 sub read {
     my $self = shift;
 
-    return $self->__set_raw($self->SUPER::read(shift));
+    $self->__set_raw($self->SUPER::read(shift));
 }
 
 sub write {
@@ -62,7 +62,7 @@ sub write {
         ]
     );
 
-    return $self;
+    $self;
 }
 
 sub make_definition {
@@ -74,7 +74,7 @@ sub make_definition {
         $definition_package->new($raw_definition);
     };
 
-    $@ ? croak($self->get_definition_package() . ' : ' . $@) : return $definition;
+    $@ ? croak($self->get_definition_package() . ' : ' . $@) : $definition;
 };
 
 sub make {
@@ -100,19 +100,19 @@ sub make {
         croak($self->get_definition_package() . ' : require failed');
     }
 
-    return $self;
+    $self;
 }
 
 sub get_definition_package {
-    return shift->{__definition_package};
+    shift->{__definition_package};
 }
 
 sub get_do_not_need_at_least_one {
-    return shift->{__do_not_need_at_least_one};
+    shift->{__do_not_need_at_least_one};
 }
 
 sub get_raw {
-    return shift->{__raw};
+    shift->{__raw};
 }
 
 sub __set_raw {
@@ -120,11 +120,11 @@ sub __set_raw {
 
     $self->{__raw} = $value;
 
-    return $self;
+    $self;
 }
 
 sub get_definitions {
-    return shift->{__definitions};
+    shift->{__definitions};
 }
 
 sub __set_definitions {
@@ -132,17 +132,17 @@ sub __set_definitions {
 
     $self->{__definitions} = $value;
 
-    return $self;
+    $self;
 }
 
 sub __get_all_by_getter {
     my ($self, $getter_name) = @_;
 
-    return [ map { $_->$getter_name() } @{$self->get_definitions()} ];
+    [ map { $_->$getter_name() } @{$self->get_definitions()} ];
 }
 
 sub get_names {
-    return shift->__get_all_by_getter('get_name');
+    shift->__get_all_by_getter('get_name');
 }
 
 sub get_by_name {
@@ -152,13 +152,13 @@ sub get_by_name {
         return $_ if ($_->get_name() eq $definition_name);
     }
 
-    return undef;
+    undef;
 }
 
 sub get_properties_by_name {
     my $definition = shift->get_by_name(shift);
 
-    return defined $definition ? $definition->get_properties() : undef;
+    defined $definition ? $definition->get_properties() : undef;
 }
 
 sub add_definition {
@@ -172,7 +172,7 @@ sub add_definition {
         croak($self->get_definition_package() . ' : duplicate definition detected');
     }
 
-    return $definition->get_name();
+    $definition->get_name();
 }
 
 sub delete_definition {
@@ -192,7 +192,7 @@ sub delete_definition {
         croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
     }
 
-    return $definition_name;
+    $definition_name;
 }
 
 # sub AUTOLOAD {}

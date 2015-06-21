@@ -67,25 +67,21 @@ my $__serialize_log_and_push_in_queues = sub {
 sub new {
     my ($class, $connectors, $rabbitmq, $logger) = @_;
 
-    if (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger') {
-        my $self = {
-            __connectors => $connectors,
-            __rabbitmq => $rabbitmq,
-            __publishers => [],
-            __queues => {},
-            __logger => $logger,
-            __cron => AnyEvent::DateTime::Cron->new(
-                quartz => 1
-            ),
-            __locks => {}
-        };
+    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger');
 
-        $class = ref $class || $class;
+    my $self = {
+        __connectors => $connectors,
+        __rabbitmq => $rabbitmq,
+        __publishers => [],
+        __queues => {},
+        __logger => $logger,
+        __cron => AnyEvent::DateTime::Cron->new(
+            quartz => 1
+        ),
+        __locks => {}
+    };
 
-        return bless $self, $class;
-    }
-
-    croak('one or more objects are invalids.');
+    bless $self, ref $class || $class;
 }
 
 sub register_logger {
@@ -100,7 +96,7 @@ sub register_logger {
         }
     );
 
-    return $self;
+    $self;
 }
 
 sub register_connector {
@@ -109,7 +105,7 @@ sub register_connector {
     my $connector = $self->get_connectors()->get_by_name(shift);
 
     if (defined $connector) {
-        return $self->get_cron()->add(
+        $self->get_cron()->add(
             $connector->get_scheduling(),
             name => 'connector_' . $connector->get_name(),
             sub {
@@ -173,8 +169,6 @@ sub register_connector {
             }
         );
     }
-
-    return 0;
 }
 
 sub register_connectors {
@@ -182,7 +176,7 @@ sub register_connectors {
 
     $self->register_connector($_->get_name()) for (@{$self->get_connectors()->get_definitions()});
 
-    return $self;
+    $self;
 }
 
 sub init_publishers {
@@ -194,7 +188,7 @@ sub init_publishers {
         push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
     }
 
-    return $self;
+    $self;
 }
 
 sub connect_publishers {
@@ -216,7 +210,7 @@ sub connect_publishers {
         }
     }
 
-    return $self;
+    $self;
 }
 
 sub register_publishers {
@@ -273,7 +267,7 @@ sub register_publishers {
         );
     }
 
-    return $self;
+    $self;
 }
 
 sub disconnect_publishers {
@@ -289,7 +283,7 @@ sub disconnect_publishers {
         }
     }
 
-    return $self;
+    $self;
 }
 
 sub unregister_job_by_name {
@@ -300,8 +294,6 @@ sub unregister_job_by_name {
     for my $job_id (keys %{$jobs}) {
         return $self->get_cron()->delete($job_id) if ($jobs->{$job_id}->{name} eq $job_name);
     }
-
-    return 0;
 }
 
 sub start {
@@ -309,7 +301,7 @@ sub start {
 
     $self->get_cron()->start()->recv();
 
-    return $self;
+    $self;
 }
 
 sub stop {
@@ -317,19 +309,19 @@ sub stop {
 
     $self->get_cron()->stop();
 
-    return $self;
+    $self;
 }
 
 sub get_connectors {
-    return shift->{__connectors};
+    shift->{__connectors};
 }
 
 sub get_rabbitmq {
-    return shift->{__rabbitmq};
+    shift->{__rabbitmq};
 }
 
 sub get_publishers {
-    return shift->{__publishers};
+    shift->{__publishers};
 }
 
 sub get_publisher_by_definition_name {
@@ -339,23 +331,23 @@ sub get_publisher_by_definition_name {
         return $_ if ($_->get_definition()->get_name() eq $definition_name);
     }
 
-    return undef;
+    undef;
 }
 
 sub get_queues {
-    return shift->{__queues};
+    shift->{__queues};
 }
 
 sub get_logger {
-    return shift->{__logger};
+    shift->{__logger};
 }
 
 sub get_cron {
-    return shift->{__cron};
+    shift->{__cron};
 }
 
 sub get_locks {
-    return shift->{__locks};
+    shift->{__locks};
 }
 
 # sub AUTOLOAD {}

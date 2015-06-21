@@ -54,11 +54,13 @@ our $VERSION = 0.1;
 sub to($$) {
     my ($connector, $datas) = @_;
 
+    croak('some datas are incorrects') unless (ref $connector eq 'Navel::Definition::Connector');
+
     $connector = unblessed($connector);
 
     publicize($connector);
 
-    return encode_json(
+    encode_json(
         {
             connector => $connector,
             time => time,
@@ -72,16 +74,14 @@ sub from($) {
 
     my $datas = decode_json($serialized);
 
-    if (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && isint($datas->{time}) && exists $datas->{datas}) {
-        return {
-            connector => Navel::Definition::Connector->new(
-                $datas->{connector}
-            ),
-            datas => $datas->{datas}
-        };
-    }
+    croak('some datas are incorrects') unless (reftype($datas) eq 'HASH' && connector_definition_validator($datas->{connector}) && isint($datas->{time}) && exists $datas->{datas});
 
-    croak('some datas are incorrects');
+    {
+        connector => Navel::Definition::Connector->new(
+            $datas->{connector}
+        ),
+        datas => $datas->{datas}
+    };
 }
 
 # sub AUTOLOAD {}

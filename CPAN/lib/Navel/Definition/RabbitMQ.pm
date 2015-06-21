@@ -75,40 +75,40 @@ sub rabbitmq_definition_validator($) {
         connector_props_delivery_mode => sub {
             my $value = shift;
 
-            return $value == 1 || $value == 2;
+            $value == 1 || $value == 2;
         },
         connector_cron => sub {
-            return eval {
+            eval {
                 DateTime::Event::Cron::Quartz->new(shift);
             };
         }
     );
 
-    return $validator->validate($parameters);
+    $validator->validate($parameters);
 }
 
 #-> methods
 
 sub new {
-    return shift->SUPER::new(
+    shift->SUPER::new(
         \&rabbitmq_definition_validator,
         shift
     );
 }
 
 sub merge {
-   return shift->SUPER::merge(
+   shift->SUPER::merge(
         \&rabbitmq_definition_validator,
         shift
    );
 }
 
 sub get_original_properties {
-    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {
-    return shift->merge(
+    shift->merge(
         {
             name => shift
         }
@@ -116,11 +116,11 @@ sub set_name {
 }
 
 sub get_host {
-    return shift->{__host};
+    shift->{__host};
 }
 
 sub set_host {
-    return shift->merge(
+    shift->merge(
         {
             host => shift
         }
@@ -128,11 +128,11 @@ sub set_host {
 }
 
 sub get_port {
-    return shift->{__port};
+    shift->{__port};
 }
 
 sub set_port {
-    return shift->merge(
+    shift->merge(
         {
             port => shift
         }
@@ -140,11 +140,11 @@ sub set_port {
 }
 
 sub get_user {
-    return shift->{__user};
+    shift->{__user};
 }
 
 sub set_user {
-    return shift->merge(
+    shift->merge(
         {
             user => shift
         }
@@ -152,11 +152,11 @@ sub set_user {
 }
 
 sub get_password {
-    return shift->{__password};
+    shift->{__password};
 }
 
 sub set_password {
-    return shift->merge(
+    shift->merge(
         {
             password => shift
         }
@@ -164,11 +164,11 @@ sub set_password {
 }
 
 sub get_timeout {
-    return shift->{__timeout};
+    shift->{__timeout};
 }
 
 sub set_timeout {
-    return shift->merge(
+    shift->merge(
         {
             timeout => shift
         }
@@ -176,11 +176,11 @@ sub set_timeout {
 }
 
 sub get_vhost {
-    return shift->{__vhost};
+    shift->{__vhost};
 }
 
 sub set_vhost {
-    return shift->merge(
+    shift->merge(
         {
             vhost => shift
         }
@@ -188,11 +188,11 @@ sub set_vhost {
 }
 
 sub get_exchange {
-    return shift->{__exchange};
+    shift->{__exchange};
 }
 
 sub set_exchange {
-    return shift->merge(
+    shift->merge(
         {
             exchange => shift
         }
@@ -200,11 +200,11 @@ sub set_exchange {
 }
 
 sub get_routing_key {
-    return shift->{__routing_key};
+    shift->{__routing_key};
 }
 
 sub set_routing_key {
-    return shift->merge(
+    shift->merge(
         {
             routing_key => shift
         }
@@ -212,11 +212,11 @@ sub set_routing_key {
 }
 
 sub get_delivery_mode {
-    return shift->{__delivery_mode};
+    shift->{__delivery_mode};
 }
 
 sub set_delivery_mode {
-    return shift->merge(
+    shift->merge(
         {
             delivery_mode => shift
         }
@@ -224,11 +224,11 @@ sub set_delivery_mode {
 }
 
 sub get_scheduling {
-    return shift->{__scheduling};
+    shift->{__scheduling};
 }
 
 sub set_scheduling {
-    return shift->merge(
+    shift->merge(
         {
             scheduling => shift
         }

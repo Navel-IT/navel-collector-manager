@@ -71,45 +71,45 @@ sub connector_definition_validator($) {
         connector_type => sub {
             my $value = shift;
 
-            return $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_JSON;
+            $value eq CONNECTOR_TYPE_CODE || $value eq CONNECTOR_TYPE_JSON;
         },
         connector_singleton => sub {
             my $value = shift;
 
-            return $value == 0 || $value == 1;
+            $value == 0 || $value == 1;
         },
         connector_cron => sub {
-            return eval {
+            eval {
                 DateTime::Event::Cron::Quartz->new(shift);
             };
         }
     );
 
-    return $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef (JSON's null) value
+    $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef (JSON's null) value
 }
 
 #-> methods
 
 sub new {
-    return shift->SUPER::new(
+    shift->SUPER::new(
         \&connector_definition_validator,
         shift
     );
 }
 
 sub merge {
-   return shift->SUPER::merge(
+   shift->SUPER::merge(
         \&connector_definition_validator,
         shift
    );
 }
 
 sub get_original_properties {
-    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {
-    return shift->merge(
+    shift->merge(
         {
             name => shift
         }
@@ -117,11 +117,11 @@ sub set_name {
 }
 
 sub get_collection {
-    return shift->{__collection};
+    shift->{__collection};
 }
 
 sub set_collection {
-    return shift->merge(
+    shift->merge(
         {
             collection => shift
         }
@@ -129,19 +129,19 @@ sub set_collection {
 }
 
 sub get_type {
-    return shift->{__type};
+    shift->{__type};
 }
 
 sub is_type_code {
-    return shift->get_type() eq CONNECTOR_TYPE_CODE;
+    shift->get_type() eq CONNECTOR_TYPE_CODE;
 }
 
 sub is_type_json {
-    return shift->get_type() eq CONNECTOR_TYPE_JSON;
+    shift->get_type() eq CONNECTOR_TYPE_JSON;
 }
 
 sub set_type {
-    return shift->merge(
+    shift->merge(
         {
             type => shift
         }
@@ -149,11 +149,11 @@ sub set_type {
 }
 
 sub get_singleton {
-    return shift->{__singleton};
+    shift->{__singleton};
 }
 
 sub set_singleton {
-    return shift->merge(
+    shift->merge(
         {
             singleton => shift
         }
@@ -161,11 +161,11 @@ sub set_singleton {
 }
 
 sub get_scheduling {
-    return shift->{__scheduling};
+    shift->{__scheduling};
 }
 
 sub set_scheduling {
-    return shift->merge(
+    shift->merge(
         {
             scheduling => shift
         }
@@ -173,11 +173,11 @@ sub set_scheduling {
 }
 
 sub get_source {
-    return shift->{__source};
+    shift->{__source};
 }
 
 sub set_source {
-    return shift->merge(
+    shift->merge(
         {
             source => shift
         }
@@ -185,11 +185,11 @@ sub set_source {
 }
 
 sub get_input {
-    return shift->{__input};
+    shift->{__input};
 }
 
 sub set_input {
-    return shift->merge(
+    shift->merge(
         {
             input => shift
         }
@@ -197,11 +197,11 @@ sub set_input {
 }
 
 sub get_exec_directory_path {
-    return shift->{__exec_directory_path};
+    shift->{__exec_directory_path};
 }
 
 sub set_exec_directory_path {
-    return shift->merge(
+    shift->merge(
         {
             exec_directory_path => shift
         }
@@ -211,7 +211,7 @@ sub set_exec_directory_path {
 sub get_exec_file_path {
     my $self = shift;
 
-    return $self->get_exec_directory_path() . '/' . ($self->get_source() || $self->get_name());
+    $self->get_exec_directory_path() . '/' . ($self->get_source() || $self->get_name());
 }
 
 # sub AUTOLOAD {}

@@ -61,7 +61,7 @@ sub ok_ko($$$) {
     $logger->good($ok . '.', 'notice') if (defined $ok);
     $logger->bad($ko . '.', 'notice') if (defined $ko);
 
-    return {
+    {
         ok => $ok,
         ko => $ko
     };
@@ -137,9 +137,7 @@ if (defined $general_configuration_file_path) {
 
                         my $userinfo = $controller->req()->url()->to_abs()->userinfo();
 
-                        if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
-                            return 1;
-                        } else {
+                        unless (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(

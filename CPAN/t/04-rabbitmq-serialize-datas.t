@@ -20,7 +20,6 @@ BEGIN {
 
 my $serialized;
 
-
 if (lives_ok {
     $serialized = to(
         Navel::Definition::Connector->new(

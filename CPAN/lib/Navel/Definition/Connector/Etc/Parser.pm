@@ -23,39 +23,39 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    return shift->SUPER::new('Navel::Definition::Connector', 1);
+    shift->SUPER::new('Navel::Definition::Connector', 1);
 }
 
 sub get_collections {
-    return shift->__get_all_by_getter('get_collection');
+    shift->__get_all_by_getter('get_collection');
 }
 
 sub get_types {
-    return shift->__get_all_by_getter('get_type');
+    shift->__get_all_by_getter('get_type');
 }
 
 sub get_singletons {
-    return shift->__get_all_by_getter('get_singleton');
+    shift->__get_all_by_getter('get_singleton');
 }
 
 sub get_schedulings {
-    return shift->__get_all_by_getter('get_scheduling');
+    shift->__get_all_by_getter('get_scheduling');
 }
 
 sub get_sources {
-    return shift->__get_all_by_getter('get_source');
+    shift->__get_all_by_getter('get_source');
 }
 
 sub get_inputs {
-    return shift->__get_all_by_getter('get_input');
+    shift->__get_all_by_getter('get_input');
 }
 
 sub get_exec_directory_paths {
-    return shift->__get_all_by_getter('get_exec_directory_path');
+    shift->__get_all_by_getter('get_exec_directory_path');
 }
 
 sub get_exec_file_paths {
-    return shift->__get_all_by_getter('get_exec_file_path');
+    shift->__get_all_by_getter('get_exec_file_path');
 }
 
 # sub AUTOLOAD {}

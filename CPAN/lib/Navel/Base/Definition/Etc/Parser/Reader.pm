@@ -36,17 +36,13 @@ our $VERSION = 0.1;
 sub read {
     my ($self, $file_path) = @_;
 
-    if (hascontent($file_path)) {
-            my $datas = eval {
-                decode_json(
-                    scalar read_file($file_path)
-                );
-            };
-            
-            return $datas;
-    }
+    croak('file path missing') unless (hascontent($file_path));
 
-    croak('file path missing');
+    eval {
+        decode_json(
+            scalar read_file($file_path)
+        );
+    };
 }
 
 # sub AUTOLOAD {}

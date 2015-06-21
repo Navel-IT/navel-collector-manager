@@ -65,35 +65,35 @@ sub web_service_definition_validator($) {
         web_service_tls => sub {
             my $value = shift;
 
-            return isint($value) && ($value == 0 || $value == 1);
+            isint($value) && ($value == 0 || $value == 1);
         }
     );
 
-    return $validator->validate($parameters);
+    $validator->validate($parameters);
 }
 
 #-> methods
 
 sub new {
-    return shift->SUPER::new(
+    shift->SUPER::new(
         \&web_service_definition_validator,
         shift
     );
 }
 
 sub merge {
-   return shift->SUPER::merge(
+   shift->SUPER::merge(
         \&web_service_definition_validator,
         shift
    );
 }
 
 sub get_original_properties {
-    return shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
 }
 
 sub set_name {
-    return shift->merge(
+    shift->merge(
         {
             name => shift
         }
@@ -101,11 +101,11 @@ sub set_name {
 }
 
 sub get_interface_mask {
-    return shift->{__interface_mask};
+    shift->{__interface_mask};
 }
 
 sub set_interface_mask {
-    return shift->merge(
+    shift->merge(
         {
             interface_mask => shift
         }
@@ -113,11 +113,11 @@ sub set_interface_mask {
 }
 
 sub get_port {
-    return shift->{__port};
+    shift->{__port};
 }
 
 sub set_port {
-    return shift->merge(
+    shift->merge(
         {
             port => shift
         }
@@ -125,11 +125,11 @@ sub set_port {
 }
 
 sub get_tls {
-    return shift->{__tls};
+    shift->{__tls};
 }
 
 sub set_tls {
-    return shift->merge(
+    shift->merge(
         {
             tls => shift
         }
@@ -139,7 +139,7 @@ sub set_tls {
 sub get_url {
     my $self = shift;
 
-    return Mojo::URL->new()->scheme(
+    Mojo::URL->new()->scheme(
         'http' . ($self->get_tls() ? 's' : '')
     )->host(
         $self->get_interface_mask()

@@ -54,16 +54,12 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $configuration_path) = @_;
 
-    if (hascontent($configuration_path)) {
-        $class = ref $class || $class;
+    croak('<general>.json path is missing') unless (hascontent($configuration_path));
 
-        return bless {
-            __core => undef,
-            __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)
-        }, $class;
-    } else {
-        croak('<general>.json path is missing');
-    }
+    bless {
+        __core => undef,
+        __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)
+    }, ref $class || $class;
 }
 
 sub run {
@@ -81,15 +77,15 @@ sub run {
 
     $self->get_core()->register_logger()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
 
-    return $self;
+    $self;
 }
 
 sub get_core {
-    return shift->{__core};
+    shift->{__core};
 }
 
 sub get_configuration {
-    return shift->{__configuration};
+    shift->{__configuration};
 }
 
 # sub AUTOLOAD {}

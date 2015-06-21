@@ -59,7 +59,7 @@ sub scheduler_definition_validator($) {
         }
     );
 
-    return $validator->validate($parameters);
+    $validator->validate($parameters);
 }
 
 #-> methods
@@ -67,7 +67,7 @@ sub scheduler_definition_validator($) {
 sub new {
     my $class = shift;
 
-    return bless {
+    bless {
         __definition => {}
     }, ref $class || $class;
 }
@@ -77,7 +77,7 @@ sub read {
 
     $self->set_definition($self->SUPER::read(shift));
 
-    return $self;
+    $self;
 }
 
 sub write {
@@ -85,7 +85,7 @@ sub write {
 
     $self->SUPER::write(shift, $self->get_definition());
 
-    return $self;
+    $self;
 }
 
 sub get_definition {
@@ -95,7 +95,7 @@ sub get_definition {
 
     publicize($definition);
 
-    return $definition;
+    $definition;
 }
 
 sub set_definition {
@@ -110,8 +110,6 @@ sub set_definition {
 
         return 1;
     }
-
-    return 0;
 }
 
 # sub AUTOLOAD {}

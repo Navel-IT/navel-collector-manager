@@ -34,17 +34,13 @@ our $CHANNEL_ID = 1;
 sub new {
     my ($class, $definition) = @_;
 
-    if (blessed($definition) eq 'Navel::Definition::RabbitMQ') {
-        $class = ref $class || $class;
+    croak('one or more objects are invalids') unless (blessed($definition) eq 'Navel::Definition::RabbitMQ');
 
-        return bless {
-            __definition => $definition,
-            __net => Net::AMQP::RabbitMQ->new(),
-            __queue => []
-        }, $class;
-    }
-
-    croak('one or more objects are invalids');
+    bless {
+        __definition => $definition,
+        __net => Net::AMQP::RabbitMQ->new(),
+        __queue => []
+    }, ref $class || $class;
 }
 
 sub connect {
@@ -67,7 +63,7 @@ sub connect {
         $self->get_net()->channel_open($CHANNEL_ID);
     };
 
-    return $@;
+    $@;
 }
 
 sub disconnect {
@@ -79,19 +75,19 @@ sub disconnect {
         $self->get_net()->disconnect();
     };
 
-    return $@;
+    $@;
 }
 
 sub get_definition {
-    return shift->{__definition};
+    shift->{__definition};
 }
 
 sub get_net {
-    return shift->{__net};
+    shift->{__net};
 }
 
 sub get_queue {
-    return shift->{__queue};
+    shift->{__queue};
 }
 
 sub push_in_queue {
@@ -99,7 +95,7 @@ sub push_in_queue {
 
     push @{$self->get_queue()}, $body;
 
-    return $self;
+    $self;
 }
 
 sub clear_queue {
@@ -107,7 +103,7 @@ sub clear_queue {
 
     undef @{$self->get_queue()};
 
-    return $self;
+    $self;
 }
 
 # sub AUTOLOAD {}

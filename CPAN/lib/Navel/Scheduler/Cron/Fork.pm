@@ -29,49 +29,45 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $connector, $logger, $perl_code_string) = @_;
 
-    if (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger') {
-        my $self = {
-            __connector => $connector,
-            __logger => $logger,
-            __perl_code_string => $perl_code_string,
-            __fork => undef,
-            __rpc => undef
-        };
+    croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger');
 
-        $self->{__fork} = AnyEvent::Fork->new()->require(
-            'strict',
-            'warnings',
-            'Navel::Utils'
-        )->eval(
-            $self->{__perl_code_string}
-        );
+    my $self = {
+        __connector => $connector,
+        __logger => $logger,
+        __perl_code_string => $perl_code_string,
+        __fork => undef,
+        __rpc => undef
+    };
 
-        $self->{__rpc} = $self->{__fork}->AnyEvent::Fork::RPC::run(
-            'connector',
-            on_event => sub {
-                my $event_type = shift;
+    $self->{__fork} = AnyEvent::Fork->new()->require(
+        'strict',
+        'warnings',
+        'Navel::Utils'
+    )->eval(
+        $self->{__perl_code_string}
+    );
 
-                if ($event_type eq 'ae_log') {
-                    my ($severity, $message) = @_;
+    $self->{__rpc} = $self->{__fork}->AnyEvent::Fork::RPC::run(
+        'connector',
+        on_event => sub {
+            my $event_type = shift;
 
-                    $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
-                }
-            },
-            on_error => sub {
-                $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err');
-            },
-            on_destroy => sub {
-                $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
-            },
-            serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
-        );
+            if ($event_type eq 'ae_log') {
+                my ($severity, $message) = @_;
 
-        $class = ref $class || $class;
+                $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
+            }
+        },
+        on_error => sub {
+            $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err');
+        },
+        on_destroy => sub {
+            $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
+        },
+        serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
+    );
 
-        return bless $self, $class;
-    }
-
-    croak('one or more objects are invalids.');
+    bless $self, ref $class || $class;
 }
 
 sub when_done {
@@ -89,7 +85,7 @@ sub when_done {
         undef $self->{__rpc};
     }
 
-    return $self;
+    $self;
 }
 
 sub get_connector {

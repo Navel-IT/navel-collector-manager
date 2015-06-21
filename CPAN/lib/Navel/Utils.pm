@@ -60,27 +60,25 @@ our $VERSION = 0.1;
 sub blessed($) {
    my $blessed = Scalar::Util::blessed(shift);
 
-   return defined $blessed ? $blessed : '';
+   defined $blessed ? $blessed : '';
 }
 
 sub reftype($) {
    my $reftype = Scalar::Util::reftype(shift);
 
-   return defined $reftype ? $reftype : '';
+   defined $reftype ? $reftype : '';
 }
 
 sub get_a_proper_localtime($) {
     my ($sec, $min, $hour, $mday, $mon, $year) = localtime shift;
 
-    return sprintf '%d/%02d/%02d %02d:%02d:%02d', 1900 + $year, $mday, $mon, $hour, $min, $sec;
+    sprintf '%d/%02d/%02d %02d:%02d:%02d', 1900 + $year, $mday, $mon, $hour, $min, $sec;
 }
 
 sub replace_key($$$) {
     my ($hash, $key, $new_key) = @_;
 
     $hash->{$new_key} = delete $hash->{$key};
-
-    return 1;
 }
 
 sub substitute_all_keys($$$@) {
@@ -99,16 +97,14 @@ sub substitute_all_keys($$$@) {
             substitute_all_keys($hash->{$new_key}, $old, $new, $recursive) || return 0;
         }
     }
-
-    return 1;
 }
 
 sub privasize($@) {
-    return substitute_all_keys(shift, '^(.*)', '__$1', shift);
+    substitute_all_keys(shift, '^(.*)', '__$1', shift);
 }
 
 sub publicize($@) {
-    return substitute_all_keys(shift, '^__', '', shift);
+    substitute_all_keys(shift, '^__', '', shift);
 }
 
 sub unblessed($) {
@@ -116,7 +112,7 @@ sub unblessed($) {
 }
 
 sub encode_json_pretty($) {
-    return JSON->new()->utf8()->pretty()->encode(shift);
+    JSON->new()->utf8()->pretty()->encode(shift);
 }
 
 1;
