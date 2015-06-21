@@ -145,346 +145,347 @@ if (defined $general_configuration_file_path) {
             };
 
             unless ($@) {
-                app()->mode('production');
+                if (@{$web_services_listeners->get_definitions()}) {
+                    app()->mode('production');
 
-                app()->log()->level('fatal');
+                    app()->log()->level('fatal');
 
-                under sub {
-                    my $controller = shift;
+                    under sub {
+                        my $controller = shift;
 
-                    my $userinfo = $controller->req()->url()->to_abs()->userinfo();
+                        my $userinfo = $controller->req()->url()->to_abs()->userinfo();
 
-                    if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
-                        return 1;
-                    } else {
-                        $controller->res()->headers()->www_authenticate('Basic');
-
-                        $controller->render(
-                            json => ok_ko($logger, undef, 'Unauthorized : access is denied due to invalid credentials'),
-                            status => 401
-                        );
-
-                        return undef;
-                    }
-                };
-
-                get '/scheduler/api' => sub {
-                    my $controller = shift;
-
-                    my $action = $controller->req()->query_params()->param('action') || '';
-
-                    if ($action eq 'write_configuration') {
-                        my ($ok, $ko);
-
-                        eval {
-                            $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
-
-                            $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors});
-
-                            $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
-
-                            $scheduler->get_configuration()->write($general_configuration_file_path);
-                        };
-
-                        unless ($@) {
-                            $ok = 'Runtime configuration successfully saved';
+                        if (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
+                            return 1;
                         } else {
-                            $ko = 'Cannot save the runtime configuration : ' . $@;
+                            $controller->res()->headers()->www_authenticate('Basic');
+
+                            $controller->render(
+                                json => ok_ko($logger, undef, 'Unauthorized : access is denied due to invalid credentials'),
+                                status => 401
+                            );
+
+                            return undef;
                         }
-
-                        return $controller->render(
-                            json => ok_ko($logger, $ok, $ko)
-                        );
-                    }
-
-                    $controller->render(
-                        json => {
-                            version => $VERSION
-                        }
-                    );
-                };
-
-                get '/scheduler/api/general' => sub {
-                    shift->render(
-                        json => $scheduler->get_configuration()->get_definition()
-                    );
-                };
-
-                put '/scheduler/api/general/webservices/(:property)' => [property => qr/(login|password)/] => sub {
-                    my $controller = shift;
-
-                    my ($ok, $ko);
-
-                    my $property = $controller->param('property');
-
-                    my $body = eval {
-                        decode_json($controller->req()->body());
                     };
 
-                    if (hascontent($body->{$property})) {
-                        my $scheduler_definition = $scheduler->get_configuration()->get_definition();
+                    get '/scheduler/api' => sub {
+                        my $controller = shift;
 
-                        if ($scheduler->get_configuration()->set_definition(
-                            {
-                                %{$scheduler_definition},
-                                %{
-                                    {
-                                        webservices => {
-                                            %{$scheduler_definition->{webservices}},
-                                            %{
-                                                {
-                                                    $property => $body->{$property}
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        )) {
-                            $ok = ucfirst($property) . ' of webservices successfully changed';
-                        } else {
-                            $ko = 'An error occurred while modifying ' . $property . ' of webservices';
-                        }
-                    } else {
-                        $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
-                    }
-
-                    $controller->render(
-                        json => ok_ko($logger, $ok, $ko)
-                    );
-                };
-
-                get '/scheduler/api/cron/jobs' => sub {
-                    shift->render(
-                        json => {
-                            jobs_count => scalar keys %{$scheduler->get_core()->get_cron()->jobs()}
-                        }
-                    );
-                };
-
-                any [qw/GET POST/] => '/scheduler/api/connectors' => sub {
-                    my $controller = shift;
-
-                    given ($controller->req()->method()) {
-                        when ('POST') {
-                            my ($ok, $ko);
-
-                            my $body = eval {
-                                decode_json($controller->req()->body());
-                            };
-
-                            unless ($@) {
-                                my $definition_name = eval {
-                                    $scheduler->get_core()->get_connectors()->add_definition(
-                                        {
-                                            %{$body},
-                                            %{
-                                                {
-                                                    exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
-                                                }
-                                            }
-                                        }
-                                    );
-                                };
-
-                                if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
-                                    $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
-                                } else {
-                                    $ko = $@;
-                                }
-                            } else {
-                                $ko = $@;
-                            }
-
-                            $controller->render(
-                                json => ok_ko($logger, $ok, $ko)
-                            );
-                        }
-                        default {
-                            $controller->render(
-                                json => $scheduler->get_core()->get_connectors()->get_names()
-                            );
-                        }
-                    }
-                };
-
-                any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
-                    my $controller = shift;
-
-                    my $connector_name = $controller->param('connector');
-
-                    given ($controller->req()->method()) {
-                        when ('PUT') {
-                            my ($ok, $ko);
-
-                            my $body = eval {
-                                decode_json($controller->req()->body());
-                            };
-
-                            unless ($@) {
-                                my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
-
-                                if (defined $connector_definition) {
-                                    delete $body->{name};
-
-                                    if ($connector_definition->merge($body)) {
-                                        $ok = 'Connector ' . $connector_name . ' successfully changed';
-                                    } else {
-                                        $ko = 'An error occurred while modifying connector ' . $connector_name;
-                                    }
-                                } else {
-                                    $ko = 'Connector ' . $connector_name . " don't exists";
-                                }
-                            } else {
-                                $ko = $@;
-                            }
-
-                            $controller->render(
-                                json => ok_ko($logger, $ok, $ko)
-                            );
-                        }
-                        when ('DEL') {
-                            my ($ok, $ko);
-
-                            if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
-                                eval {
-                                    $scheduler->get_core()->get_connectors()->delete_definition($connector_name);
-                                };
-
-                                unless ($@) {
-                                    $ok = 'Connector ' . $connector_name . ' successfuly unregistered and deleted';
-                                } else {
-                                    $ko = $@;
-                                }
-                            } else {
-                                $ko = 'Connector ' . $connector_name . " don't exists";
-                            }
-
-                            $controller->render(
-                                json => ok_ko($logger, $ok, $ko)
-                            );
-                        }
-                        default {
-                            $controller->render(
-                                json => $scheduler->get_core()->get_connectors()->get_properties_by_name($connector_name) || {}
-                            );
-                        }
-                    }
-                };
-
-                any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
-                    my $controller = shift;
-
-                    given ($controller->req()->method()) {
-                        when ('POST') {
-                            # create a resource here
-                        }
-                        default {
-                            $controller->render(
-                                json => $scheduler->get_core()->get_rabbitmq()->get_names()
-                            );
-                        }
-                    }
-                };
-
-                any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
-                    my $controller = shift;
-
-                    given ($controller->req()->method()) {
-                        when ('PUT') {
-                            # modify a resource here
-                        }
-                        when ('DEL') {
-                            # delete a resource here
-                        }
-                        default {
-                            $controller->render(
-                                json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
-                            );
-                        }
-                    }
-                };
-
-                get '/scheduler/api/publishers' => sub {
-                    shift->render(
-                        json => [map { $_->get_definition()->get_name() } @{$scheduler->get_core()->get_publishers()}]
-                    );
-                };
-
-                get '/scheduler/api/publishers/(:publisher)' => sub {
-                    my $controller = shift;
-
-                    my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($controller->param('publisher'));
-
-                    if (defined $publisher) {
                         my $action = $controller->req()->query_params()->param('action') || '';
 
-                        if ($action =~ /^(connect|disconnect)$/) {
-                            my $method = $1;
+                        if ($action eq 'write_configuration') {
+                            my ($ok, $ko);
 
-                            my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
+                            eval {
+                                $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
 
-                            if (my $error = $publisher->$method()) {
-                                $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
+                                $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors});
+
+                                $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
+
+                                $scheduler->get_configuration()->write($general_configuration_file_path);
+                            };
+
+                            unless ($@) {
+                                $ok = 'Runtime configuration successfully saved';
                             } else {
-                                $logger->good($method_generic_message . '.', 'notice');
+                                $ko = 'Cannot save the runtime configuration : ' . $@;
                             }
-                        } elsif ($action eq 'clear_queue') {
-                            $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
-                            $publisher->$action();
+                            return $controller->render(
+                                json => ok_ko($logger, $ok, $ko)
+                            );
                         }
 
                         $controller->render(
                             json => {
-                                connected => $publisher->get_net()->is_connected() || 0,
-                                messages_in_queue => scalar @{$publisher->get_queue()}
+                                version => $VERSION
                             }
                         );
-                    } else {
-                        $controller->render(
-                            json => ok_ko($logger, undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
+                    };
+
+                    get '/scheduler/api/general' => sub {
+                        shift->render(
+                            json => $scheduler->get_configuration()->get_definition()
                         );
-                    }
-                };
+                    };
 
-                get '/scheduler/api/webservices' => {
-                    json => $web_services_listeners->get_names()
-                };
+                    put '/scheduler/api/general/webservices/(:property)' => [property => qr/(login|password)/] => sub {
+                        my $controller = shift;
 
-                get '/scheduler/api/webservices/(:webservice)' => sub {
-                    my $controller = shift;
+                        my ($ok, $ko);
 
-                    $controller->render(
-                        json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
+                        my $property = $controller->param('property');
+
+                        my $body = eval {
+                            decode_json($controller->req()->body());
+                        };
+
+                        if (hascontent($body->{$property})) {
+                            my $scheduler_definition = $scheduler->get_configuration()->get_definition();
+
+                            if ($scheduler->get_configuration()->set_definition(
+                                {
+                                    %{$scheduler_definition},
+                                    %{
+                                        {
+                                            webservices => {
+                                                %{$scheduler_definition->{webservices}},
+                                                %{
+                                                    {
+                                                        $property => $body->{$property}
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )) {
+                                $ok = ucfirst($property) . ' of webservices successfully changed';
+                            } else {
+                                $ko = 'An error occurred while modifying ' . $property . ' of webservices';
+                            }
+                        } else {
+                            $ko = $@ || 'Property ' . $body->{$property} . ' cannot be empty';
+                        }
+
+                        $controller->render(
+                            json => ok_ko($logger, $ok, $ko)
+                        );
+                    };
+
+                    get '/scheduler/api/cron/jobs' => sub {
+                        shift->render(
+                            json => {
+                                jobs_count => scalar keys %{$scheduler->get_core()->get_cron()->jobs()}
+                            }
+                        );
+                    };
+
+                    any [qw/GET POST/] => '/scheduler/api/connectors' => sub {
+                        my $controller = shift;
+
+                        given ($controller->req()->method()) {
+                            when ('POST') {
+                                my ($ok, $ko);
+
+                                my $body = eval {
+                                    decode_json($controller->req()->body());
+                                };
+
+                                unless ($@) {
+                                    my $definition_name = eval {
+                                        $scheduler->get_core()->get_connectors()->add_definition(
+                                            {
+                                                %{$body},
+                                                %{
+                                                    {
+                                                        exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+                                                    }
+                                                }
+                                            }
+                                        );
+                                    };
+
+                                    if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
+                                        $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
+                                    } else {
+                                        $ko = $@;
+                                    }
+                                } else {
+                                    $ko = $@;
+                                }
+
+                                $controller->render(
+                                    json => ok_ko($logger, $ok, $ko)
+                                );
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_connectors()->get_names()
+                                );
+                            }
+                        }
+                    };
+
+                    any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
+                        my $controller = shift;
+
+                        my $connector_name = $controller->param('connector');
+
+                        given ($controller->req()->method()) {
+                            when ('PUT') {
+                                my ($ok, $ko);
+
+                                my $body = eval {
+                                    decode_json($controller->req()->body());
+                                };
+
+                                unless ($@) {
+                                    my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
+
+                                    if (defined $connector_definition) {
+                                        delete $body->{name};
+
+                                        if ($connector_definition->merge($body)) {
+                                            $ok = 'Connector ' . $connector_name . ' successfully changed';
+                                        } else {
+                                            $ko = 'An error occurred while modifying connector ' . $connector_name;
+                                        }
+                                    } else {
+                                        $ko = 'Connector ' . $connector_name . " don't exists";
+                                    }
+                                } else {
+                                    $ko = $@;
+                                }
+
+                                $controller->render(
+                                    json => ok_ko($logger, $ok, $ko)
+                                );
+                            }
+                            when ('DEL') {
+                                my ($ok, $ko);
+
+                                if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
+                                    eval {
+                                        $scheduler->get_core()->get_connectors()->delete_definition($connector_name);
+                                    };
+
+                                    unless ($@) {
+                                        $ok = 'Connector ' . $connector_name . ' successfuly unregistered and deleted';
+                                    } else {
+                                        $ko = $@;
+                                    }
+                                } else {
+                                    $ko = 'Connector ' . $connector_name . " don't exists";
+                                }
+
+                                $controller->render(
+                                    json => ok_ko($logger, $ok, $ko)
+                                );
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_connectors()->get_properties_by_name($connector_name) || {}
+                                );
+                            }
+                        }
+                    };
+
+                    any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
+                        my $controller = shift;
+
+                        given ($controller->req()->method()) {
+                            when ('POST') {
+                                # create a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                                );
+                            }
+                        }
+                    };
+
+                    any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                        my $controller = shift;
+
+                        given ($controller->req()->method()) {
+                            when ('PUT') {
+                                # modify a resource here
+                            }
+                            when ('DEL') {
+                                # delete a resource here
+                            }
+                            default {
+                                $controller->render(
+                                    json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                                );
+                            }
+                        }
+                    };
+
+                    get '/scheduler/api/publishers' => sub {
+                        shift->render(
+                            json => [map { $_->get_definition()->get_name() } @{$scheduler->get_core()->get_publishers()}]
+                        );
+                    };
+
+                    get '/scheduler/api/publishers/(:publisher)' => sub {
+                        my $controller = shift;
+
+                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($controller->param('publisher'));
+
+                        if (defined $publisher) {
+                            my $action = $controller->req()->query_params()->param('action') || '';
+
+                            if ($action =~ /^(connect|disconnect)$/) {
+                                my $method = $1;
+
+                                my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
+
+                                if (my $error = $publisher->$method()) {
+                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
+                                } else {
+                                    $logger->good($method_generic_message . '.', 'notice');
+                                }
+                            } elsif ($action eq 'clear_queue') {
+                                $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+
+                                $publisher->$action();
+                            }
+
+                            $controller->render(
+                                json => {
+                                    connected => $publisher->get_net()->is_connected() || 0,
+                                    messages_in_queue => scalar @{$publisher->get_queue()}
+                                }
+                            );
+                        } else {
+                            $controller->render(
+                                json => ok_ko($logger, undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
+                            );
+                        }
+                    };
+
+                    get '/scheduler/api/webservices' => {
+                        json => $web_services_listeners->get_names()
+                    };
+
+                    get '/scheduler/api/webservices/(:webservice)' => sub {
+                        my $controller = shift;
+
+                        $controller->render(
+                            json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
+                        );
+                    };
+
+                    $prefork_server = Mojo::Server::Prefork->new(
+                        app => app(),
+                        listen => $web_services_listeners->get_urls()
                     );
-                };
 
-                $prefork_server = Mojo::Server::Prefork->new(
-                    app => app(),
-                    listen => $web_services_listeners->get_urls()
-                );
+                    $logger->push_to_queue('Starting the webservices ...', 'notice')->flush_queue(1);
 
-                # $prefork_server->workers();
-                # $prefork_server->accepts()
-                # $prefork_server->multi_accept();
-            }
+                    eval {
+                        $prefork_server->silent(1)->start();
+                    };
 
-            $logger->bad($@ . '.', 'err')->flush_queue(1) if ($@);
-        }
+                    if ($@) {
+                        $logger->bad($@ . '.', 'err')->flush_queue(1);
+                    } else {
+                        $logger->good('Webservices successfully started.', 'notice')->flush_queue(1);
+                    }
 
-        unless ($disable_rest) {
-            $logger->push_to_queue('Starting the webservices ...', 'notice')->flush_queue(1);
-
-            eval {
-                $prefork_server->silent(1)->start();
-            };
-
-            if ($@) {
-                $logger->bad($@ . '.', 'err')->flush_queue(1);
+                    # $prefork_server->workers();
+                    # $prefork_server->accepts()
+                    # $prefork_server->multi_accept();
+                }
             } else {
-                $logger->good('Webservices successfully started.', 'notice')->flush_queue(1);
+                $logger->bad($@ . '.', 'err')->flush_queue(1);
             }
+
         }
 
         $logger->push_to_queue('Starting the scheduler ...', 'notice')->flush_queue(1);
