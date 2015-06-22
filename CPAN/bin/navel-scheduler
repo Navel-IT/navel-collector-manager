@@ -715,13 +715,15 @@ AVGtTAdPrkt3T61L30+tS/1PrUv/T61L/0+tS/1PrUvfT61Ld1GtTAf///8B////Af///wH///8B
 @@ not_found.html.ep
 <!DOCTYPE html>
 <html>
-    <head><title>Page not found</title></head>
-    <body>Page not found</body>
+    % my $error = 'Page not found';
+    <head><title><%= $error %></title></head>
+    <body><%= $error %></body>
 </html>
 
 @@ exception.html.ep
 <!DOCTYPE html>
 <html>
-    <head><title>Unexpected error</title><head>
-    <body>Unexpected error : please report bugs !</body>
+    % my $error = 'Unexpected error';
+    <head><title><%= $error %></title><head>
+    <body><%= $error %> : please report bugs !</body>
 </html>
