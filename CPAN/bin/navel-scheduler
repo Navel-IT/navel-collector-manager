@@ -428,7 +428,41 @@ if (defined $general_configuration_file_path) {
                             when ('PUT') {
                                 my (@ok, @ko);
 
-                                # TODO
+                                my $body = eval {
+                                    decode_json($controller->req()->body());
+                                };
+
+                                unless ($@) {
+                                    if (ref $body eq 'HASH') {
+                                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($rabbitmq_name);
+
+                                        if (defined $publisher) {
+                                            if (my $error = $publisher->disconnect()) {
+                                                push @ko, 'Disconnect publisher ' . $rabbitmq_name . ' : ' . $error;
+                                            } else {
+                                                push @ok, 'Disconnect publisher ' . $rabbitmq_name;
+
+                                                if ($publisher->get_definition()->merge($body)) {
+                                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' changed';
+                                                } else {
+                                                    push @ko, 'An error occurred while modifying RabbitMQ ' . $rabbitmq_name;
+                                                }
+
+                                                if (my $error = $publisher->connect()) {
+                                                    push @ko, 'Connect publisher ' . $rabbitmq_name . ' : ' . $error;
+                                                } else {
+                                                    push @ok, 'Connect publisher ' . $rabbitmq_name;
+                                                }
+                                            }
+                                        } else {
+                                            push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists";
+                                        }
+                                    } else {
+                                        push @ko, 'Body need to be a hashtable';
+                                    }
+                                } else {
+                                    push @ko, $@;
+                                }
 
                                 $controller->render(
                                     json => ok_ko($logger, \@ok, \@ko)
