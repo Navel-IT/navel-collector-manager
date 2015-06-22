@@ -8,6 +8,9 @@
     "webservices" : {
         "login" : "admin",
         "password" : "admin"
+    },
+    "rabbitmq" : {
+        "auto_connect" : 1
     }
 }
 

@@ -8,6 +8,9 @@
     "webservices" : {
         "login" : "admin",
         "password": "navel-scheduler"
+    },
+    "rabbitmq" : {
+        "auto_connect" : 1
     }
 }
 

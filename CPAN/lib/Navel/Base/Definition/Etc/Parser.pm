@@ -172,7 +172,7 @@ sub add_definition {
         croak($self->get_definition_package() . ' : duplicate definition detected');
     }
 
-    $definition->get_name();
+    $definition;
 }
 
 sub delete_definition {

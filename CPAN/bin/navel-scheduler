@@ -58,8 +58,13 @@ my $pid_dir = '/var/run';
 sub ok_ko($$$) {
     my ($logger, $ok, $ko) = @_;
 
-    $logger->good($ok . '.', 'notice') if (defined $ok);
-    $logger->bad($ko . '.', 'notice') if (defined $ko);
+    for (@{$ok}) {
+        $logger->good($_ . '.', 'notice') if (defined $_);
+    }
+
+    for (@{$ko}) {
+        $logger->bad($_ . '.', 'notice') if (defined $_);
+    }
 
     {
         ok => $ok,
@@ -141,7 +146,7 @@ if (defined $general_configuration_file_path) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(
-                                json => ok_ko($logger, undef, 'Unauthorized : access is denied due to invalid credentials'),
+                                json => ok_ko($logger, [], ['Unauthorized : access is denied due to invalid credentials']),
                                 status => 401
                             );
 
@@ -155,7 +160,7 @@ if (defined $general_configuration_file_path) {
                         my $action = $controller->req()->query_params()->param('action') || '';
 
                         if ($action eq 'write_configuration') {
-                            my ($ok, $ko);
+                            my (@ok, @ko);
 
                             eval {
                                 $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
@@ -168,13 +173,13 @@ if (defined $general_configuration_file_path) {
                             };
 
                             unless ($@) {
-                                $ok = 'Runtime configuration successfully saved';
+                                push @ok, 'Runtime configuration saved';
                             } else {
-                                $ko = 'Cannot save the runtime configuration : ' . $@;
+                                push @ko, 'Cannot save the runtime configuration : ' . $@;
                             }
 
                             return $controller->render(
-                                json => ok_ko($logger, $ok, $ko)
+                                json => ok_ko($logger, \@ok, \@ko)
                             );
                         }
 
@@ -194,7 +199,7 @@ if (defined $general_configuration_file_path) {
                     put '/scheduler/api/general/webservices' => sub {
                         my $controller = shift;
 
-                        my ($ok, $ko);
+                        my (@ok, @ko);
 
                         my $body = eval {
                             decode_json($controller->req()->body());
@@ -217,19 +222,19 @@ if (defined $general_configuration_file_path) {
                                         }
                                     }
                                 )) {
-                                    $ok = 'Credentials of webservices successfully changed';
+                                    push @ok, 'Credentials of webservices changed';
                                 } else {
-                                    $ko = 'An error occurred while modifying the credentials of webservices';
+                                    push @ko, 'An error occurred while modifying the credentials of webservices';
                                 }
                             } else {
-                                $ko = 'Body need to be a hashtable';
+                                push @ko, 'Body need to be a hashtable';
                             }
                         } else {
-                            $ko = $@;
+                            push @ko, $@;
                         }
 
                         $controller->render(
-                            json => ok_ko($logger, $ok, $ko)
+                            json => ok_ko($logger, \@ok, \@ko)
                         );
                     };
 
@@ -246,15 +251,15 @@ if (defined $general_configuration_file_path) {
 
                         given ($controller->req()->method()) {
                             when ('POST') {
-                                my ($ok, $ko);
+                                my (@ok, @ko);
 
                                 my $body = eval {
                                     decode_json($controller->req()->body());
                                 };
 
                                 unless ($@) {
-                                    if ($body eq 'HASH') {
-                                        my $definition_name = eval {
+                                    if (ref $body eq 'HASH') {
+                                        my $definition = eval {
                                             $scheduler->get_core()->get_connectors()->add_definition(
                                                 {
                                                     %{$body},
@@ -267,20 +272,22 @@ if (defined $general_configuration_file_path) {
                                             );
                                         };
 
-                                        if ( ! $@ && $scheduler->get_core()->register_connector($definition_name)) {
-                                            $ok = 'Connector ' . $definition_name . ' successfuly added and registered';
+                                        unless ($@) {
+                                            $scheduler->get_core()->register_connector($definition->get_name());
+
+                                            push @ok, 'Connector ' . $definition->get_name() . ' added and registered';
                                         } else {
-                                            $ko = $@;
+                                            push @ko, $@;
                                         }
                                     } else {
-                                        $ko = 'Body need to be a hashtable';
+                                        push @ko, 'Body need to be a hashtable';
                                     }
                                 } else {
-                                    $ko = $@;
+                                    push @ko, $@;
                                 }
 
                                 $controller->render(
-                                    json => ok_ko($logger, $ok, $ko)
+                                    json => ok_ko($logger, \@ok, \@ko)
                                 );
                             }
                             default {
@@ -298,40 +305,40 @@ if (defined $general_configuration_file_path) {
 
                         given ($controller->req()->method()) {
                             when ('PUT') {
-                                my ($ok, $ko);
+                                my (@ok, @ko);
 
                                 my $body = eval {
                                     decode_json($controller->req()->body());
                                 };
 
                                 unless ($@) {
-                                    if ($body eq 'HASH') {
+                                    if (ref $body eq 'HASH') {
                                         my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
 
                                         if (defined $connector_definition) {
                                             delete $body->{name};
 
                                             if ($connector_definition->merge($body)) {
-                                                $ok = 'Connector ' . $connector_name . ' successfully changed';
+                                                push @ok, 'Connector ' . $connector_name . ' changed';
                                             } else {
-                                                $ko = 'An error occurred while modifying connector ' . $connector_name;
+                                                push @ko, 'An error occurred while modifying connector ' . $connector_name;
                                             }
                                         } else {
-                                            $ko = 'Connector ' . $connector_name . " don't exists";
+                                            push @ko, 'Connector ' . $connector_name . " don't exists";
                                         }
                                     } else {
-                                        $ko = 'Body need to be a hashtable';
+                                        push @ko, 'Body need to be a hashtable';
                                     }
                                 } else {
-                                    $ko = $@;
+                                    push @ko, $@;
                                 }
 
                                 $controller->render(
-                                    json => ok_ko($logger, $ok, $ko)
+                                    json => ok_ko($logger, \@ok, \@ko)
                                 );
                             }
                             when ('DEL') {
-                                my ($ok, $ko);
+                                my (@ok, @ko);
 
                                 if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
                                     eval {
@@ -339,16 +346,16 @@ if (defined $general_configuration_file_path) {
                                     };
 
                                     unless ($@) {
-                                        $ok = 'Connector ' . $connector_name . ' successfuly unregistered and deleted';
+                                        push @ok, 'Connector ' . $connector_name . ' unregistered and deleted';
                                     } else {
-                                        $ko = $@;
+                                        push @ko, $@;
                                     }
                                 } else {
-                                    $ko = 'Connector ' . $connector_name . " don't exists";
+                                    push @ko, 'Connector ' . $connector_name . " don't exists";
                                 }
 
                                 $controller->render(
-                                    json => ok_ko($logger, $ok, $ko)
+                                    json => ok_ko($logger, \@ok, \@ko)
                                 );
                             }
                             default {
@@ -364,7 +371,45 @@ if (defined $general_configuration_file_path) {
 
                         given ($controller->req()->method()) {
                             when ('POST') {
-                                # create a resource here
+                                my (@ok, @ko);
+
+                                my $body = eval {
+                                    decode_json($controller->req()->body());
+                                };
+
+                                unless ($@) {
+                                    if (ref $body eq 'HASH') {
+                                        my $definition = eval {
+                                            $scheduler->get_core()->get_rabbitmq()->add_definition($body);
+                                        };
+
+                                        unless ($@) {
+                                            $scheduler->get_core()->init_publisher($definition->get_name());
+
+                                            $scheduler->get_core()->register_publisher($definition->get_name());
+
+                                            push @ok, 'RabbitMQ ' . $definition->get_name() . ' added and publisher associated with registered';
+
+                                            if ($scheduler->get_configuration()->get_definition()->{rabbitmq}->{auto_connect}) {
+                                                if (my $error = $scheduler->get_core()->get_publisher_by_definition_name($definition->get_name())->connect()) {
+                                                    push @ko, 'Connect publisher ' . $definition->get_name() . ' : ' . $error;
+                                                } else {
+                                                    push @ok, 'Publisher ' . $definition->get_name() . ' connected';
+                                                }
+                                            }
+                                        } else {
+                                            push @ko, $@;
+                                        }
+                                    } else {
+                                        push @ko, 'Body need to be a hashtable';
+                                    }
+                                } else {
+                                    push @ko, $@;
+                                }
+
+                                $controller->render(
+                                    json => ok_ko($logger, \@ok, \@ko)
+                                );
                             }
                             default {
                                 $controller->render(
@@ -377,16 +422,54 @@ if (defined $general_configuration_file_path) {
                     any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
                         my $controller = shift;
 
+                        my $rabbitmq_name = $controller->param('rabbitmq');
+
                         given ($controller->req()->method()) {
                             when ('PUT') {
-                                # modify a resource here
+                                my (@ok, @ko);
+
+                                # TODO
+
+                                $controller->render(
+                                    json => ok_ko($logger, \@ok, \@ko)
+                                );
                             }
                             when ('DEL') {
-                                # delete a resource here
+                                my (@ok, @ko);
+
+                                if ($scheduler->get_core()->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
+                                    push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
+
+                                    eval {
+                                        $scheduler->get_core()->delete_publisher_by_definition_name($rabbitmq_name);
+                                    };
+
+                                    unless ($@) {
+                                        push @ok, 'Publisher ' . $rabbitmq_name . ' disconnected and deleted';
+
+                                        eval {
+                                            $scheduler->get_core()->get_rabbitmq()->delete_definition($rabbitmq_name);
+                                        };
+
+                                        unless ($@) {
+                                            push @ok, 'RabbitMQ ' . $rabbitmq_name . ' deleted'
+                                        } else {
+                                            push @ko, $@;
+                                        }
+                                    } else {
+                                        push @ko, $@;
+                                    }
+                                } else {
+                                    push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists";
+                                }
+
+                                $controller->render(
+                                    json => ok_ko($logger, \@ok, \@ko)
+                                );
                             }
                             default {
                                 $controller->render(
-                                    json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($controller->param('rabbitmq')) || {}
+                                    json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($rabbitmq_name) || {}
                                 );
                             }
                         }
@@ -422,17 +505,17 @@ if (defined $general_configuration_file_path) {
                                 $publisher->$action();
                             }
 
-                            $controller->render(
+                            return $controller->render(
                                 json => {
                                     connected => $publisher->get_net()->is_connected() || 0,
                                     messages_in_queue => scalar @{$publisher->get_queue()}
                                 }
                             );
-                        } else {
-                            $controller->render(
-                                json => ok_ko($logger, undef, 'Publisher ' . $controller->param('publisher') . " don't exists")
-                            );
                         }
+
+                        $controller->render(
+                            json => {}
+                        );
                     };
 
                     get '/scheduler/api/webservices' => {
@@ -461,7 +544,7 @@ if (defined $general_configuration_file_path) {
                     if ($@) {
                         $logger->bad($@ . '.', 'err')->flush_queue(1);
                     } else {
-                        $logger->good('Webservices successfully started.', 'notice')->flush_queue(1);
+                        $logger->good('Webservices started.', 'notice')->flush_queue(1);
                     }
 
                     # $prefork_server->workers();

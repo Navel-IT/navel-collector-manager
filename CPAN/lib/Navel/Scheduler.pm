@@ -54,11 +54,11 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $configuration_path) = @_;
 
-    croak('<general>.json path is missing') unless (hascontent($configuration_path));
+    croak('general configuration file path is missing') unless (hascontent($configuration_path));
 
     bless {
         __core => undef,
-        __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)
+        __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)->make()
     }, ref $class || $class;
 }
 
@@ -75,7 +75,11 @@ sub run {
 
     $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
 
-    $self->get_core()->register_logger()->register_connectors()->init_publishers()->connect_publishers()->register_publishers()->start();
+    my $run = $self->get_core()->register_logger()->register_connectors()->init_publishers()->register_publishers();
+
+    $run->connect_publishers() if ($self->get_configuration()->get_definition()->{rabbitmq}->{auto_connect});
+
+    $run->start();
 
     $self;
 }

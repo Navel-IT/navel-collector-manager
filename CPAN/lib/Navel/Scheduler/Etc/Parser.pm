@@ -28,6 +28,11 @@ use Exporter::Easy (
     ]
 );
 
+use Carp qw/
+    carp
+    croak
+/;
+
 use Storable qw/
     dclone
 /;
@@ -55,7 +60,18 @@ sub scheduler_definition_validator($) {
             webservices => {
                 login => 'text',
                 password => 'text'
+            },
+            rabbitmq => {
+                auto_connect => 'general_auto_connect'
             }
+        }
+    );
+
+    $validator->type(
+        general_auto_connect => sub {
+            my $value = shift;
+
+            $value == 0 || $value == 1;
         }
     );
 
@@ -84,6 +100,14 @@ sub write {
     my $self = shift;
 
     $self->SUPER::write(shift, $self->get_definition());
+
+    $self;
+}
+
+sub make {
+    my $self = shift;
+
+    croak('general definition is invalid') unless scheduler_definition_validator($self->get_definition());
 
     $self;
 }

@@ -104,71 +104,73 @@ sub register_connector {
 
     my $connector = $self->get_connectors()->get_by_name(shift);
 
-    if (defined $connector) {
-        $self->get_cron()->add(
-            $connector->get_scheduling(),
-            name => 'connector_' . $connector->get_name(),
-            sub {
-                local ($@, $!);
+    croak('undefined definition') unless (defined $connector);
 
-                unless ($self->get_locks()->{$connector->get_name()}) {
-                    $self->get_locks()->{$connector->get_name()} = $connector->get_singleton();
+    $self->get_cron()->add(
+        $connector->get_scheduling(),
+        name => 'connector_' . $connector->get_name(),
+        sub {
+            local ($@, $!);
 
-                    aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
-                        sub {
-                            my $fh = shift;
+            unless ($self->get_locks()->{$connector->get_name()}) {
+                $self->get_locks()->{$connector->get_name()} = $connector->get_singleton();
 
-                            if ($fh) {
-                                my $connector_content = '';
+                aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
+                    sub {
+                        my $fh = shift;
 
-                                $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug');
+                        if ($fh) {
+                            my $connector_content = '';
 
-                                aio_read($fh, 0, -s $fh, $connector_content, 0,
-                                    sub {
-                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
+                            $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug');
 
-                                        if ($connector->is_type_code()) {
-                                            Navel::Scheduler::Cron::Fork->new(
-                                                $connector,
-                                                $self->get_logger(),
-                                                $connector_content
-                                            )->when_done(
-                                                sub {
-                                                    $__serialize_log_and_push_in_queues->(
-                                                        $self->get_logger(),
-                                                        $connector,
-                                                        $self->get_publishers(),
-                                                        shift
-                                                    );
+                            aio_read($fh, 0, -s $fh, $connector_content, 0,
+                                sub {
+                                    close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                                                    $self->get_locks()->{$connector->get_name()} = 0;
-                                                }
-                                            );
-                                        } else {
-                                            $__serialize_log_and_push_in_queues->(
-                                                $self->get_logger(),
-                                                $connector,
-                                                $self->get_publishers(),
-                                                $connector_content
-                                            );
+                                    if ($connector->is_type_code()) {
+                                        Navel::Scheduler::Cron::Fork->new(
+                                            $connector,
+                                            $self->get_logger(),
+                                            $connector_content
+                                        )->when_done(
+                                            sub {
+                                                $__serialize_log_and_push_in_queues->(
+                                                    $self->get_logger(),
+                                                    $connector,
+                                                    $self->get_publishers(),
+                                                    shift
+                                                );
 
-                                            $self->get_locks()->{$connector->get_name()} = 0;
-                                        }
+                                                $self->get_locks()->{$connector->get_name()} = 0;
+                                            }
+                                        );
+                                    } else {
+                                        $__serialize_log_and_push_in_queues->(
+                                            $self->get_logger(),
+                                            $connector,
+                                            $self->get_publishers(),
+                                            $connector_content
+                                        );
+
+                                        $self->get_locks()->{$connector->get_name()} = 0;
                                     }
-                                )
-                            } else {
-                                $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
+                                }
+                            )
+                        } else {
+                            $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                                $self->get_locks()->{$connector->get_name()} = 0;
-                            }
+                            $self->get_locks()->{$connector->get_name()} = 0;
                         }
-                    );
-                } else {
-                    $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
-                }
+                    }
+                );
+            } else {
+                $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
             }
-        );
-    }
+        }
+    );
+
+    $self;
 }
 
 sub register_connectors {
@@ -179,13 +181,47 @@ sub register_connectors {
     $self;
 }
 
+sub init_publisher {
+    my $self = shift;
+
+    my $rabbitmq = $self->get_rabbitmq()->get_by_name(shift);
+
+    croak('undefined definition') unless (defined $rabbitmq);
+
+    $self->get_logger()->push_to_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info');
+
+    push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
+
+    $self;
+}
+
 sub init_publishers {
     my $self = shift;
 
-    for my $rabbitmq (@{$self->get_rabbitmq()->get_definitions()}) {
-        $self->get_logger()->push_to_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info')->flush_queue(1);
+    $self->init_publisher($_->get_name()) for (@{$self->get_rabbitmq()->get_definitions()});
 
-        push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
+    $self;
+}
+
+sub connect_publisher {
+    my $self = shift;
+
+    my $publisher = $self->get_publisher_by_definition_name(shift);
+
+    croak('undefined definition') unless (defined $publisher);
+
+    my $publisher_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
+
+    unless ($publisher->get_net()->is_connected()) {
+        my $connect_message = $publisher->connect();
+
+        if ($connect_message) {
+            $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_queue(1);
+        } else {
+            $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_queue(1);
+        }
+    } else {
+        $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_queue(1);
     }
 
     $self;
@@ -194,21 +230,66 @@ sub init_publishers {
 sub connect_publishers {
     my $self = shift;
 
-    for my $publisher (@{$self->get_publishers()}) {
-        my $publisher_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
+    $self->connect_publisher($_->get_definition()->get_name()) for (@{$self->get_publishers()});
 
-        unless ($publisher->get_net()->is_connected()) {
-            my $connect_message = $publisher->connect();
+    $self;
+}
 
-            if ($connect_message) {
-                $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_queue(1);
+sub register_publisher {
+    my $self = shift;
+
+    my $publisher = $self->get_publisher_by_definition_name(shift);
+
+    croak('undefined definition') unless (defined $publisher);
+
+    $self->get_cron()->add(
+        $publisher->get_definition()->get_scheduling(),
+        name => 'publisher_' . $publisher->get_definition()->get_name(),
+        single => 1,
+        sub {
+            local $@;
+
+            my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
+
+            if ($publisher->get_net()->is_connected()) {
+                my @queue = @{$publisher->get_queue()};
+
+                if (@queue) {
+                    $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+
+                    $publisher->clear_queue();
+
+                    eval {
+                        for my $body (@queue) {
+                            $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug');
+
+                            $publisher->get_net()->publish(
+                                $Navel::RabbitMQ::Publisher::CHANNEL_ID,
+                                $publisher->get_definition()->get_routing_key(),
+                                $body,
+                                {
+                                    exchange => $publisher->get_definition()->get_exchange()
+                                },
+                                {
+                                    delivery_mode => $publisher->get_definition()->get_delivery_mode()
+                                }
+                            );
+                        }
+                    };
+
+                    if ($@) {
+                        $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                    } else {
+                        $self->get_logger()->good($publish_generic_message . '.', 'notice');
+                    }
+                } else {
+                    $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
+                }
             } else {
-                $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_queue(1);
+                $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
             }
-        } else {
-            $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_queue(1);
         }
-    }
+    );
 
     $self;
 }
@@ -216,55 +297,24 @@ sub connect_publishers {
 sub register_publishers {
     my $self = shift;
 
-    local $@;
+    $self->register_publisher($_->get_definition()->get_name()) for (@{$self->get_publishers()});
 
-    for my $publisher (@{$self->get_publishers()}) {
-        $self->get_cron()->add(
-            $publisher->get_definition()->get_scheduling(),
-            name => 'publisher_' . $publisher->get_definition()->get_name(),
-            single => 1,
-            sub {
-                my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
+    $self;
+}
 
-                if ($publisher->get_net()->is_connected()) {
-                    my @queue = @{$publisher->get_queue()};
+sub disconnect_publisher {
+    my $self = shift;
 
-                    if (@queue) {
-                        $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+    my $publisher = $self->get_publisher_by_definition_name(shift);
 
-                        $publisher->clear_queue();
+    croak('undefined definition') unless (defined $publisher);
 
-                        eval {
-                            for my $body (@queue) {
-                                $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug');
+    my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->get_definition()->get_name();
 
-                                $publisher->get_net()->publish(
-                                    $Navel::RabbitMQ::Publisher::CHANNEL_ID,
-                                    $publisher->get_definition()->get_routing_key(),
-                                    $body,
-                                    {
-                                        exchange => $publisher->get_definition()->get_exchange()
-                                    },
-                                    {
-                                        delivery_mode => $publisher->get_definition()->get_delivery_mode()
-                                    }
-                                );
-                            }
-                        };
-
-                        if ($@) {
-                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
-                        } else {
-                            $self->get_logger()->good($publish_generic_message . '.', 'notice');
-                        }
-                    } else {
-                        $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
-                    }
-                } else {
-                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
-                }
-            }
-        );
+    if (my $error = $publisher->disconnect()) {
+        $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice');
+    } else {
+        $self->get_logger()->good($disconnect_generic_message . '.', 'notice');
     }
 
     $self;
@@ -273,15 +323,7 @@ sub register_publishers {
 sub disconnect_publishers {
     my $self = shift;
 
-    for (@{$self->get_publishers()}) {
-        my $disconnect_generic_message = 'Disconnect publisher ' . $_->get_definition()->get_name();
-
-        if (my $error = $_->disconnect()) {
-            $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice');
-        } else {
-            $self->get_logger()->good($disconnect_generic_message . '.', 'notice');
-        }
-    }
+    $self->disconnect_publisher($_->get_name()) for (@{$self->get_publishers()});
 
     $self;
 }
@@ -329,6 +371,26 @@ sub get_publisher_by_definition_name {
 
     for (@{$self->get_publishers()}) {
         return $_ if ($_->get_definition()->get_name() eq $definition_name);
+    }
+
+    undef;
+}
+
+sub delete_publisher_by_definition_name {
+    my ($self, $definition_name) = @_;
+
+    my $publishers = $self->get_publishers();
+
+    my $definition_to_delete_index = 0;
+
+    my $finded;
+
+    $definition_to_delete_index++ until ($finded = $publishers->[$definition_to_delete_index]->get_definition()->get_name() eq $definition_name);
+
+    if ($finded) {
+        splice @{$publishers}, $definition_to_delete_index, 1;
+    } else {
+        croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
     }
 
     undef;
