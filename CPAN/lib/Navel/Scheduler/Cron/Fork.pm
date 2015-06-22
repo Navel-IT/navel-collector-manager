@@ -55,14 +55,14 @@ sub new {
             if ($event_type eq 'ae_log') {
                 my ($severity, $message) = @_;
 
-                $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
+                $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
             }
         },
         on_error => sub {
             $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err');
         },
         on_destroy => sub {
-            $self->get_logger()->push_to_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
+            $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
         },
         serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
     );
@@ -80,7 +80,7 @@ sub when_done {
             $callback
         );
 
-        $self->get_logger()->push_to_queue('Spawned a new process.', 'debug');
+        $self->get_logger()->push_in_queue('Spawned a new process.', 'debug');
 
         undef $self->{__rpc};
     }

@@ -18,7 +18,7 @@ BEGIN {
 
 my $log_file = '/logger.log';
 
-unlink $log_file if ok(Navel::Logger->new('notice', $log_file)->push_to_queue(__FILE__, 'notice')->flush_queue(), 'new()->push_to_queue()->flush_queue() : push datas in ' . $log_file);
+unlink $log_file if ok(Navel::Logger->new('notice', $log_file)->push_in_queue(__FILE__, 'notice')->flush_queue(), 'new()->push_in_queue()->flush_queue() : push datas in ' . $log_file);
 
 #-> END
 

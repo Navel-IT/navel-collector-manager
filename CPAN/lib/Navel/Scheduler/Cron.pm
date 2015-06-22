@@ -165,7 +165,7 @@ sub register_connector {
                     }
                 );
             } else {
-                $self->get_logger()->push_to_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
+                $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
             }
         }
     );
@@ -188,7 +188,7 @@ sub init_publisher {
 
     croak('undefined definition') unless (defined $rabbitmq);
 
-    $self->get_logger()->push_to_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info');
+    $self->get_logger()->push_in_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info');
 
     push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
 
@@ -255,13 +255,13 @@ sub register_publisher {
                 my @queue = @{$publisher->get_queue()};
 
                 if (@queue) {
-                    $self->get_logger()->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+                    $self->get_logger()->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
                     $publisher->clear_queue();
 
                     eval {
                         for my $body (@queue) {
-                            $self->get_logger()->push_to_queue($publish_generic_message . ' : sending one body.', 'debug');
+                            $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one body.', 'debug');
 
                             $publisher->get_net()->publish(
                                 $Navel::RabbitMQ::Publisher::CHANNEL_ID,

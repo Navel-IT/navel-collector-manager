@@ -36,6 +36,10 @@ use Navel::Scheduler qw/
 
 use Navel::Definition::WebService::Etc::Parser;
 
+use Navel::RabbitMQ::Serialize::Data qw/
+    :all
+/;
+
 use Navel::Utils qw/
     :all
 /;
@@ -107,7 +111,7 @@ if (defined $general_configuration_file_path) {
     };
 
     if ($daemonize) {
-        $logger->push_to_queue('Daemonizing ...', 'info')->flush_queue(1);
+        $logger->push_in_queue('Daemonizing ...', 'info')->flush_queue(1);
 
         my $mojo_templates_fh = __PACKAGE__ . '::DATA';
 
@@ -438,24 +442,24 @@ if (defined $general_configuration_file_path) {
 
                                         if (defined $publisher) {
                                             if (my $error = $publisher->disconnect()) {
-                                                push @ko, 'Disconnect publisher ' . $rabbitmq_name . ' : ' . $error;
+                                                push @ko, 'Disconnect publisher ' . $publisher->get_definition()->get_name() . ' : ' . $error;
                                             } else {
-                                                push @ok, 'Disconnect publisher ' . $rabbitmq_name;
+                                                push @ok, 'Disconnect publisher ' . $publisher->get_definition()->get_name();
 
                                                 if ($publisher->get_definition()->merge($body)) {
-                                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' changed';
+                                                    push @ok, 'RabbitMQ ' . $publisher->get_definition()->get_name() . ' changed';
                                                 } else {
-                                                    push @ko, 'An error occurred while modifying RabbitMQ ' . $rabbitmq_name;
+                                                    push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->get_definition()->get_name();
                                                 }
 
                                                 if (my $error = $publisher->connect()) {
-                                                    push @ko, 'Connect publisher ' . $rabbitmq_name . ' : ' . $error;
+                                                    push @ko, 'Connect publisher ' . $publisher->get_definition()->get_name() . ' : ' . $error;
                                                 } else {
-                                                    push @ok, 'Connect publisher ' . $rabbitmq_name;
+                                                    push @ok, 'Connect publisher ' . $publisher->get_definition()->get_name();
                                                 }
                                             }
                                         } else {
-                                            push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists";
+                                            push @ko, 'RabbitMQ ' . $publisher->get_definition()->get_name() . " and his publisher don't exists";
                                         }
                                     } else {
                                         push @ko, 'Body need to be a hashtable';
@@ -515,41 +519,70 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api/publishers/(:publisher)' => sub {
+                    any [qw/GET PUT/] => '/scheduler/api/publishers/(:publisher)' => sub {
                         my $controller = shift;
 
                         my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($controller->param('publisher'));
 
-                        if (defined $publisher) {
-                            my $action = $controller->req()->query_params()->param('action') || '';
+                        given ($controller->req()->method()) {
+                            when ('PUT') {
+                                my (@ok, @ko);
 
-                            if ($action =~ /^(connect|disconnect)$/) {
-                                my $method = $1;
+                                my $body = $controller->req()->body();
 
-                                my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
+                                eval {
+                                    from($body);
+                                };
 
-                                if (my $error = $publisher->$method()) {
-                                    $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
+                                unless ($@) {
+                                    if (defined $publisher) {
+                                        $publisher->push_in_queue($body);
+
+                                        push @ok, 'Push manually datas to the queue of publisher ' . $publisher->get_definition()->get_name();
+                                    } else {
+                                        push @ko, 'Publisher ' . $publisher->get_definition()->get_name() . " don't exists";
+                                    }
                                 } else {
-                                    $logger->good($method_generic_message . '.', 'notice');
+                                    push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
                                 }
-                            } elsif ($action eq 'clear_queue') {
-                                $logger->push_to_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
-                                $publisher->$action();
+                                $controller->render(
+                                    json => ok_ko($logger, \@ok, \@ko)
+                                );
                             }
+                            default {
+                                if (defined $publisher) {
+                                    my $action = $controller->req()->query_params()->param('action') || '';
 
-                            return $controller->render(
-                                json => {
-                                    connected => $publisher->get_net()->is_connected() || 0,
-                                    messages_in_queue => scalar @{$publisher->get_queue()}
+                                    if ($action =~ /^(connect|disconnect)$/) {
+                                        my $method = $1;
+
+                                        my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
+
+                                        if (my $error = $publisher->$method()) {
+                                            $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
+                                        } else {
+                                            $logger->good($method_generic_message . '.', 'notice');
+                                        }
+                                    } elsif ($action eq 'clear_queue') {
+                                        $logger->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+
+                                        $publisher->$action();
+                                    }
+
+                                    return $controller->render(
+                                        json => {
+                                            connected => $publisher->get_net()->is_connected() || 0,
+                                            messages_in_queue => scalar @{$publisher->get_queue()}
+                                        }
+                                    );
                                 }
-                            );
-                        }
 
-                        $controller->render(
-                            json => {}
-                        );
+                                $controller->render(
+                                    json => {}
+                                );
+                            }
+                        }
                     };
 
                     get '/scheduler/api/webservices' => {
@@ -569,7 +602,7 @@ if (defined $general_configuration_file_path) {
                         listen => $web_services_listeners->get_urls()
                     );
 
-                    $logger->push_to_queue('Starting the webservices ...', 'notice')->flush_queue(1);
+                    $logger->push_in_queue('Starting the webservices ...', 'notice')->flush_queue(1);
 
                     eval {
                         $prefork_server->silent(1)->start();
@@ -591,7 +624,7 @@ if (defined $general_configuration_file_path) {
 
         }
 
-        $logger->push_to_queue('Starting the scheduler ...', 'notice')->flush_queue(1);
+        $logger->push_in_queue('Starting the scheduler ...', 'notice')->flush_queue(1);
 
         eval {
             $scheduler->run($logger);

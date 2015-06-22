@@ -116,7 +116,7 @@ sub get_queue {
     shift->{__queue};
 }
 
-sub push_to_queue { # need changes relatives to the comments below
+sub push_in_queue { # need changes relatives to the comments below
     my ($self, $messages, $severity) = @_;
 
     push @{$self->get_queue()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
@@ -125,11 +125,11 @@ sub push_to_queue { # need changes relatives to the comments below
 }
 
 sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
-    shift->push_to_queue('[OK] ' . shift, shift);
+    shift->push_in_queue('[OK] ' . shift, shift);
 }
 
 sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
-    shift->push_to_queue('[KO] ' . shift, shift);
+    shift->push_in_queue('[KO] ' . shift, shift);
 }
 
 sub join_queue {
