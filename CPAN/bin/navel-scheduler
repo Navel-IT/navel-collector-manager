@@ -37,7 +37,7 @@ use Navel::Scheduler qw/
 use Navel::Definition::WebService::Etc::Parser;
 
 use Navel::RabbitMQ::Serialize::Data qw/
-    :all
+    to
 /;
 
 use Navel::Utils qw/
