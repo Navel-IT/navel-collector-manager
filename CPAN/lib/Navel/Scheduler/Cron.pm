@@ -89,7 +89,7 @@ sub register_logger {
 
     $self->get_cron()->add(
         '* * * * * ?',
-        name => 'logger',
+        name => 'logger_0',
         single => 1,
         sub {
             $self->get_logger()->flush_queue(1);
