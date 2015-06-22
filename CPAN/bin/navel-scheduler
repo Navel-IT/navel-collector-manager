@@ -261,7 +261,7 @@ if (defined $general_configuration_file_path) {
 
                         shift->render(
                             json => {
-                                job_count => {
+                                jobs_registered => {
                                     loggers => $loggers,
                                     publishers => $publishers,
                                     connectors => $connectors
