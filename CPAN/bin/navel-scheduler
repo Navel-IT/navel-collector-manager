@@ -37,7 +37,7 @@ use Navel::Scheduler qw/
 use Navel::Definition::WebService::Etc::Parser;
 
 use Navel::RabbitMQ::Serialize::Data qw/
-    from
+    :all
 /;
 
 use Navel::Utils qw/
@@ -542,28 +542,30 @@ if (defined $general_configuration_file_path) {
                     any [qw/GET PUT/] => '/scheduler/api/publishers/(:publisher)' => sub {
                         my $controller = shift;
 
-                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($controller->param('publisher'));
+                        my $publisher_name = $controller->param('publisher');
+
+                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($publisher_name);
 
                         given ($controller->req()->method()) {
                             when ('PUT') {
                                 my (@ok, @ko);
 
-                                my $body = $controller->req()->body();
+                                if (defined $publisher) {
+                                    my $body = eval {
+                                        from(
+                                            to(undef, $controller->req()->body())
+                                        );
+                                    };
 
-                                eval {
-                                    from($body);
-                                };
-
-                                unless ($@) {
-                                    if (defined $publisher) {
+                                    unless ($@) {
                                         $publisher->push_in_queue($body);
 
                                         push @ok, 'Push manually datas to the queue of publisher ' . $publisher->get_definition()->get_name();
                                     } else {
-                                        push @ko, 'Publisher ' . $publisher->get_definition()->get_name() . " don't exists";
+                                        push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
                                     }
                                 } else {
-                                    push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
+                                    push @ko, 'Publisher ' . $publisher_name . " don't exists";
                                 }
 
                                 $controller->render(
