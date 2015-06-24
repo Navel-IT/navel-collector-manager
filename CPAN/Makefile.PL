@@ -38,7 +38,6 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'Scalar::Util::Numeric' => 0,
-        'IO::File' => 0,
         'File::Slurp' => 0,
         'IO::AIO' => 0,
         'JSON' => 0,
