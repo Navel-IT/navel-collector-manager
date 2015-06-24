@@ -37,6 +37,11 @@ use Storable qw/
     dclone
 /;
 
+use Scalar::Util::Numeric qw/
+    isint
+    isfloat
+/;
+
 use Data::Validate::Struct;
 
 use Navel::Utils qw/
@@ -59,7 +64,8 @@ sub scheduler_definition_validator($) {
             },
             webservices => {
                 login => 'text',
-                password => 'text'
+                password => 'text',
+                mojo_server => 'general_mojo_server'
             },
             rabbitmq => {
                 auto_connect => 'general_auto_connect'
@@ -68,6 +74,31 @@ sub scheduler_definition_validator($) {
     );
 
     $validator->type(
+        general_mojo_server => sub {
+            my $value = shift;
+
+            my $customs_options_ok = 0;
+
+            if (ref $value eq 'HASH') {
+                $customs_options_ok = 1;
+
+                my $properties_type = {
+                    accepts => \&isint,
+                    accept_interval => \&isfloat,
+                    graceful_timeout => \&isfloat,
+                    heartbeat_interval => \&isfloat,
+                    heartbeat_timeout => \&isfloat,
+                    multi_accept => \&isint,
+                    workers => \&isint
+                };
+
+                while (my ($property, $type) = each %{$properties_type}) {
+                    $customs_options_ok = 0 if (exists $value->{$property} && defined $value->{$property} && ! $value->{$property});
+                }
+            }
+
+            $customs_options_ok;
+        },
         general_auto_connect => sub {
             my $value = shift;
 

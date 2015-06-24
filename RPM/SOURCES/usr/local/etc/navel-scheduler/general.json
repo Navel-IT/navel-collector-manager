@@ -7,7 +7,9 @@
     },
     "webservices" : {
         "login" : "admin",
-        "password" : "admin"
+        "password" : "admin",
+        "mojo_server" : {
+        }
     },
     "rabbitmq" : {
         "auto_connect" : 1

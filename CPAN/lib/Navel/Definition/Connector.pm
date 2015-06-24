@@ -85,7 +85,7 @@ sub connector_definition_validator($) {
         }
     );
 
-    $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # sadly, Data::Validate::Struct doesn't work with undef (JSON's null) value
+    $validator->validate($parameters) && (exists $parameters->{source} and ! defined $parameters->{source} || $parameters->{source} =~ /^[\w_\-]+$/) && exists $parameters->{input}; # unfortunately, Data::Validate::Struct doesn't work with undef (JSON's null) value
 }
 
 #-> methods

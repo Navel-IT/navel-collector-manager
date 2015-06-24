@@ -102,8 +102,8 @@ $getopts->getoptions(
 if (defined $general_configuration_file_path) {
     my $logger = Navel::Logger->new(
         'notice',
-        $log_file_path,
-        $log_severity
+        $log_severity,
+        $log_file_path
     );
 
     my $scheduler = eval {
@@ -113,16 +113,11 @@ if (defined $general_configuration_file_path) {
     if ($daemonize) {
         $logger->push_in_queue('Daemonizing ...', 'info')->flush_queue(1);
 
-        my $mojo_templates_fh = __PACKAGE__ . '::DATA';
-
         Proc::Daemon->new(
             working_directory => getcwd(),
             pid_file => $pid_dir . '/navel-scheduler.pid',
-            dont_close_fh => $logger->is_filehandler_via_lib() ? [
-                $mojo_templates_fh,
-                $logger->get_filehandler()
-            ] : [
-                $mojo_templates_fh
+            dont_close_fh => [
+                __PACKAGE__ . '::DATA'
             ]
         )->Init();
 
@@ -627,6 +622,10 @@ if (defined $general_configuration_file_path) {
                     $logger->push_in_queue('Starting the webservices ...', 'notice')->flush_queue(1);
 
                     eval {
+                        while (my ($method, $value) = each %{$scheduler->get_configuration()->get_definition()->{webservices}->{mojo_server}}) {
+                            $prefork_server->$method($value);
+                        }
+
                         $prefork_server->silent(1)->start();
                     };
 
@@ -635,10 +634,6 @@ if (defined $general_configuration_file_path) {
                     } else {
                         $logger->good('Webservices started.', 'notice')->flush_queue(1);
                     }
-
-                    # $prefork_server->workers();
-                    # $prefork_server->accepts()
-                    # $prefork_server->multi_accept();
                 }
             } else {
                 $logger->bad($@ . '.', 'err')->flush_queue(1);

@@ -87,12 +87,14 @@ sub new {
 sub register_logger {
     my $self = shift;
 
+    my $job_name = 'logger_0';
+
     $self->get_cron()->add(
-        '* * * * * ?',
-        name => 'logger_0',
+        '*/3 * * * * ?',
+        name => $job_name,
         single => 1,
         sub {
-            $self->get_logger()->flush_queue(1);
+                $self->get_logger()->flush_queue(1);
         }
     );
 
@@ -106,14 +108,17 @@ sub register_connector {
 
     croak('undefined definition') unless (defined $connector);
 
+    my $job_name = 'connector_' . $connector->get_name();
+
     $self->get_cron()->add(
         $connector->get_scheduling(),
-        name => 'connector_' . $connector->get_name(),
+        name => $job_name,
+        single => 1,
         sub {
             local ($@, $!);
 
-            unless ($self->get_locks()->{$connector->get_name()}) {
-                $self->get_locks()->{$connector->get_name()} = $connector->get_singleton();
+            unless ($self->get_locks()->{$job_name}) {
+                $self->get_locks()->{$job_name} = $connector->get_singleton();
 
                 aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
                     sub {
@@ -142,7 +147,7 @@ sub register_connector {
                                                     shift
                                                 );
 
-                                                $self->get_locks()->{$connector->get_name()} = 0;
+                                                $self->get_locks()->{$job_name} = 0;
                                             }
                                         );
                                     } else {
@@ -153,14 +158,14 @@ sub register_connector {
                                             $connector_content
                                         );
 
-                                        $self->get_locks()->{$connector->get_name()} = 0;
+                                        $self->get_locks()->{$job_name} = 0;
                                     }
                                 }
                             )
                         } else {
                             $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                            $self->get_locks()->{$connector->get_name()} = 0;
+                            $self->get_locks()->{$job_name} = 0;
                         }
                     }
                 );
