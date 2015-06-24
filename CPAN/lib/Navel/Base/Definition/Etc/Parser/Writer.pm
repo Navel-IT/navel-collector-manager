@@ -40,7 +40,10 @@ sub write {
 
     write_file(
         $file_path,
-        encode_json_pretty($definitions)
+        {
+            binmode => ':utf8'
+        },
+        \encode_json_pretty($definitions)
     );
 
     $self;

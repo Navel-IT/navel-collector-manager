@@ -40,7 +40,10 @@ sub read {
 
     eval {
         decode_json(
-            scalar read_file($file_path)
+            scalar read_file(
+                $file_path,
+                binmode => ':utf8'
+            )
         );
     };
 }
