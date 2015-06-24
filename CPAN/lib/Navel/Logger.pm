@@ -32,7 +32,9 @@ use String::Util qw/
     crunch
 /;
 
-use IO::File;
+use File::Slurp qw/
+    append_file
+/;
 
 use Navel::Logger::Severity;
 
@@ -42,7 +44,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-#-> global
+#-> globals
 
 binmode STDOUT, ':utf8';
 
@@ -51,29 +53,15 @@ binmode STDERR, ':utf8';
 #-> methods
 
 sub new {
-    my ($class, $default_severity, $file_path, $severity) = @_;
+    my ($class, $default_severity, $severity, $file_path) = @_;
 
-    local $!;
-
-    my $self = {
+    bless {
         __severity => eval {
             Navel::Logger::Severity->new($severity)
         } || Navel::Logger::Severity->new($default_severity),
         __file_path => $file_path,
         __queue => []
-    };
-
-    if (defined $self->{__file_path}) {
-        $self->{__filehandler} = IO::File->new();
-
-        $self->{__filehandler}->binmode(':utf8');
-
-        $self->{__filehandler} = undef unless $self->{__filehandler}->open('>> ' . $self->{__file_path});
-    }
-
-    $self->{__filehandler} ||= *STDOUT;
-
-    bless $self, ref $class || $class;
+    }, ref $class || $class;
 }
 
 sub get_severity {
@@ -82,34 +70,6 @@ sub get_severity {
 
 sub get_file_path {
     shift->{__file_path};
-}
-
-sub get_filehandler {
-    shift->{__filehandler};
-}
-
-sub __set_filehandler {
-    shift->{__filehandler} = shift;
-}
-
-sub on_stdout {
-    my $self = shift;
-
-    $self->__set_filehandler(*STDOUT);
-
-    $self;
-}
-
-sub on_stderr {
-    my $self = shift;
-
-    $self->__set_filehandler(*STDERR);
-
-    $self;
-}
-
-sub is_filehandler_via_lib {
-    blessed(shift->get_filehandler()) eq 'IO::File';
 }
 
 sub get_queue {
@@ -138,18 +98,6 @@ sub join_queue {
     join $separator, @{$self->get_queue()};
 }
 
-sub flush_queue {
-    my ($self, $clear_queue) = @_;
-
-    no strict qw/
-        refs
-    /;
-
-    say { $self->get_filehandler() } $self->join_queue("\n") if (@{$self->get_queue()});
-
-    $clear_queue ? $self->clear_queue() : $self;
-}
-
 sub clear_queue {
     my $self = shift;
 
@@ -158,15 +106,33 @@ sub clear_queue {
     $self;
 }
 
+sub flush_queue {
+    my ($self, $clear_queue) = @_;
+
+    if (@{$self->get_queue()}) {
+        if (defined $self->get_file_path()) {
+            eval {
+                append_file(
+                    $self->get_file_path(),
+                    {
+                        binmode => ':utf8'
+                    },
+                    [
+                        map { $_ . "\n" } @{$self->get_queue()}
+                    ]
+                );
+            };
+        } else {
+            say $self->join_queue("\n");
+        }
+    }
+
+    $clear_queue ? $self->clear_queue() : $self;
+}
+
 # sub AUTOLOAD {}
 
-sub DESTROY {
-    my $self = shift;
-
-    local $!;
-
-    $self->get_filehandler()->close() if ($self->is_filehandler_via_lib());
-}
+# sub DESTROY {}
 
 1;
 
