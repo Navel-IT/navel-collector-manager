@@ -28,7 +28,7 @@ Requires:    perl => 5.10.1-1, perl(Scalar::Util::Numeric), perl(File::Slurp), p
 [ "${RPM_BUILD_ROOT}" != '/' ] && rm -rf "${RPM_BUILD_ROOT}"
 
 %post
-chkconfig --level 234 navel-scheduler on
+chkconfig navel-scheduler on
 
 %files
 %defattr(-, root, root)
