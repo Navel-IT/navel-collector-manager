@@ -70,7 +70,7 @@ Service
 
 `service navel-scheduler <action>`
 
-If you want to change the service options, edit */etc/sysconfig/navel-scheduler*
+If you want to change the service options, edit */etc/sysconfig/navel-scheduler*.
 
 REST API
 --------
