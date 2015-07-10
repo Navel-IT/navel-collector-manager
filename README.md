@@ -23,6 +23,8 @@ cpanm <cpan-archive> -n
 
 cp -R RPM/SOURCES/* /
 
+chmod +x /etc/init.d/navel-scheduler
+
 chkconfig navel-scheduler on
 ```
 
