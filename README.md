@@ -46,10 +46,10 @@ Prepare configuration
 ```javascript
 {
     "definitions_path" : {
-        "connectors" : "/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/etc/navel-scheduler/connectors", // this directory contains the connectors (scripts)
-        "rabbitmq" : "/etc/navel-scheduler/rabbitmq.json",
-        "webservices" : "/etc/navel-scheduler/webservices.json"
+        "connectors" : "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors", // this directory contains the connectors (scripts)
+        "rabbitmq" : "/usr/local/etc/navel-scheduler/rabbitmq.json",
+        "webservices" : "/usr/local/etc/navel-scheduler/webservices.json"
     },
     "webservices" : { // properties shared by all the web services
         "login" : "admin", // can be modified at runtime
@@ -109,10 +109,10 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {
     "definitions_path" : {
-        "connectors" : "/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/etc/navel-scheduler/connectors",
-        "rabbitmq" : "/etc/navel-scheduler/rabbitmq.json",
-        "webservices" : "/etc/navel-scheduler/webservices.json"
+        "connectors" : "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "rabbitmq" : "/usr/local/etc/navel-scheduler/rabbitmq.json",
+        "webservices" : "/usr/local/etc/navel-scheduler/webservices.json"
     },
     "webservices" : {
         "login" : "admin",
@@ -163,7 +163,7 @@ The following endpoints are currently availables for informations and runtime mo
     "input" : {
         "url" : "http://login:password@glpi.home.fr:8080"
     },
-    "exec_directory_path" : "/etc/navel-scheduler/connectors"
+    "exec_directory_path" : "/usr/local/etc/navel-scheduler/connectors"
 }
 ```
   - /scheduler/api/rabbitmq
