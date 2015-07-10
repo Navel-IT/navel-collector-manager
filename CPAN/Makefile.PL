@@ -12,7 +12,7 @@ use ExtUtils::MakeMaker 6.64;
 
 #-> main
 
-my $min_per_version = '5.10.1';
+my $min_perl_version = '5.10.1';
 
 WriteMakefile(
     NAME => 'Navel::Scheduler',
@@ -22,7 +22,7 @@ WriteMakefile(
     LICENSE => 'GNU GPL v3',
     META_MERGE => {
         requires => {
-            perl => $min_per_version
+            perl => $min_perl_version
         },
         resources => {
             license => 'http://www.gnu.org/copyleft/gpl.html',
@@ -32,7 +32,7 @@ WriteMakefile(
             directory => ['t']
         }
     },
-    MIN_PERL_VERSION => $min_per_version,
+    MIN_PERL_VERSION => $min_perl_version,
     CONFIGURE_REQUIRES => {
        'ExtUtils::MakeMaker' => 6.64
     },
