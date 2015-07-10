@@ -72,14 +72,14 @@ Prepare configuration
     {
         "name" : "webservice-1", // web service (unique name)
         "interface_mask" : "*", // this web service will be listening on this mask
-        "port" : 3000, // this web service will be listening on this port
+        "port" : 80, // this web service will be listening on this port
         "tls" : 0 // 0 or 1. Enable TLS
     },
     {
         "name" : "webservice-2",
         "interface_mask" : "*",
-        "port" : 3000,
-        "tls" : 0
+        "port" : 443,
+        "tls" : 1
     }
 ]
 ```
