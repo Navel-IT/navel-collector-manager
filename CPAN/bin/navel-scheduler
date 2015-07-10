@@ -589,6 +589,7 @@ if (defined $general_configuration_file_path) {
 
                                     return $controller->render(
                                         json => {
+                                            name => $publisher->get_definition()->get_name(),
                                             connected => $publisher->get_net()->is_connected() || 0,
                                             messages_in_queue => scalar @{$publisher->get_queue()}
                                         }
