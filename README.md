@@ -5,19 +5,38 @@ navel-scheduler's purpose is to get back datas from connectors at scheduled (Qua
 
 It must work on all Linux platforms but, **at this time, it is only supported on RHEL/CentOS 6.6**.
 
-Build
------
+Build and install
+-----------------
 
-- CPAN : `build_cpan_archive.sh <version>`
+Assuming you have all the necessary commands installed ...
 
-- RPM : `build_rpm_archive.sh <version> <release>`
+- CPAN
 
-Install
--------
+```
+git clone http://github.com/Navel-IT/navel-scheduler.git
 
-- CPAN : `cpanm <cpan-archive> -n`
+cd navel-scheduler/
 
-- RPM : `yum localinstall <rpm-archive>`
+./build_cpan_archive.sh <version>
+
+cpanm <cpan-archive> -n
+
+cp -R RPM/SOURCES/* /
+
+chkconfig navel-scheduler on
+```
+
+- RPM
+
+```
+git clone http://github.com/Navel-IT/navel-scheduler.git
+
+cd navel-scheduler/
+
+./build_rpm_archive.sh <version> <release>
+
+yum localinstall <rpm-archive>
+```
 
 Prepare configuration
 ---------------------
