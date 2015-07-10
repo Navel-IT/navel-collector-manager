@@ -299,7 +299,7 @@ The following endpoints are currently availables for informations and runtime mo
 {
     "ok" : [
         "Publisher rabbitmq-3 disconnected, unregistered and deleted",
-        'RabbitMQ rabbitmq-3 deleted'
+        "RabbitMQ rabbitmq-3 deleted"
     ],
     "ko" : []
 }
