@@ -498,7 +498,7 @@ if (defined $general_configuration_file_path) {
                                     };
 
                                     unless ($@) {
-                                        push @ok, 'Publisher ' . $rabbitmq_name . ' disconnected and deleted';
+                                        push @ok, 'Publisher ' . $rabbitmq_name . ' unregistered, disconnected and deleted';
 
                                         eval {
                                             $scheduler->get_core()->get_rabbitmq()->delete_definition($rabbitmq_name);
