@@ -27,6 +27,8 @@ cpanm ExtUtils::MakeMaker <cpan-archive>
 mkdir -p /usr/local/etc/navel-scheduler/connectors
 cp -n RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 
+mkdir /var/log/navel-scheduler
+
 cp -n RPM/SOURCES/etc/sysconfig/* /etc/sysconfig
 chmod +x RPM/SOURCES/etc/init.d/*
 cp -np RPM/SOURCES/etc/init.d/* /etc/init.d
