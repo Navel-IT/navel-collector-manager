@@ -37,7 +37,7 @@ chkconfig navel-scheduler on
 - **RPM**
 
 ```
-yum install -y git gcc bash
+yum install -y git rpm-build gcc bash
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
