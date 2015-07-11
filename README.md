@@ -8,18 +8,24 @@ It must work on all Linux platforms but, **at this time, it is only supported on
 Build and install
 -----------------
 
-Assuming you have all the necessary commands installed ...
+Assuming you started the installation from scratch ...
 
 - CPAN
 
 ```
+yum install -y git gcc bash perl
+
+curl -L http://cpanmin.us | perl - App::cpanminus
+
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
+chmod +x build_cpan_archive.sh
+
 ./build_cpan_archive.sh <version>
 
-cpanm <cpan-archive> -n
+cpanm ExtUtils::MakeMaker <cpan-archive>
 
 cp -R RPM/SOURCES/* /
 
@@ -31,9 +37,13 @@ chkconfig navel-scheduler on
 - RPM
 
 ```
+yum install -y git gcc bash
+
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
+
+chmod +x build_rpm_archive.sh
 
 ./build_rpm_archive.sh <version> <release>
 
