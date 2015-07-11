@@ -13,7 +13,7 @@ Assuming you have all the necessary commands installed ...
 - CPAN
 
 ```
-git clone http://github.com/Navel-IT/navel-scheduler.git
+git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
@@ -31,7 +31,7 @@ chkconfig navel-scheduler on
 - RPM
 
 ```
-git clone http://github.com/Navel-IT/navel-scheduler.git
+git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
