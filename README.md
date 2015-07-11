@@ -14,7 +14,6 @@ Assuming you started the installation from scratch ...
 
 ```
 yum install -y git gcc bash perl
-
 curl -L http://cpanmin.us | perl - App::cpanminus
 
 git clone git://github.com/Navel-IT/navel-scheduler.git
@@ -22,14 +21,15 @@ git clone git://github.com/Navel-IT/navel-scheduler.git
 cd navel-scheduler/
 
 chmod +x build_cpan_archive.sh
-
 ./build_cpan_archive.sh <version>
-
 cpanm ExtUtils::MakeMaker <cpan-archive>
 
-cp -R RPM/SOURCES/* /
+mkdir -p /usr/local/etc/navel-scheduler/connectors
+cp -n RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 
-chmod +x /etc/init.d/navel-scheduler
+cp -n RPM/SOURCES/etc/sysconfig/* /etc/sysconfig
+chmod +x RPM/SOURCES/etc/init.d/*
+cp -np RPM/SOURCES/etc/init.d/* /etc/init.d
 
 chkconfig navel-scheduler on
 ```
@@ -38,15 +38,12 @@ chkconfig navel-scheduler on
 
 ```
 yum install -y git gcc bash
-
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
 chmod +x build_rpm_archive.sh
-
 ./build_rpm_archive.sh <version> <release>
-
 yum localinstall <rpm-archive>
 ```
 
