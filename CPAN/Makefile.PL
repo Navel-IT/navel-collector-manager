@@ -60,7 +60,9 @@ WriteMakefile(
         'String::Util' => 0,
         'Cwd' => 0,
         'Proc::Daemon' => 0,
-        'Mojolicious' => 0
+        'Mojolicious' => 0,
+        'Time::HiRes' => 0,
+        'Compress::Raw::Zlib' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,
