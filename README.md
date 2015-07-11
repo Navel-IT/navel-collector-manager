@@ -10,7 +10,7 @@ Build and install
 
 Assuming you start the installation from scratch ...
 
-- CPAN
+- **CPAN**
 
 ```
 yum install -y git gcc bash perl
@@ -34,7 +34,7 @@ cp -np RPM/SOURCES/etc/init.d/* /etc/init.d
 chkconfig navel-scheduler on
 ```
 
-- RPM
+- **RPM**
 
 ```
 yum install -y git gcc bash
