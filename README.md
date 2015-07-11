@@ -8,7 +8,7 @@ It must work on all Linux platforms but, **at this time, it is only supported on
 Build and install
 -----------------
 
-Assuming you started the installation from scratch ...
+Assuming you start the installation from scratch ...
 
 - CPAN
 
