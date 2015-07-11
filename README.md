@@ -235,7 +235,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {
     "name" : "rabbitmq-1",
-    "connected" : 1,
+    "connected" : 0,
     "messages_in_queue" : 0
 }
 ```
