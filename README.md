@@ -28,7 +28,7 @@ getent passwd myservice || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel
 
 cp RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 
-mkdir /var/run/navel-scheduler/ /var/log/navel-scheduler
+mkdir /var/run/navel-scheduler/ /var/log/navel-scheduler/
 
 cp RPM/SOURCES/etc/sysconfig/navel-scheduler /etc/sysconfig/
 chmod +x RPM/SOURCES/etc/init.d/navel-scheduler
