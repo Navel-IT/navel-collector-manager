@@ -83,13 +83,13 @@ Prepare configuration
     {
         "name" : "webservice-1", // web service (unique name)
         "interface_mask" : "*", // this web service will list on this mask
-        "port" : 8080, // this web service will listen on this port
+        "port" : 22080, // this web service will listen on this port
         "tls" : 0 // 0 or 1. Enable TLS
     },
     {
         "name" : "webservice-2",
         "interface_mask" : "*",
-        "port" : 443,
+        "port" : 22443,
         "tls" : 1
     }
 ]
@@ -258,7 +258,7 @@ The following endpoints are currently availables for informations and runtime mo
     {
         "name" : "webservice-1",
         "interface_mask" : "*",
-        "port" : 8080,
+        "port" : 22080,
         "tls" : 0
     }
 ]
