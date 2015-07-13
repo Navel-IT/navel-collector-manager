@@ -18,8 +18,9 @@ prog='navel-scheduler'
 
 prog_full_path="/usr/local/bin/${prog}"
 
-lockfile="/var/lock/subsys/${prog}.lock"
-pidfile="/var/run/${prog}.pid"
+prog_user='navel-scheduler'
+
+pidfile="/var/run/navel-scheduler/${prog}.pid"
 sysconfig="/etc/sysconfig/${prog}"
 
 [[ -r ${sysconfig} ]] && . ${sysconfig}
@@ -29,11 +30,9 @@ sysconfig="/etc/sysconfig/${prog}"
 f_start() {
     ${ECHO} -n "Starting ${prog} : "
 
-    daemon --pidfile=${pidfile} ${prog_full_path} ${OPTS}
+    daemon --user=${prog_user} --pidfile=${pidfile} ${prog_full_path} ${OPTS}
 
     ${ECHO}
-
-    ${TOUCH} ${lockfile}
 }
 
 f_stop() {
@@ -42,8 +41,6 @@ f_stop() {
     killproc -p ${pidfile} ${prog_full_path}
 
     ${ECHO}
-
-    ${RM} -f ${lockfile}
 }
 
 #-> main

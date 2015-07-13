@@ -55,7 +55,7 @@ my (
     $prefork_server
 );
 
-my $pid_dir = '/var/run';
+my $pid_dir = '/var/run/navel-scheduler';
 
 #-> functions
 

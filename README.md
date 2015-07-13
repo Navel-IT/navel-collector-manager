@@ -20,20 +20,23 @@ git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-chmod +x build_cpan_archive.sh
-./build_cpan_archive.sh <version>
+bash build_cpan_archive.sh <version>
 cpanm ExtUtils::MakeMaker <cpan-archive>
 
-mkdir -p /usr/local/etc/navel-scheduler/connectors
-cp -n RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
+getent group navel-scheduler || groupadd -r navel-scheduler
+getent passwd myservice || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
 
-mkdir /var/log/navel-scheduler
+cp RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 
-cp -n RPM/SOURCES/etc/sysconfig/* /etc/sysconfig
-chmod +x RPM/SOURCES/etc/init.d/*
-cp -np RPM/SOURCES/etc/init.d/* /etc/init.d
+mkdir /var/run/navel-scheduler/ /var/log/navel-scheduler
+
+cp RPM/SOURCES/etc/sysconfig/navel-scheduler /etc/sysconfig/
+chmod +x RPM/SOURCES/etc/init.d/navel-scheduler
+cp -p RPM/SOURCES/etc/init.d/navel-scheduler /etc/init.d/
 
 chkconfig navel-scheduler on
+
+chown -R navel-scheduler:navel-scheduler /usr/local/bin/navel-scheduler /usr/local/etc/navel-scheduler/ /var/run/navel-scheduler/ /var/log/navel-scheduler/
 ```
 
 - **RPM**
@@ -44,8 +47,7 @@ git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-chmod +x build_rpm_archive.sh
-./build_rpm_archive.sh <version> <release>
+bash build_rpm_archive.sh <version> <release>
 yum localinstall <rpm-archive>
 ```
 
@@ -80,8 +82,8 @@ Prepare configuration
 [
     {
         "name" : "webservice-1", // web service (unique name)
-        "interface_mask" : "*", // this web service will be listening on this mask
-        "port" : 80, // this web service will be listening on this port
+        "interface_mask" : "*", // this web service will list on this mask
+        "port" : 8080, // this web service will listen on this port
         "tls" : 0 // 0 or 1. Enable TLS
     },
     {
@@ -103,6 +105,8 @@ Service
 `service navel-scheduler <action>`
 
 If you want to change the service options, edit */etc/sysconfig/navel-scheduler*.
+
+**Note** : the service will run under *navel-scheduler:navel-scheduler*.
 
 REST API
 --------
@@ -254,7 +258,7 @@ The following endpoints are currently availables for informations and runtime mo
     {
         "name" : "webservice-1",
         "interface_mask" : "*",
-        "port" : 80,
+        "port" : 8080,
         "tls" : 0
     }
 ]

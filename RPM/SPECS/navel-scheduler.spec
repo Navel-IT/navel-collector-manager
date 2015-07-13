@@ -13,7 +13,7 @@ Prefix:    /opt
 BuildRoot:      %{_tmppath}/%{name}
 BuildArch:    noarch
 
-Requires:    perl => 5.10.1-1, perl(Scalar::Util::Numeric), perl(File::Slurp), perl(IO::AIO), perl(JSON), perl(IPC::Cmd), perl(Net::AMQP::RabbitMQ), perl(Carp), perl(EV), perl(AnyEvent::Datetime::Cron), perl(AnyEvent::AIO), perl(AnyEvent::Fork), perl(AnyEvent::Fork::RPC), perl(Exporter::Easy), perl(Storable), perl(Data::Validate::Struct), perl(Scalar::Util), perl(DateTime::Event::Cron::Quartz), perl(Pod::Usage), perl(List::MoreUtils), perl(String::Util), perl(Cwd), perl(Proc::Daemon), perl(Mojolicious), perl(Time::HiRes), perl(Compress::Raw::Zlib)
+Requires:    bash, perl >= 5.10.1-1, perl(Scalar::Util::Numeric), perl(File::Slurp), perl(IO::AIO), perl(JSON), perl(IPC::Cmd), perl(Net::AMQP::RabbitMQ), perl(Carp), perl(EV), perl(AnyEvent::Datetime::Cron), perl(AnyEvent::AIO), perl(AnyEvent::Fork), perl(AnyEvent::Fork::RPC), perl(Exporter::Easy), perl(Storable), perl(Data::Validate::Struct), perl(Scalar::Util), perl(DateTime::Event::Cron::Quartz), perl(Pod::Usage), perl(List::MoreUtils), perl(String::Util), perl(Cwd), perl(Proc::Daemon), perl(Mojolicious), perl(Time::HiRes), perl(Compress::Raw::Zlib)
 
 %description
 "navel-scheduler's purpose is to get back datas from connectors at scheduled time then encode and push it through RabbbitMQ to navel-router"
@@ -27,17 +27,28 @@ Requires:    perl => 5.10.1-1, perl(Scalar::Util::Numeric), perl(File::Slurp), p
 %clean
 [ "${RPM_BUILD_ROOT}" != '/' ] && rm -rf "${RPM_BUILD_ROOT}"
 
+%pre
+getent group navel-scheduler || groupadd -r navel-scheduler
+getent passwd myservice || useradd -rmd /usr/local/etc/navel-scheduler/ -s /sbin/nologin navel-scheduler
+
 %post
 chkconfig navel-scheduler on
 
 %files
-%defattr(-, root, root)
+%defattr(-, navel-scheduler, navel-scheduler)
 
-/etc/sysconfig/*
-%attr(755, -, -) /etc/init.d/*
-/usr/local/etc/navel-scheduler/*
-%attr(755, -, -) /usr/local/bin/*
-/usr/local/share/navel-scheduler/lib/*
+%dir% /usr/local/share/navel-scheduler
+%dir% /var/run/navel-scheduler/
 %dir% /var/log/navel-scheduler/
+
+%attr(-, root, root) /etc/sysconfig/navel-scheduler
+%attr(755, root, root) /etc/init.d/navel-scheduler
+/usr/local/etc/navel-scheduler/*
+%attr(755, -, -) /usr/local/bin/navel-scheduler
+/usr/local/share/navel-scheduler/lib/*
+
+%postun
+groupdel navel-scheduler
+userdel navel-scheduler
 
 #-> END
