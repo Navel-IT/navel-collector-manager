@@ -24,7 +24,7 @@ bash build_cpan_archive.sh <version>
 cpanm ExtUtils::MakeMaker <cpan-archive>
 
 getent group navel-scheduler || groupadd -r navel-scheduler
-getent passwd myservice || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
+getent passwd navel-scheduler || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
 
 cp RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 

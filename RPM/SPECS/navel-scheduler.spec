@@ -29,7 +29,7 @@ Requires:    bash, perl >= 5.10.1-1, perl(Scalar::Util::Numeric), perl(File::Slu
 
 %pre
 getent group navel-scheduler || groupadd -r navel-scheduler
-getent passwd myservice || useradd -rmd /usr/local/etc/navel-scheduler/ -s /sbin/nologin navel-scheduler
+getent passwd navel-scheduler || useradd -rmd /usr/local/etc/navel-scheduler/ -s /sbin/nologin navel-scheduler
 
 %post
 chkconfig navel-scheduler on
