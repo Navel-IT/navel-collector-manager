@@ -65,13 +65,13 @@ Prepare configuration
         "webservices" : "/usr/local/etc/navel-scheduler/webservices.json"
     },
     "webservices" : { // properties shared by all the web services
-        "login" : "admin", // can be modified at runtime
-        "password" : "password", // can be modified at runtime
+        "login" : "admin",
+        "password" : "password",
         "mojo_server" : { // Mojo::Server::Prefork properties
         }
     },
     "rabbitmq" : { // properties shared by all the rabbitmq clients
-        "auto_connect" : 1 // 0 or 1. Automatically connect navel-scheduler to rabbitmq servers when a rabbitmq definition is added or when navel-scheduler start
+        "auto_connect" : 1
     }
 }
 ```
@@ -81,10 +81,10 @@ Prepare configuration
 ```javascript
 [
     {
-        "name" : "webservice-1", // web service (unique name)
-        "interface_mask" : "*", // this web service will list on this mask
-        "port" : 22080, // this web service will listen on this port
-        "tls" : 0 // 0 or 1. Enable TLS
+        "name" : "webservice-1",
+        "interface_mask" : "*",
+        "port" : 22080,
+        "tls" : 0
     },
     {
         "name" : "webservice-2",
