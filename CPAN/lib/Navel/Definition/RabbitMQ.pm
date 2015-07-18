@@ -28,6 +28,10 @@ use Exporter::Easy (
 
 use Data::Validate::Struct;
 
+use Scalar::Util::Numeric qw/
+    isint
+/;
+
 use DateTime::Event::Cron::Quartz;
 
 use Navel::Utils qw/
@@ -74,10 +78,15 @@ sub rabbitmq_definition_validator($) {
     );
 
     $validator->type(
+        connector_timeout => sub {
+            my $value = shift;
+
+            isint($value) && $value >= 0;
+        },
         connector_props_delivery_mode => sub {
             my $value = shift;
 
-            $value == 1 || $value == 2;
+            $value == 1 || $value == 2 if (isint($value));
         },
         connector_cron => sub {
             eval {
@@ -87,7 +96,7 @@ sub rabbitmq_definition_validator($) {
         connector_auto_connect => sub {
             my $value = shift;
 
-            $value == 0 || $value == 1;
+            $value == 0 || $value == 1 if (isint($value));
         }
     );
 

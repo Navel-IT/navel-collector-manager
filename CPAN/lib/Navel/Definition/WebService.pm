@@ -26,11 +26,11 @@ use Exporter::Easy (
     ]
 );
 
+use Data::Validate::Struct;
+
 use Scalar::Util::Numeric qw/
     isint
 /;
-
-use Data::Validate::Struct;
 
 use Mojo::URL;
 
@@ -65,7 +65,7 @@ sub web_service_definition_validator($) {
         web_service_tls => sub {
             my $value = shift;
 
-            isint($value) && ($value == 0 || $value == 1);
+            $value == 0 or $value == 1 if (isint($value));
         }
     );
 
