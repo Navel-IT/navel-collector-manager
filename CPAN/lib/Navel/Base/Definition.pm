@@ -72,7 +72,7 @@ sub merge {
             $self->{'__' . $property} = $value;
         }
 
-        return 1;
+        1;
     }
 }
 

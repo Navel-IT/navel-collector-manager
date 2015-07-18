@@ -102,10 +102,6 @@ if (defined $general_configuration_file_path) {
         $log_file_path
     );
 
-    my $scheduler = eval {
-        Navel::Scheduler->new($general_configuration_file_path);
-    };
-
     if ($daemonize) {
         $logger->push_in_queue('Daemonizing ...', 'info')->flush_queue(1);
 
@@ -119,6 +115,10 @@ if (defined $general_configuration_file_path) {
 
         IO::AIO::reinit(); # IO::AIO loaded by Navel::Scheduler
     }
+
+    my $scheduler = eval {
+        Navel::Scheduler->new($general_configuration_file_path);
+    };
 
     unless ($@) {
         unless ($disable_rest) {
@@ -137,7 +137,7 @@ if (defined $general_configuration_file_path) {
 
                         my $userinfo = $controller->req()->url()->to_abs()->userinfo();
 
-                        unless (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{password}) {
+                        unless (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{credentials}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{credentials}->{password}) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(
@@ -191,7 +191,7 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    put '/scheduler/api/general/webservices' => sub {
+                    put '/scheduler/api/general/webservices/credentials' => sub {
                         my $controller = shift;
 
                         my (@ok, @ko);
@@ -210,8 +210,11 @@ if (defined $general_configuration_file_path) {
                                         %{
                                             {
                                                 webservices => {
-                                                    %{$scheduler_definition->{webservices}},
-                                                    %{$body}
+                                                    credentials => {
+                                                        %{$scheduler_definition->{webservices}->{credentials}},
+                                                        %{$body}
+                                                    },
+                                                    mojo_server => $scheduler_definition->{webservices}->{mojo_server}
                                                 }
                                             }
                                         }
@@ -405,7 +408,7 @@ if (defined $general_configuration_file_path) {
 
                                             push @ok, 'RabbitMQ ' . $definition->get_name() . ' added and publisher associated with registered';
 
-                                            if ($scheduler->get_configuration()->get_definition()->{rabbitmq}->{auto_connect}) {
+                                            if ($definition->get_auto_connect()) {
                                                 if (my $error = $scheduler->get_core()->get_publisher_by_definition_name($definition->get_name())->connect()) {
                                                     push @ko, 'Connect publisher ' . $definition->get_name() . ' : ' . $error;
                                                 } else {

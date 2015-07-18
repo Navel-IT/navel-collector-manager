@@ -6,13 +6,11 @@
         "webservices" : "t/webservices.json"
     },
     "webservices" : {
-        "login" : "admin",
-        "password" : "admin",
+        "credentials" : {
+            "login" : "admin",
+            "password" : "password"
+        },
         "mojo_server" : {
         }
-    },
-    "rabbitmq" : {
-        "auto_connect" : 1
     }
 }
-

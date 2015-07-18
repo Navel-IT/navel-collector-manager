@@ -63,12 +63,11 @@ sub scheduler_definition_validator($) {
                 rabbitmq => 'text'
             },
             webservices => {
-                login => 'text',
-                password => 'text',
+                credentials => {
+                    login => 'text',
+                    password => 'text'
+                },
                 mojo_server => 'general_mojo_server'
-            },
-            rabbitmq => {
-                auto_connect => 'general_auto_connect'
             }
         }
     );
@@ -98,11 +97,6 @@ sub scheduler_definition_validator($) {
             }
 
             $customs_options_ok;
-        },
-        general_auto_connect => sub {
-            my $value = shift;
-
-            $value == 0 || $value == 1;
         }
     );
 
@@ -138,7 +132,7 @@ sub write {
 sub make {
     my $self = shift;
 
-    croak('general definition is invalid') unless scheduler_definition_validator($self->get_definition());
+    croak('general definition is invalid') unless (scheduler_definition_validator($self->get_definition()));
 
     $self;
 }
@@ -163,7 +157,7 @@ sub set_definition {
 
         $self->{__definition} = $value;
 
-        return 1;
+        1;
     }
 }
 

@@ -48,6 +48,7 @@ our @ORIGINAL_PROPERTIES = qw/
     routing_key
     delivery_mode
     scheduling
+    auto_connect
 /;
 
 #-> functions
@@ -67,7 +68,8 @@ sub rabbitmq_definition_validator($) {
             exchange => 'text',
             routing_key => 'text',
             delivery_mode => 'connector_props_delivery_mode',
-            scheduling => 'connector_cron'
+            scheduling => 'connector_cron',
+            auto_connect => 'connector_auto_connect'
         }
     );
 
@@ -81,6 +83,11 @@ sub rabbitmq_definition_validator($) {
             eval {
                 DateTime::Event::Cron::Quartz->new(shift);
             };
+        },
+        connector_auto_connect => sub {
+            my $value = shift;
+
+            $value == 0 || $value == 1;
         }
     );
 
@@ -231,6 +238,18 @@ sub set_scheduling {
     shift->merge(
         {
             scheduling => shift
+        }
+    );
+}
+
+sub get_auto_connect {
+    shift->{__auto_connect};
+}
+
+sub set_auto_connect {
+    shift->merge(
+        {
+            auto_connect => shift
         }
     );
 }

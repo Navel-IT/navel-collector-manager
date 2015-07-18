@@ -71,11 +71,13 @@ sub run {
 
     $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
 
-    my $run = $self->get_core()->register_logger()->register_connectors()->init_publishers()->register_publishers();
+    my $run = $self->get_core()->register_logger()->register_connectors()->init_publishers();
 
-    $run->connect_publishers() if ($self->get_configuration()->get_definition()->{rabbitmq}->{auto_connect});
+    for (@{$self->get_core()->get_publishers()}) {
+        $self->get_core()->connect_publisher($_->get_definition()->get_name()) if ($_->get_definition()->get_auto_connect());
+    }
 
-    $run->start();
+    $run->register_publishers()->start();
 
     $self;
 }

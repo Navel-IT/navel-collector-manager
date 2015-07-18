@@ -10,6 +10,7 @@
         "exchange" : "navel-scheduler.E.direct.events",
         "routing_key" : "navel-scheduler.collections",
         "delivery_mode" : 2,
-        "scheduling" : "*/15 * * * * ?"
+        "scheduling" : "*/15 * * * * ?",
+        "auto_connect" : 1
     }
 ]

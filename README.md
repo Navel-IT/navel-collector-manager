@@ -67,13 +67,12 @@ Prepare configuration
         "webservices" : "/usr/local/etc/navel-scheduler/webservices.json"
     },
     "webservices" : { // properties shared by all the web services
-        "login" : "admin",
-        "password" : "password",
+        "credentials" : {
+            "login" : "admin",
+            "password" : "password"
+        },
         "mojo_server" : { // Mojo::Server::Prefork properties
         }
-    },
-    "rabbitmq" : { // properties shared by all the rabbitmq clients
-        "auto_connect" : 1
     }
 }
 ```
@@ -134,13 +133,12 @@ The following endpoints are currently availables for informations and runtime mo
         "webservices" : "/usr/local/etc/navel-scheduler/webservices.json"
     },
     "webservices" : {
-        "login" : "admin",
-        "password" : "password",
+        "credentials" : {
+            "login" : "admin",
+            "password" : "password"
+        },
         "mojo_server" : {
         }
-    },
-    "rabbitmq" : {
-        "auto_connect" : 1
     }
 }
 ```
@@ -205,7 +203,8 @@ The following endpoints are currently availables for informations and runtime mo
     "exchange" : "navel-scheduler.E.direct.events",
     "routing_key" : "navel-scheduler.collections",
     "delivery_mode" : 2,
-    "scheduling" : "*/15 * * * * ?"
+    "scheduling" : "*/15 * * * * ?",
+    "auto_connect" : 1
 }
 ```
   - /scheduler/api/publishers
@@ -293,7 +292,8 @@ The following endpoints are currently availables for informations and runtime mo
     "exchange" : "navel-scheduler.E.direct.events",
     "routing_key" : "navel-scheduler.collections",
     "delivery_mode" : 2,
-    "scheduling" : "*/15 * * * * ?"
+    "scheduling" : "*/15 * * * * ?",
+    "auto_connect" : 1
 }
 ```
   - /scheduler/api/publishers/(:publisher)
@@ -307,7 +307,7 @@ The following endpoints are currently availables for informations and runtime mo
 }
 ```
 - **PUT** - modify
-  - /scheduler/api/general/webservices
+  - /scheduler/api/general/webservices/credentials
 ```json
 {
     "password" : "new_password"
