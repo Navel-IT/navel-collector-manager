@@ -237,30 +237,19 @@ if (defined $general_configuration_file_path) {
                     };
 
                     get '/scheduler/api/cron/jobs' => sub {
-                        my ($loggers, $connectors, $publishers) = (0) x 3;
+                        my %jobs = (
+                            publishers => [],
+                            connectors => []
+                        );
 
                         for (values %{$scheduler->get_core()->get_cron()->jobs()}) {
-                            given ($_->{name}) {
-                                when (/^logger_/) {
-                                    $loggers++;
-                                }
-                                when (/^connector_/) {
-                                    $connectors++;
-                                }
-                                when (/^publisher_/) {
-                                    $publishers++;
-                                }
+                            if ($_->{name} =~ /^(connector|publisher)_(.*)/) {
+                                push @{$jobs{$1 . 's'}}, $2;
                             }
                         }
 
                         shift->render(
-                            json => {
-                                jobs_registered => {
-                                    loggers => $loggers,
-                                    publishers => $publishers,
-                                    connectors => $connectors
-                                }
-                            }
+                            json => \%jobs
                         );
                     };
 

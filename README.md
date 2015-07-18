@@ -171,12 +171,16 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/cron/jobs
 ```json
 {
-    "jobs_registered" : {
-        "loggers" : 1,
-        "publishers" : 2,
-        "connectors" : 2
-    }
+    "publishers" : [
+        "rabbitmq-1",
+        "rabbitmq-2"
+    ],
+    "connectors" : [
+        "glpi-1",
+        "collectd-1"
+    ]
 }
+
 ```
   - /scheduler/api/connectors
 ```json
