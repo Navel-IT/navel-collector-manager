@@ -10,6 +10,8 @@ Build and install
 
 Assuming you start the installation from scratch ...
 
+**WARNING** : if the system language is not English, you may encounter some unexpected bugs while running navel-scheduler.
+
 - **CPAN**
 
 ```
