@@ -142,7 +142,7 @@ The following endpoints are currently availables for informations and runtime mo
     }
 }
 ```
-  - /scheduler/api/general?action=write_configuration
+  - /scheduler/api/general?action=save_configuration
 ```json
 {
     "ok" : [
@@ -296,10 +296,13 @@ The following endpoints are currently availables for informations and runtime mo
 ```
   - /scheduler/api/publishers/(:publisher)
 ```json
-[
-    "foo",
-    "bar"
-]
+{
+    "datas" : [
+        "foo",
+        "bar"
+    ],
+    "collection" : "puppet-reports"
+}
 ```
 - **PUT** - modify
   - /scheduler/api/general/webservices

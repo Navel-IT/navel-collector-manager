@@ -57,12 +57,12 @@ WriteMakefile(
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
         'List::MoreUtils' => 0,
-        'String::Util' => 0,
         'Cwd' => 0,
         'Proc::Daemon' => 0,
         'Mojolicious' => 0,
         'Time::HiRes' => 0,
-        'Compress::Raw::Zlib' => 0
+        'Compress::Raw::Zlib' => 0,
+        'IO::Compress::Gzip' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,

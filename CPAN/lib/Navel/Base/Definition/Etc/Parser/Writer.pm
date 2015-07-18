@@ -19,10 +19,6 @@ use Carp qw/
     croak
 /;
 
-use String::Util qw/
-    hascontent
-/;
-
 use File::Slurp;
 
 use Navel::Utils qw/
@@ -36,7 +32,7 @@ our $VERSION = 0.1;
 sub write {
     my ($self, $file_path, $definitions) = @_;
 
-    croak('file path missing') unless (hascontent($file_path));
+    croak('file path missing') unless (defined $file_path);
 
     write_file(
         $file_path,

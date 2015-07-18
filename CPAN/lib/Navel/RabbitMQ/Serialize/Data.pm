@@ -51,8 +51,8 @@ our $VERSION = 0.1;
 
 #-> methods
 
-sub to($$) {
-    my ($connector, $datas) = @_;
+sub to($@) {
+    my ($datas, $connector, $collection) = @_;
 
     if (ref $connector eq 'Navel::Definition::Connector') {
         $connector = unblessed($connector);
@@ -62,9 +62,10 @@ sub to($$) {
 
     encode_json(
         {
-            connector => $connector,
+            datas => $datas,
             time => time,
-            datas => $datas
+            connector => $connector,
+            collection => defined $collection ? sprintf '%s', $collection : $collection
         }
     );
 }
@@ -72,24 +73,32 @@ sub to($$) {
 sub from($) {
     my $serialized = shift;
 
-    my $datas = decode_json($serialized);
+    my $deserialized = decode_json($serialized);
 
-    if (reftype($datas) && isint($datas->{time}) && exists $datas->{datas}) {
+    if (reftype($deserialized) && isint($deserialized->{time}) && exists $deserialized->{datas} && exists $deserialized->{collection}) {
         my $connector;
 
-        if (defined $datas->{connector}) {
-            croak('some datas are incorrects : connector definition is incorrect') unless (connector_definition_validator($datas->{connector}));
+        if (defined $deserialized->{connector}) {
+            croak('deserialized datas are incorrects : connector definition is incorrect') unless (connector_definition_validator($deserialized->{connector}));
 
-            $connector = Navel::Definition::Connector->new($datas->{connector});
+            $connector = Navel::Definition::Connector->new($deserialized->{connector});
+        }
+
+        if (defined $deserialized->{collection}) {
+            $deserialized->{collection} = sprintf '%s', $deserialized->{collection};
         }
 
         return {
-            connector => $connector,
-            datas => $datas->{datas}
+            %{$deserialized},
+            %{
+                {
+                    connector => $connector
+                }
+            }
         };
     }
 
-    croak('some datas are incorrects');
+    croak('deserialized datas are incorrects');
 }
 
 # sub AUTOLOAD {}

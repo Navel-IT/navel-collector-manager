@@ -48,8 +48,8 @@ my $__serialize_log_and_push_in_queues = sub {
 
     my $serialized = eval {
         to(
-            $connector,
-            $datas
+            $datas,
+            $connector
         );
     };
 

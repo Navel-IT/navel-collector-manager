@@ -22,6 +22,10 @@ my $serialized;
 
 if (lives_ok {
     $serialized = to(
+        {
+            a => 0,
+            b => 1
+        },
         Navel::Definition::Connector->new(
             {
                 name => 'test-1',
@@ -34,10 +38,7 @@ if (lives_ok {
                 exec_directory_path => ''
             }
         ),
-        {
-            a => 0,
-            b => 1
-        }
+        'test'
     );
 } 'to() : serialize') {
     lives_ok {

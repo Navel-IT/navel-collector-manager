@@ -31,10 +31,6 @@ use Carp qw/
     croak
 /;
 
-use String::Util qw/
-    hascontent
-/;
-
 use Navel::Scheduler::Cron;
 
 use Navel::Scheduler::Etc::Parser;
@@ -54,7 +50,7 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $configuration_path) = @_;
 
-    croak('general configuration file path is missing') unless (hascontent($configuration_path));
+    croak('general configuration file path is missing') unless (defined $configuration_path);
 
     bless {
         __core => undef,

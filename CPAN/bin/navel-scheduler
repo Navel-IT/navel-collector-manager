@@ -10,10 +10,6 @@ use 5.10.1;
 
 use lib '/usr/local/share/navel-scheduler/lib';
 
-use String::Util qw/
-    hascontent
-/;
-
 use Getopt::Long;
 
 use Pod::Usage;
@@ -158,7 +154,7 @@ if (defined $general_configuration_file_path) {
 
                         my $action = $controller->req()->query_params()->param('action') || '';
 
-                        if ($action eq 'write_configuration') {
+                        if ($action eq 'save_configuration') {
                             my (@ok, @ko);
 
                             eval {
@@ -547,17 +543,33 @@ if (defined $general_configuration_file_path) {
 
                                 if (defined $publisher) {
                                     my $body = eval {
-                                        from(
-                                            to(undef, $controller->req()->body())
-                                        );
+                                        decode_json($controller->req()->body());
                                     };
 
                                     unless ($@) {
-                                        $publisher->push_in_queue($body);
+                                        if (ref $body eq 'HASH' && exists $body->{datas} && defined $body->{collection}) {
+                                            my $deserialized = eval {
+                                                from(
+                                                    to(
+                                                        $body->{datas},
+                                                        undef,
+                                                        $body->{collection}
+                                                    )
+                                                );
+                                            };
 
-                                        push @ok, 'Push manually datas to the queue of publisher ' . $publisher->get_definition()->get_name();
+                                            unless ($@) {
+                                                $publisher->push_in_queue($deserialized);
+
+                                                push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->get_definition()->get_name();
+                                            } else {
+                                                push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
+                                            }
+                                        } else {
+                                            push @ko, "Body need to be a hashtable with 'datas' and 'collection' key";
+                                        }
                                     } else {
-                                        push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
+                                        push @ko, $@;
                                     }
                                 } else {
                                     push @ko, 'Publisher ' . $publisher_name . " don't exists";
