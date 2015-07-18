@@ -89,7 +89,6 @@ sub scheduler_definition_validator($) {
                     inactivity_timeout => \&isint,
                     max_clients => \&isint,
                     max_requests => \&isint,
-                    silent => \&isint,
                     # Mojo::Server::Prefork
                     accepts => \&isint,
                     accept_interval => \&isfloat,
