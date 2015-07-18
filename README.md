@@ -77,6 +77,23 @@ Prepare configuration
 }
 ```
 
+List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Prefork#ATTRIBUTES)) :
+
+Property name  | Property type
+------------- | -------------
+reverse_proxy | int
+backlog | int
+inactivity_timeout | int
+max_clients | int
+max_requests | int
+accepts | int
+accept_interval | float
+graceful_timeout | float
+heartbeat_interval | float
+heartbeat_timeout | float
+multi_accept | int
+workers | int
+
 *webservices.json* contains the definitions of navel-scheduler's web services and cannot be modified at runtime. It must look like this :
 
 ```javascript
