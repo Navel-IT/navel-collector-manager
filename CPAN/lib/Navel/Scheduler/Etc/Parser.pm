@@ -82,6 +82,15 @@ sub scheduler_definition_validator($) {
                 $customs_options_ok = 1;
 
                 my $properties_type = {
+                    # Mojo::Server
+                    reverse_proxy => \&isint,
+                    # Mojo::Server::Daemon
+                    backlog => \&isint,
+                    inactivity_timeout => \&isint,
+                    max_clients => \&isint,
+                    max_requests => \&isint,
+                    silent => \&isint,
+                    # Mojo::Server::Prefork
                     accepts => \&isint,
                     accept_interval => \&isfloat,
                     graceful_timeout => \&isfloat,
@@ -92,7 +101,7 @@ sub scheduler_definition_validator($) {
                 };
 
                 while (my ($property, $type) = each %{$properties_type}) {
-                    $customs_options_ok = 0 if (exists $value->{$property} && defined $value->{$property} && ! $value->{$property});
+                    $customs_options_ok = 0 if (exists $value->{$property} && ! $type->($value->{$property}));
                 }
             }
 
