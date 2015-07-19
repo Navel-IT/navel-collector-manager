@@ -3,13 +3,14 @@
 
 #-> BEGIN
 
+READLINK='readlink'
 DIRNAME='dirname'
 ECHO='echo'
 TAR='tar'
 
 prog='navel-scheduler'
 
-dirname=$(${DIRNAME} $0)
+dirname=$(${DIRNAME} $(${READLINK} -f $0))
 
 version=${1}
 
