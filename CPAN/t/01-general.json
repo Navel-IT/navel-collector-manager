@@ -1,7 +1,7 @@
 {
     "connectors" : {
-        "definitions_from_file" : "t/01-connectors.json"
-        "connectors_exec_directory" : "t/connectors",
+        "definitions_from_file" : "t/01-connectors.json",
+        "connectors_exec_directory" : "t/connectors"
     },
     "rabbitmq" : {
         "definitions_from_file" : "t/01-rabbitmq.json"

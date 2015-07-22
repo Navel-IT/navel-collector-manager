@@ -61,8 +61,8 @@ Prepare configuration
 ```javascript
 {
     "connectors" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json"
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors"
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
@@ -146,8 +146,8 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {
     "connectors" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json"
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors"
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
