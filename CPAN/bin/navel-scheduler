@@ -689,7 +689,7 @@ navel-scheduler [options]
      [--log-file-path] <F>   log informations in file <F>
      [--log-severity] <F>    set severity (syslog format) to <F>
 
-     [--no-rest]   disable the REST api
+     [--no-web-services]   disable the web services
 
      [--daemonize]   run as a standalone daemon (only work on Unix-like systems)
 
