@@ -61,13 +61,13 @@ sub new {
 sub run {
     my ($self, $logger) = @_;
 
-    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{definitions_path}->{connectors})->make(
+    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{connectors}->{definitions_from_file})->make(
         {
-            exec_directory_path => $self->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+            exec_directory_path => $self->get_configuration()->get_definition()->{connectors}->{connectors_exec_directory}
         }
     );
 
-    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{definitions_path}->{rabbitmq})->make();
+    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{rabbitmq}->{definitions_from_file})->make();
 
     $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
 

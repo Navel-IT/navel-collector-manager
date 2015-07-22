@@ -1,11 +1,13 @@
 {
-    "definitions_path" : {
-        "connectors" : "t/01-connectors.json",
+    "connectors" : {
+        "definitions_from_file" : "t/01-connectors.json"
         "connectors_exec_directory" : "t/connectors",
-        "rabbitmq" : "t/01-rabbitmq.json",
-        "webservices" : "t/webservices.json"
+    },
+    "rabbitmq" : {
+        "definitions_from_file" : "t/01-rabbitmq.json"
     },
     "webservices" : {
+        "definitions_from_file" : "t/webservices.json",
         "credentials" : {
             "login" : "admin",
             "password" : "password"

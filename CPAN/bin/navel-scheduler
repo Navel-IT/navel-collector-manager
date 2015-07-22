@@ -123,7 +123,7 @@ if (defined $general_configuration_file_path) {
     unless ($@) {
         unless ($disable_rest) {
             my $web_services_listeners = eval {
-                Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices})->make();
+                Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->get_configuration()->get_definition()->{webservices}->{definitions_from_file})->make();
             };
 
             unless ($@) {
@@ -158,11 +158,11 @@ if (defined $general_configuration_file_path) {
                             my (@ok, @ko);
 
                             eval {
-                                $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{webservices});
+                                $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{webservices}->{definitions_from_file});
 
-                                $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors});
+                                $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{connectors}->{definitions_from_file});
 
-                                $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{definitions_path}->{rabbitmq});
+                                $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{rabbitmq}->{definitions_from_file});
 
                                 $scheduler->get_configuration()->write($general_configuration_file_path);
                             };
@@ -272,7 +272,7 @@ if (defined $general_configuration_file_path) {
                                                     %{$body},
                                                     %{
                                                         {
-                                                            exec_directory_path => $scheduler->get_configuration()->get_definition()->{definitions_path}->{connectors_exec_directory}
+                                                            exec_directory_path => $scheduler->get_configuration()->get_definition()->{connectors}->{connectors_exec_directory}
                                                         }
                                                     }
                                                 }

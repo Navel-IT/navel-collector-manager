@@ -57,12 +57,15 @@ sub scheduler_definition_validator($) {
 
     my $validator = Data::Validate::Struct->new(
         {
-            definitions_path => {
-                connectors => 'text',
-                connectors_exec_directory => 'text',
-                rabbitmq => 'text'
+            connectors => {
+                definitions_from_file => 'text',
+                connectors_exec_directory => 'text'
+            },
+            rabbitmq => {
+                definitions_from_file => 'text'
             },
             webservices => {
+                definitions_from_file => 'text',
                 credentials => {
                     login => 'text',
                     password => 'text'
