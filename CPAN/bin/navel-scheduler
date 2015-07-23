@@ -46,7 +46,7 @@ my (
     $general_configuration_file_path,
     $log_file_path,
     $log_severity,
-    $disable_rest,
+    $disable_web_services,
     $daemonize,
     $prefork_server
 );
@@ -90,7 +90,7 @@ $getopts->getoptions(
     'c|general-configuration-file-path=s' => \$general_configuration_file_path,
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
-    'no-rest' => \$disable_rest,
+    'no-web-services' => \$disable_web_services,
     'daemonize' => \$daemonize
 
 ) || pod2usage(1);
@@ -121,7 +121,7 @@ if (defined $general_configuration_file_path) {
     };
 
     unless ($@) {
-        unless ($disable_rest) {
+        unless ($disable_web_services) {
             my $web_services_listeners = eval {
                 Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->get_configuration()->get_definition()->{webservices}->{definitions_from_file})->make();
             };
