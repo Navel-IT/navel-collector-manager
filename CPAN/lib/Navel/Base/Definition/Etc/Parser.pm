@@ -57,7 +57,7 @@ sub write {
         shift,
         [
             map {
-                $_->get_original_properties(eval '$' . $self->get_definition_package() . '::ORIGINAL_PROPERTIES')
+                $_->get_original_properties()
             } @{$self->get_definitions()}
         ]
     );

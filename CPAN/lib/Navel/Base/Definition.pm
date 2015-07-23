@@ -52,9 +52,9 @@ sub get_properties {
 }
 
 sub get_original_properties {
-    my ($self_copy, $original_properties) = (shift->get_properties(), shift);
+    my ($self_copy, $runtime_properties) = (shift->get_properties(), shift);
 
-    exists $self_copy->{$_} || delete $self_copy->{$_} for (@{$original_properties});
+    delete $self_copy->{$_} for (@{$runtime_properties});
 
     $self_copy;
 }

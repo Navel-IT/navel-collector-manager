@@ -45,14 +45,8 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our @ORIGINAL_PROPERTIES = qw/
-    name
-    collection
-    type
-    singleton
-    scheduling
-    source
-    input
+our @RUNTIME_PROPERTIES = qw/
+    exec_directory_path
 /;
 
 #-> functions
@@ -109,7 +103,7 @@ sub merge {
 }
 
 sub get_original_properties {
-    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@RUNTIME_PROPERTIES);
 }
 
 sub set_name {

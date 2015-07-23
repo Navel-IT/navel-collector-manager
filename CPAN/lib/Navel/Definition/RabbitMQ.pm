@@ -40,20 +40,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our @ORIGINAL_PROPERTIES = qw/
-    name
-    host
-    port
-    user
-    password
-    timeout
-    vhost
-    exchange
-    routing_key
-    delivery_mode
-    scheduling
-    auto_connect
-/;
+our @RUNTIME_PROPERTIES;
 
 #-> functions
 
@@ -120,7 +107,7 @@ sub merge {
 }
 
 sub get_original_properties {
-    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@RUNTIME_PROPERTIES);
 }
 
 sub set_name {

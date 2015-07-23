@@ -40,12 +40,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-our @ORIGINAL_PROPERTIES = qw/
-    name
-    interface_mask
-    port
-    tls
-/;
+our @RUNTIME_PROPERTIES;
 
 #-> functions
 
@@ -89,7 +84,7 @@ sub merge {
 }
 
 sub get_original_properties {
-    shift->SUPER::get_original_properties(\@ORIGINAL_PROPERTIES);
+    shift->SUPER::get_original_properties(\@RUNTIME_PROPERTIES);
 }
 
 sub set_name {
