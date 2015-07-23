@@ -67,7 +67,7 @@ sub rabbitmq_definition_validator($) {
             port => 'port',
             user => 'text',
             password => 'text',
-            timeout => 'int',
+            timeout => 'connector_timeout',
             vhost => 'text',
             exchange => 'text',
             routing_key => 'text',
