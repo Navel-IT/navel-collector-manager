@@ -210,11 +210,11 @@ if (defined $general_configuration_file_path) {
                                         %{
                                             {
                                                 webservices => {
+                                                    %{$scheduler_definition->{webservices}},
                                                     credentials => {
                                                         %{$scheduler_definition->{webservices}->{credentials}},
                                                         %{$body}
-                                                    },
-                                                    mojo_server => $scheduler_definition->{webservices}->{mojo_server}
+                                                    }
                                                 }
                                             }
                                         }

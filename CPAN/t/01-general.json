@@ -1,7 +1,8 @@
 {
     "connectors" : {
         "definitions_from_file" : "t/01-connectors.json",
-        "connectors_exec_directory" : "t/connectors"
+        "connectors_exec_directory" : "t/connectors",
+        "maximum_simultaneous_exec" : 0
     },
     "rabbitmq" : {
         "definitions_from_file" : "t/01-rabbitmq.json"

@@ -59,7 +59,8 @@ sub scheduler_definition_validator($) {
         {
             connectors => {
                 definitions_from_file => 'text',
-                connectors_exec_directory => 'text'
+                connectors_exec_directory => 'text',
+                maximum_simultaneous_exec => 'general_maximum_simultaneous_exec'
             },
             rabbitmq => {
                 definitions_from_file => 'text'
@@ -76,6 +77,11 @@ sub scheduler_definition_validator($) {
     );
 
     $validator->type(
+        general_maximum_simultaneous_exec => sub {
+            my $value = shift;
+
+            isint($value) && $value >= 0;
+        },
         general_mojo_server => sub {
             my $value = shift;
 

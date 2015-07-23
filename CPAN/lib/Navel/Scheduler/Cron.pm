@@ -19,6 +19,10 @@ use Carp qw/
     croak
 /;
 
+use Scalar::Util::Numeric qw/
+    isint
+/;
+
 use AnyEvent::DateTime::Cron;
 
 use AnyEvent::AIO;
@@ -65,9 +69,9 @@ my $__serialize_log_and_push_in_queues = sub {
 #-> methods
 
 sub new {
-    my ($class, $connectors, $rabbitmq, $logger) = @_;
+    my ($class, $connectors, $rabbitmq, $logger, $maximum_simultaneous_exec) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger');
+    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger' && isint($maximum_simultaneous_exec) && $maximum_simultaneous_exec >= 0);
 
     my $self = {
         __connectors => $connectors,
@@ -78,7 +82,9 @@ sub new {
         __cron => AnyEvent::DateTime::Cron->new(
             quartz => 1
         ),
-        __locks => {}
+        __locks => {},
+        __maximum_simultaneous_exec => $maximum_simultaneous_exec,
+        __connectors_running => 0
     };
 
     bless $self, ref $class || $class;
@@ -117,60 +123,72 @@ sub register_connector {
         sub {
             local ($@, $!);
 
-            unless ($self->get_locks()->{$job_name}) {
-                $self->get_locks()->{$job_name} = $connector->get_singleton();
+            if ( ! $self->get_maximum_simultaneous_exec() || $self->get_maximum_simultaneous_exec() > $self->get_connectors_running()) {
+                unless ($self->get_locks()->{$job_name}) {
+                    $self->a_connector_start();
 
-                aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
-                    sub {
-                        my $fh = shift;
+                    $self->get_locks()->{$job_name} = $connector->get_singleton();
 
-                        if ($fh) {
-                            my $connector_content = '';
+                    aio_open($connector->get_exec_file_path(), IO::AIO::O_RDONLY, 0,
+                        sub {
+                            my $fh = shift;
 
-                            $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug');
+                            if ($fh) {
+                                my $connector_content = '';
 
-                            aio_read($fh, 0, -s $fh, $connector_content, 0,
-                                sub {
-                                    close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
+                                $self->get_logger()->good('Connector ' . $connector->get_name() . ' : successfuly opened file ' . $connector->get_exec_file_path() . '.', 'debug');
 
-                                    if ($connector->is_type_code()) {
-                                        Navel::Scheduler::Cron::Fork->new(
-                                            $connector,
-                                            $self->get_logger(),
-                                            $connector_content
-                                        )->when_done(
-                                            sub {
-                                                $__serialize_log_and_push_in_queues->(
-                                                    $self->get_logger(),
-                                                    $connector,
-                                                    $self->get_publishers(),
-                                                    shift
-                                                );
+                                aio_read($fh, 0, -s $fh, $connector_content, 0,
+                                    sub {
+                                        close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                                                $self->get_locks()->{$job_name} = 0;
-                                            }
-                                        );
-                                    } else {
-                                        $__serialize_log_and_push_in_queues->(
-                                            $self->get_logger(),
-                                            $connector,
-                                            $self->get_publishers(),
-                                            $connector_content
-                                        );
+                                        if ($connector->is_type_code()) {
+                                            Navel::Scheduler::Cron::Fork->new(
+                                                $connector,
+                                                $self->get_logger(),
+                                                $connector_content
+                                            )->when_done(
+                                                sub {
+                                                    $__serialize_log_and_push_in_queues->(
+                                                        $self->get_logger(),
+                                                        $connector,
+                                                        $self->get_publishers(),
+                                                        shift
+                                                    );
 
-                                        $self->get_locks()->{$job_name} = 0;
+                                                    $self->get_locks()->{$job_name} = 0;
+
+                                                    $self->a_connector_stop();
+                                                }
+                                            );
+                                        } else {
+                                            $__serialize_log_and_push_in_queues->(
+                                                $self->get_logger(),
+                                                $connector,
+                                                $self->get_publishers(),
+                                                $connector_content
+                                            );
+
+                                            $self->get_locks()->{$job_name} = 0;
+
+                                            $self->a_connector_stop();
+                                        }
                                     }
-                                }
-                            )
-                        } else {
-                            $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
+                                )
+                            } else {
+                                $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                            $self->get_locks()->{$job_name} = 0;
+                                $self->get_locks()->{$job_name} = 0;
+
+                                $self->a_connector_stop();
+                            }
                         }
-                    }
-                );
+                    );
+                } else {
+                    $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
+                }
             } else {
-                $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
+                 $self->get_logger()->push_in_queue('Too much connectors are running (maximum of ' . $self->get_maximum_simultaneous_exec() . ').', 'info');
             }
         }
     );
@@ -415,6 +433,22 @@ sub get_cron {
 
 sub get_locks {
     shift->{__locks};
+}
+
+sub get_maximum_simultaneous_exec {
+    shift->{__maximum_simultaneous_exec};
+}
+
+sub get_connectors_running {
+    shift->{__connectors_running};
+}
+
+sub a_connector_start {
+    shift->{__connectors_running}++;
+}
+
+sub a_connector_stop {
+    shift->{__connectors_running}--;
 }
 
 # sub AUTOLOAD {}

@@ -56,24 +56,25 @@ yum localinstall '<RPM-ARCHIVE>'
 Prepare configuration
 ---------------------
 
-*general.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be modified at runtime. It must look like this :
+*general.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this :
 
 ```javascript
 {
     "connectors" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors"
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "maximum_simultaneous_exec" : 0
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
     },
     "webservices" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/webservices.json",
-        "credentials" : {
+        "credentials" : { # changeable at runtime
             "login" : "admin",
             "password" : "password"
         },
-        "mojo_server" : { // Mojo::Server::Prefork properties
+        "mojo_server" : {
         }
     }
 }
@@ -96,7 +97,7 @@ heartbeat_timeout | float
 multi_accept | int
 workers | int
 
-*webservices.json* contains the definitions of navel-scheduler's web services and cannot be modified at runtime. It must look like this :
+*webservices.json* contains the definitions of navel-scheduler's web services and cannot be changed at runtime. It must look like this :
 
 ```javascript
 [
@@ -142,12 +143,22 @@ The following endpoints are currently availables for informations and runtime mo
     "version" : 0.1
 }
 ```
+  - /scheduler/api?action=save_configuration
+```json
+{
+    "ok" : [
+        "Runtime configuration saved"
+    ],
+    "ko" : []
+}
+```
   - /scheduler/api/general
 ```json
 {
     "connectors" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors"
+        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "maximum_simultaneous_exec" : 0
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
@@ -161,15 +172,6 @@ The following endpoints are currently availables for informations and runtime mo
         "mojo_server" : {
         }
     }
-}
-```
-  - /scheduler/api/general?action=save_configuration
-```json
-{
-    "ok" : [
-        "Runtime configuration saved"
-    ],
-    "ko" : []
 }
 ```
   - /scheduler/api/cron/jobs

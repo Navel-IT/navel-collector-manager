@@ -69,7 +69,12 @@ sub run {
 
     my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{rabbitmq}->{definitions_from_file})->make();
 
-    $self->{__core} = Navel::Scheduler::Cron->new($connectors, $rabbitmq, $logger);
+    $self->{__core} = Navel::Scheduler::Cron->new(
+        $connectors,
+        $rabbitmq,
+        $logger,
+        $self->get_configuration()->get_definition()->{connectors}->{maximum_simultaneous_exec}
+    );
 
     my $run = $self->get_core()->register_logger()->register_connectors()->init_publishers();
 
