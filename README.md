@@ -70,7 +70,7 @@ Prepare configuration
     },
     "webservices" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/webservices.json",
-        "credentials" : { # changeable at runtime
+        "credentials" : { // changeable at runtime
             "login" : "admin",
             "password" : "password"
         },
