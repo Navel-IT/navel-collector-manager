@@ -14,7 +14,7 @@ Assuming you start the installation from scratch ...
 
 - **CPAN**
 
-```
+```bash
 yum install -y git gcc bash perl
 curl -L http://cpanmin.us | perl - App::cpanminus
 
@@ -22,8 +22,8 @@ git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash build_cpan_archive.sh <version>
-cpanm ExtUtils::MakeMaker <cpan-archive>
+bash build_cpan_archive.sh '<VERSION>'
+cpanm ExtUtils::MakeMaker '<CPAN-ARCHIVE>'
 
 getent group navel-scheduler || groupadd -r navel-scheduler
 getent passwd navel-scheduler || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
@@ -43,14 +43,14 @@ chown -R navel-scheduler:navel-scheduler /usr/local/bin/navel-scheduler /usr/loc
 
 - **RPM**
 
-```
+```bash
 yum install -y git rpm-build gcc bash
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash build_rpm_archive.sh <version> <release>
-yum localinstall <rpm-archive>
+bash build_rpm_archive.sh '<VERSION>' '<RELEASE>'
+yum localinstall '<RPM-ARCHIVE>'
 ```
 
 Prepare configuration
