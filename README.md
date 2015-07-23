@@ -14,7 +14,7 @@ Assuming you start the installation from scratch ...
 
 - **CPAN**
 
-```bash
+```shell
 yum install -y git gcc bash perl
 curl -L http://cpanmin.us | perl - App::cpanminus
 
@@ -43,7 +43,7 @@ chown -R navel-scheduler:navel-scheduler /usr/local/bin/navel-scheduler /usr/loc
 
 - **RPM**
 
-```bash
+```shell
 yum install -y git rpm-build gcc bash
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
