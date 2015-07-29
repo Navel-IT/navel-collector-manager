@@ -64,7 +64,7 @@ sub web_service_definition_validator($) {
         }
     );
 
-    $validator->validate($parameters);
+    $validator->validate($parameters) && exists $parameters->{ca} && exists $parameters->{cert} && exists $parameters->{ciphers} && exists $parameters->{key} && exists $parameters->{verify}; # unfortunately, Data::Validate::Struct doesn't work with undef (JSON's null) value
 }
 
 #-> methods
@@ -131,16 +131,84 @@ sub set_tls {
     );
 }
 
+sub get_ca {
+    shift->{__ca};
+}
+
+sub set_ca {
+    shift->merge(
+        {
+            ca => shift
+        }
+    );
+}
+
+sub get_cert {
+    shift->{__cert};
+}
+
+sub set_cert {
+    shift->merge(
+        {
+            cert => shift
+        }
+    );
+}
+
+sub get_ciphers {
+    shift->{__ciphers};
+}
+
+sub set_ciphers {
+    shift->merge(
+        {
+            ciphers => shift
+        }
+    );
+}
+
+sub get_key {
+    shift->{__key};
+}
+
+sub set_key {
+    shift->merge(
+        {
+            key => shift
+        }
+    );
+}
+
+sub get_verify {
+    shift->{__verify};
+}
+
+sub set_verify {
+    shift->merge(
+        {
+            verify => shift
+        }
+    );
+}
+
 sub get_url {
     my $self = shift;
 
-    Mojo::URL->new()->scheme(
+    my $url = Mojo::URL->new()->scheme(
         'http' . ($self->get_tls() ? 's' : '')
     )->host(
         $self->get_interface_mask()
     )->port(
         $self->get_port()
     );
+
+    $url->query(ca => $self->get_ca()) if (defined $self->get_ca());
+    $url->query(cert => $self->get_cert()) if (defined $self->get_cert());
+    $url->query(ciphers => $self->get_ciphers()) if (defined $self->get_ciphers());
+    $url->query(key => $self->get_key()) if (defined $self->get_key());
+    $url->query(verify => $self->get_verify()) if (defined $self->get_verify());
+
+    $url;
 }
 
 # sub AUTOLOAD {}

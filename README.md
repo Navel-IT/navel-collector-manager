@@ -105,13 +105,23 @@ workers | int
         "name" : "webservice-1",
         "interface_mask" : "*",
         "port" : 22080,
-        "tls" : 0
+        "tls" : 0,
+        "ca" : null,
+        "cert" : null,
+        "ciphers" : null,
+        "key" : null,
+        "verify" : null
     },
     {
         "name" : "webservice-2",
         "interface_mask" : "*",
         "port" : 22443,
-        "tls" : 1
+        "tls" : 1,
+        "ca" : null,
+        "cert" : null,
+        "ciphers" : null,
+        "key" : null,
+        "verify" : null
     }
 ]
 ```
@@ -287,7 +297,12 @@ The following endpoints are currently availables for informations and runtime mo
         "name" : "webservice-1",
         "interface_mask" : "*",
         "port" : 22080,
-        "tls" : 0
+        "tls" : 0,
+        "ca" : null,
+        "cert" : null,
+        "ciphers" : null,
+        "key" : null,
+        "verify" : null
     }
 ]
 ```

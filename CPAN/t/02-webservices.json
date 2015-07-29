@@ -3,6 +3,11 @@
         "name" : "webservice-1",
         "interface_mask" : "*",
         "port" : 3000,
-        "tls" : 0
+        "tls" : 0,
+        "ca" : null,
+        "cert" : null,
+        "ciphers" : null,
+        "key" : null,
+        "verify" : null
     }
 ]
