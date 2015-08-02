@@ -38,12 +38,24 @@ sub get_tls {
     shift->__get_all_by_getter('get_tls');
 }
 
-sub get_logins {
-    shift->__get_all_by_getter('get_login');
+sub get_cas {
+    shift->__get_all_by_getter('get_ca');
 }
 
-sub get_passwords {
-    shift->__get_all_by_getter('get_password');
+sub get_certs {
+    shift->__get_all_by_getter('get_cert');
+}
+
+sub get_ciphers {
+    shift->__get_all_by_getter('get_ciphers');
+}
+
+sub get_keys {
+    shift->__get_all_by_getter('get_key');
+}
+
+sub get_verifies {
+    shift->__get_all_by_getter('get_verify');
 }
 
 sub get_urls {
