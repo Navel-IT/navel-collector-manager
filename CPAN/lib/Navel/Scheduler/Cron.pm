@@ -43,29 +43,6 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-#-> functions
-
-my $__serialize_log_and_push_in_queues = sub {
-    my ($logger, $connector, $publishers, $datas) = @_;
-
-    my $generic_message = 'Get and serialize datas for connector ' . $connector->get_name();
-
-    my $serialized = eval {
-        to(
-            $datas,
-            $connector
-        );
-    };
-
-    unless ($@) {
-        $logger->good($generic_message . '.', 'info');
-
-        map { $_->push_in_queue($serialized) } @{$publishers};
-    } else {
-        $logger->bad($generic_message . ' failed : ' . $@ . ' .', 'err');
-    }
-};
-
 #-> methods
 
 sub new {
@@ -142,6 +119,8 @@ sub register_connector {
                                     sub {
                                         close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
+                                        my $get_and_push_generic_message = 'Get and push in queue datas for connector ' . $connector->get_name() . '.';
+
                                         if ($connector->is_type_code()) {
                                             Navel::Scheduler::Cron::Fork->new(
                                                 $connector,
@@ -149,12 +128,19 @@ sub register_connector {
                                                 $connector_content
                                             )->when_done(
                                                 sub {
-                                                    $__serialize_log_and_push_in_queues->(
-                                                        $self->get_logger(),
-                                                        $connector,
-                                                        $self->get_publishers(),
-                                                        shift
-                                                    );
+                                                    my $datas = shift;
+
+                                                    $self->get_logger()->push_in_queue($get_and_push_generic_message, 'info');
+
+                                                    map {
+                                                        $_->push_in_queue(
+                                                            {
+                                                                connector => $connector,
+                                                                collection => $connector->get_collection(),
+                                                                datas => $datas
+                                                            }
+                                                        )
+                                                    } @{$self->get_publishers()};
 
                                                     $self->get_locks()->{$job_name} = 0;
 
@@ -162,12 +148,17 @@ sub register_connector {
                                                 }
                                             );
                                         } else {
-                                            $__serialize_log_and_push_in_queues->(
-                                                $self->get_logger(),
-                                                $connector,
-                                                $self->get_publishers(),
-                                                $connector_content
-                                            );
+                                            $self->get_logger()->push_in_queue($get_and_push_generic_message, 'info');
+
+                                            map {
+                                                $_->push_in_queue(
+                                                    {
+                                                        connector => $connector,
+                                                        collection => $connector->get_collection(),
+                                                        datas => $connector_content
+                                                    }
+                                                )
+                                            } @{$self->get_publishers()};
 
                                             $self->get_locks()->{$job_name} = 0;
 
@@ -284,19 +275,37 @@ sub register_publisher {
 
                     eval {
                         for my $body (@queue) {
-                            $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one body.', 'debug');
+                            my $serialize_generic_message = 'Serialize datas for collection ' . $body->{collection} . '.';
 
-                            $publisher->get_net()->publish(
-                                $Navel::RabbitMQ::Publisher::CHANNEL_ID,
-                                $publisher->get_definition()->get_routing_key(),
-                                $body,
-                                {
-                                    exchange => $publisher->get_definition()->get_exchange()
-                                },
-                                {
-                                    delivery_mode => $publisher->get_definition()->get_delivery_mode()
-                                }
-                            );
+                            my $serialized = eval {
+                                to(
+                                    datas => $body->{datas},
+                                    connector => $body->{connector},
+                                    collection => $body->{collection}
+                                );
+                            };
+
+                            unless ($@) {
+                                $self->get_logger()->good($serialize_generic_message, 'debug');
+
+                                my $routing_key = 'navel-scheduler.' . $body->{collection};
+
+                                $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one body with routing key ' . $routing_key . '.', 'debug');
+
+                                $publisher->get_net()->publish(
+                                    $Navel::RabbitMQ::Publisher::CHANNEL_ID,
+                                    $routing_key,
+                                    $body,
+                                    {
+                                        exchange => $publisher->get_definition()->get_exchange()
+                                    },
+                                    {
+                                        delivery_mode => $publisher->get_definition()->get_delivery_mode()
+                                    }
+                                );
+                            } else {
+                                $self->get_logger()->bad($serialize_generic_message, 'debug');
+                            }
                         }
                     };
 

@@ -50,10 +50,6 @@ sub get_exchanges {
     shift->__get_all_by_getter('get_exchanges');
 }
 
-sub get_routing_keys {
-    shift->__get_all_by_getter('get_routing_key');
-}
-
 sub get_delivery_modes {
     shift->__get_all_by_getter('get_delivery_mode');
 }

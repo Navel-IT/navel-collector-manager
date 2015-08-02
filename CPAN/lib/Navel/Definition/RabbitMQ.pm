@@ -57,7 +57,6 @@ sub rabbitmq_definition_validator($) {
             timeout => 'connector_timeout',
             vhost => 'text',
             exchange => 'text',
-            routing_key => 'text',
             delivery_mode => 'connector_props_delivery_mode',
             scheduling => 'connector_cron',
             auto_connect => 'connector_auto_connect'
@@ -198,18 +197,6 @@ sub set_exchange {
     shift->merge(
         {
             exchange => shift
-        }
-    );
-}
-
-sub get_routing_key {
-    shift->{__routing_key};
-}
-
-sub set_routing_key {
-    shift->merge(
-        {
-            routing_key => shift
         }
     );
 }

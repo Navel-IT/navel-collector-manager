@@ -237,8 +237,7 @@ The following endpoints are currently availables for informations and runtime mo
     "password" : "guest",
     "timeout" : 0,
     "vhost" : "/",
-    "exchange" : "navel-scheduler.E.direct.events",
-    "routing_key" : "navel-scheduler.collections",
+    "exchange" : "amq.topic",
     "delivery_mode" : 2,
     "scheduling" : "*/15 * * * * ?",
     "auto_connect" : 1
@@ -331,8 +330,7 @@ The following endpoints are currently availables for informations and runtime mo
     "password" : "guest",
     "timeout" : 0,
     "vhost" : "/",
-    "exchange" : "navel-scheduler.E.direct.events",
-    "routing_key" : "navel-scheduler.collections",
+    "exchange" : "amq.topic",
     "delivery_mode" : 2,
     "scheduling" : "*/15 * * * * ?",
     "auto_connect" : 1

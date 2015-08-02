@@ -551,7 +551,12 @@ if (defined $general_configuration_file_path) {
                                             };
 
                                             unless ($@) {
-                                                $publisher->push_in_queue($deserialized);
+                                                $publisher->push_in_queue(
+                                                    {
+                                                        collection => $body->{collection},
+                                                        datas => $deserialized
+                                                    }
+                                                );
 
                                                 push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->get_definition()->get_name();
                                             } else {
