@@ -119,28 +119,26 @@ sub register_connector {
                                     sub {
                                         close $fh or $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
-                                        my $get_and_push_generic_message = 'Get and push in queue datas for connector ' . $connector->get_name() . '.';
+                                        my $get_and_push_generic_message = 'Get and push in queue an event for connector ' . $connector->get_name() . '.';
 
                                         if ($connector->is_type_code()) {
                                             Navel::Scheduler::Cron::Fork->new(
                                                 $connector,
-                                                $self->get_logger(),
-                                                $connector_content
+                                                $connector_content,
+                                                $self->get_publishers(),
+                                                $self->get_logger()
                                             )->when_done(
                                                 sub {
                                                     my $datas = shift;
 
                                                     $self->get_logger()->push_in_queue($get_and_push_generic_message, 'info');
 
-                                                    map {
-                                                        $_->push_in_queue(
-                                                            {
-                                                                connector => $connector,
-                                                                collection => $connector->get_collection(),
-                                                                datas => $datas
-                                                            }
-                                                        )
-                                                    } @{$self->get_publishers()};
+                                                    $_->push_in_queue(
+                                                        {
+                                                            connector => $connector,
+                                                            datas => $datas
+                                                        }
+                                                    ) for (@{$self->get_publishers()});
 
                                                     $self->get_locks()->{$job_name} = 0;
 
@@ -150,15 +148,12 @@ sub register_connector {
                                         } else {
                                             $self->get_logger()->push_in_queue($get_and_push_generic_message, 'info');
 
-                                            map {
-                                                $_->push_in_queue(
-                                                    {
-                                                        connector => $connector,
-                                                        collection => $connector->get_collection(),
-                                                        datas => $connector_content
-                                                    }
-                                                )
-                                            } @{$self->get_publishers()};
+                                            $_->push_in_queue(
+                                                {
+                                                    connector => $connector,
+                                                    datas => $connector_content
+                                                }
+                                            ) for (@{$self->get_publishers()});
 
                                             $self->get_locks()->{$job_name} = 0;
 
@@ -169,6 +164,13 @@ sub register_connector {
                             } else {
                                 $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
+                                $_->push_in_queue(
+                                    {
+                                        connector => $connector
+                                    },
+                                    'set_ko_exception'
+                                ) for (@{$self->get_publishers()});
+
                                 $self->get_locks()->{$job_name} = 0;
 
                                 $self->a_connector_stop();
@@ -176,7 +178,7 @@ sub register_connector {
                         }
                     );
                 } else {
-                    $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' already running.', 'info');
+                    $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' is already running.', 'info');
                 }
             } else {
                  $self->get_logger()->push_in_queue('Too much connectors are running (maximum of ' . $self->get_maximum_simultaneous_exec() . ').', 'info');
@@ -263,7 +265,7 @@ sub register_publisher {
         sub {
             local $@;
 
-            my $publish_generic_message = 'Publish datas for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
+            my $publish_generic_message = 'Publish events for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
 
             if ($publisher->get_net()->is_connected()) {
                 my @queue = @{$publisher->get_queue()};
@@ -274,28 +276,24 @@ sub register_publisher {
                     $publisher->clear_queue();
 
                     eval {
-                        for my $body (@queue) {
-                            my $serialize_generic_message = 'Serialize datas for collection ' . $body->{collection} . '.';
+                        for my $event (@queue) {
+                            my $serialize_generic_message = 'Serialize datas for collection ' . $event->get_collection() . '.';
 
                             my $serialized = eval {
-                                to(
-                                    datas => $body->{datas},
-                                    connector => $body->{connector},
-                                    collection => $body->{collection}
-                                );
+                                $event->get_datas_serialized();
                             };
 
                             unless ($@) {
                                 $self->get_logger()->good($serialize_generic_message, 'debug');
 
-                                my $routing_key = 'navel-scheduler.' . $body->{collection};
+                                my $routing_key = $event->get_routing_key();
 
-                                $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one body with routing key ' . $routing_key . '.', 'debug');
+                                $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . '.', 'debug');
 
                                 $publisher->get_net()->publish(
                                     $Navel::RabbitMQ::Publisher::CHANNEL_ID,
                                     $routing_key,
-                                    $body,
+                                    $serialized,
                                     {
                                         exchange => $publisher->get_definition()->get_exchange()
                                     },

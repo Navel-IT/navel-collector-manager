@@ -32,10 +32,6 @@ use Navel::Scheduler qw/
 
 use Navel::Definition::WebService::Etc::Parser;
 
-use Navel::RabbitMQ::Serialize::Data qw/
-    :all
-/;
-
 use Navel::Utils qw/
     :all
 /;
@@ -539,31 +535,14 @@ if (defined $general_configuration_file_path) {
                                     };
 
                                     unless ($@) {
-                                        if (ref $body eq 'HASH' && exists $body->{datas} && defined $body->{collection}) {
-                                            my $deserialized = eval {
-                                                from(
-                                                    to(
-                                                        $body->{datas},
-                                                        undef,
-                                                        $body->{collection}
-                                                    )
-                                                );
-                                            };
+                                        eval {
+                                            $publisher->push_in_queue($body);
+                                        };
 
-                                            unless ($@) {
-                                                $publisher->push_in_queue(
-                                                    {
-                                                        collection => $body->{collection},
-                                                        datas => $deserialized
-                                                    }
-                                                );
-
-                                                push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->get_definition()->get_name();
-                                            } else {
-                                                push @ko, 'Error while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
-                                            }
+                                        unless ($@) {
+                                            push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->get_definition()->get_name();
                                         } else {
-                                            push @ko, "Body need to be a hashtable with 'datas' and 'collection' key";
+                                            push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
                                         }
                                     } else {
                                         push @ko, $@;

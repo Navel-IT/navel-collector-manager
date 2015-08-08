@@ -54,7 +54,7 @@ our $VERSION = 0.1;
 sub to($@) {
     my ($datas, $connector, $collection) = @_;
 
-    if (ref $connector eq 'Navel::Definition::Connector') {
+    if (blessed($connector) eq 'Navel::Definition::Connector') {
         $connector = unblessed($connector);
 
         publicize($connector);

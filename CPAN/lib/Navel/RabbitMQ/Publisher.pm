@@ -21,6 +21,8 @@ use Carp qw/
 
 use Net::AMQP::RabbitMQ;
 
+use Navel::RabbitMQ::Publisher::Event;
+
 use Navel::Utils qw/
     :all
 /;
@@ -91,9 +93,13 @@ sub get_queue {
 }
 
 sub push_in_queue {
-    my ($self, $body) = @_;
+    my ($self, $definition, $status_method) = @_;
 
-    push @{$self->get_queue()}, $body;
+    my $event = Navel::RabbitMQ::Publisher::Event->new($definition);
+
+    $event->$status_method() if (defined $status_method);
+
+    push @{$self->get_queue()}, $event;
 
     $self;
 }
