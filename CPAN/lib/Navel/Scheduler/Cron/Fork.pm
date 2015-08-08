@@ -27,14 +27,19 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $logger, $perl_code_string) = @_;
+    my ($class, $connector, $perl_code_string, $logger, $publishers) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger');
+    croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger' && ref $publishers eq 'ARRAY');
+
+    for (@{$publishers}) {
+        croak('one or more publisher objects are invalids.') unless ($_ eq 'Navel::RabbitMQ::Publisher');
+    }
 
     my $self = {
         __connector => $connector,
-        __logger => $logger,
         __perl_code_string => $perl_code_string,
+        __logger => $logger,
+        __publishers => $publishers,
         __fork => undef,
         __rpc => undef
     };
@@ -59,7 +64,14 @@ sub new {
             }
         },
         on_error => sub {
-            $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed : ' . shift() . '.', 'err');
+            $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed (fatal error) : ' . shift() . '.', 'err');
+
+            $_->push_in_queue(
+                {
+                    connector => $connector
+                },
+                'set_ko_no_source'
+            ) for (@{$self->get_publishers()});
         },
         on_destroy => sub {
             $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
@@ -92,12 +104,16 @@ sub get_connector {
     shift->{__connector};
 }
 
+sub get_perl_code_string {
+    shift->{__perl_code_string};
+}
+
 sub get_logger {
     shift->{__logger};
 }
 
-sub get_perl_code_string {
-    shift->{__perl_code_string};
+sub get_publishers {
+    shift->{__publishers};
 }
 
 sub get_fork {
