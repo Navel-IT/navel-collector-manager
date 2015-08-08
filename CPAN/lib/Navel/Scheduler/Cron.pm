@@ -267,10 +267,8 @@ sub register_publisher {
 
             my $publish_generic_message = 'Publish events for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
 
-            if ($publisher->get_net()->is_connected()) {
-                my @queue = @{$publisher->get_queue()};
-
-                if (@queue) {
+            if (my @queue = @{$publisher->get_queue()}) {
+                if ($publisher->get_net()->is_connected()) {
                     $self->get_logger()->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
                     $publisher->clear_queue();
@@ -313,10 +311,10 @@ sub register_publisher {
                         $self->get_logger()->good($publish_generic_message . '.', 'notice');
                     }
                 } else {
-                    $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
+                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
                 }
             } else {
-                $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
+                $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
             }
         }
     );
