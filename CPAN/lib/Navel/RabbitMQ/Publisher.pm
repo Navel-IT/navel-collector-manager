@@ -57,7 +57,8 @@ sub connect {
         vhost => $self->get_definition()->get_vhost()
     );
 
-    $options{timeout} = $self->get_definition()->get_timeout() if ($self->get_definition()->get_timeout());
+    $options{timeout} = 5;
+    # $options{timeout} = $self->get_definition()->get_timeout() if ($self->get_definition()->get_timeout());
 
     eval {
         $self->get_net()->connect($self->get_definition()->get_host(), \%options);
