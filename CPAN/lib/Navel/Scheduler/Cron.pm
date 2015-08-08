@@ -168,7 +168,7 @@ sub register_connector {
                                     {
                                         connector => $connector
                                     },
-                                    'set_ko_exception'
+                                    'set_ko_no_source'
                                 ) for (@{$self->get_publishers()});
 
                                 $self->get_locks()->{$job_name} = 0;

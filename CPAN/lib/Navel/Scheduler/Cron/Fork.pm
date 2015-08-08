@@ -70,7 +70,7 @@ sub new {
                 {
                     connector => $connector
                 },
-                'set_ko_no_source'
+                'set_ko_exception'
             ) for (@{$self->get_publishers()});
         },
         on_destroy => sub {
