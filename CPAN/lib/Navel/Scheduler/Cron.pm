@@ -73,11 +73,11 @@ sub register_logger {
     my $job_name = 'logger_0';
 
     $self->get_cron()->add(
-        '*/3 * * * * ?',
+        '*/2 * * * * ?',
         name => $job_name,
         single => 1,
         sub {
-                $self->get_logger()->flush_queue(1);
+            $self->get_logger()->flush_queue(1);
         }
     );
 
