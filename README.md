@@ -135,7 +135,7 @@ Service
 
 `service navel-scheduler <action>`
 
-If you want to change the service options, edit */etc/sysconfig/navel-scheduler*.
+If you want to change the service options, edit */etc/sysconfig/navel-scheduler* in accordance with the options returned by `navel-scheduler --help`.
 
 **Note** : the service will run under *navel-scheduler:navel-scheduler*.
 
