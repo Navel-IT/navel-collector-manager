@@ -19,7 +19,7 @@ use Carp qw/
     croak
 /;
 
-use Net::AMQP::RabbitMQ;
+use AnyEvent::RabbitMQ 1.19;
 
 use Navel::RabbitMQ::Publisher::Event;
 
@@ -28,8 +28,6 @@ use Navel::Utils qw/
 /;
 
 our $VERSION = 0.1;
-
-our $CHANNEL_ID = 1;
 
 #-> methods
 
@@ -40,45 +38,49 @@ sub new {
 
     bless {
         __definition => $definition,
-        __net => Net::AMQP::RabbitMQ->new(),
+        __net => undef,
         __queue => []
     }, ref $class || $class;
 }
 
 sub connect {
-    my $self = shift;
+    my ($self, $callbacks) = @_;
 
-    local $@;
+    croak('one or more callbacks are not coderef') unless (ref $callbacks eq 'HASH' && ref $callbacks->{on_success} eq 'CODE' && ref $callbacks->{on_failure} eq 'CODE' && ref $callbacks->{on_read_failure} eq 'CODE' && ref $callbacks->{on_return} eq 'CODE' && ref $callbacks->{on_close} eq 'CODE');
 
-    my %options = (
-        user => $self->get_definition()->get_user(),
-        password => $self->get_definition()->get_password(),
+    $self->{__net} = AnyEvent::RabbitMQ->new()->load_xml_spec()->connect(
+        host => $self->get_definition()->get_host(),
         port => $self->get_definition()->get_port(),
-        vhost => $self->get_definition()->get_vhost()
+        user => $self->get_definition()->get_user(),
+        pass => $self->get_definition()->get_password(),
+        vhost => $self->get_definition()->get_vhost(),
+        timeout => $self->get_definition()->get_timeout(),
+        tls => $self->get_definition()->get_tls(),
+        tune => {
+            heartbeat => $self->get_definition()->get_heartbeat()
+        },
+        on_success => $callbacks->{on_success},
+        on_failure => $callbacks->{on_failure},
+        on_read_failure => $callbacks->{on_read_failure},
+        on_return => $callbacks->{on_return},
+        on_close => $callbacks->{on_close}
     );
 
-    $options{timeout} = 5;
-    # $options{timeout} = $self->get_definition()->get_timeout() if ($self->get_definition()->get_timeout());
-
-    eval {
-        $self->get_net()->connect($self->get_definition()->get_host(), \%options);
-
-        $self->get_net()->channel_open($CHANNEL_ID);
-    };
-
-    $@;
+    $self;
 }
 
 sub disconnect {
     my $self = shift;
 
-    local $@;
+    undef $self->{__net};
 
-    eval {
-        $self->get_net()->disconnect();
-    };
+    $self;
+}
 
-    $@;
+sub is_connected {
+    my $self = shift;
+
+    blessed($self->get_net()) eq 'AnyEvent::RabbitMQ' && $self->get_net()->is_open();
 }
 
 sub get_definition {
@@ -115,13 +117,7 @@ sub clear_queue {
 
 # sub AUTOLOAD {}
 
-sub DESTROY {
-    my $self = shift;
-
-    $self->channel_close($CHANNEL_ID);
-
-    $self->disconnect();
-}
+# sub DESTROY {}
 
 1;
 

@@ -3,7 +3,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
 
-It must work on all Linux platforms but, **at this time, it is only supported on RHEL/CentOS 6.6**.
+It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only tested on RHEL/CentOS 6.6**.
 
 Build and install
 -----------------
@@ -15,7 +15,7 @@ Assuming you start the installation from scratch ...
 - **CPAN**
 
 ```shell
-yum install -y git gcc bash perl
+yum install -y git gcc bash perl libxml2 libxml2-devel
 curl -L http://cpanmin.us | perl - App::cpanminus
 
 git clone git://github.com/Navel-IT/navel-scheduler.git
@@ -237,6 +237,8 @@ The following endpoints are currently availables for informations and runtime mo
     "password" : "guest",
     "timeout" : 0,
     "vhost" : "/",
+    "tls" : 0,
+    "heartbeat" : 30,
     "exchange" : "amq.topic",
     "delivery_mode" : 2,
     "scheduling" : "*/15 * * * * ?",
@@ -261,6 +263,8 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=clear_queue
 ```json
 {
+    "ok" : ["Clear queue for publisher rabbitmq-1"]
+    "ko" : [],
     "name" : "rabbitmq-1",
     "connected" : 0,
     "messages_in_queue" : 0
@@ -269,6 +273,8 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=connect
 ```json
 {
+    "ok" : []
+    "ko" : [],
     "name" : "rabbitmq-1",
     "connected" : 1,
     "messages_in_queue" : 5
@@ -277,6 +283,8 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=disconnect
 ```json
 {
+    "ok" : []
+    "ko" : [],
     "name" : "rabbitmq-1",
     "connected" : 0,
     "messages_in_queue" : 0
@@ -330,6 +338,8 @@ The following endpoints are currently availables for informations and runtime mo
     "password" : "guest",
     "timeout" : 0,
     "vhost" : "/",
+    "tls" : 0,
+    "heartbeat" : 30,
     "exchange" : "amq.topic",
     "delivery_mode" : 2,
     "scheduling" : "*/15 * * * * ?",
@@ -402,6 +412,8 @@ sub connector {
     my ($connector_properties, $input) = @_;
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ...
+
+    AnyEvent::Fork::RPC::event("It's done father !") # send a log message to navel-scheduler
 
     \@datas;
 }

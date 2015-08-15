@@ -387,19 +387,11 @@ if (defined $general_configuration_file_path) {
                                         };
 
                                         unless ($@) {
-                                            $scheduler->get_core()->init_publisher($definition->get_name());
-
-                                            $scheduler->get_core()->register_publisher($definition->get_name());
+                                            $scheduler->get_core()->init_publisher($definition->get_name())->register_publisher($definition->get_name());
 
                                             push @ok, 'RabbitMQ ' . $definition->get_name() . ' added and publisher associated with registered';
 
-                                            if ($definition->get_auto_connect()) {
-                                                if (my $error = $scheduler->get_core()->get_publisher_by_definition_name($definition->get_name())->connect()) {
-                                                    push @ko, 'Connect publisher ' . $definition->get_name() . ' : ' . $error;
-                                                } else {
-                                                    push @ok, 'Publisher ' . $definition->get_name() . ' connected';
-                                                }
-                                            }
+                                            $scheduler->get_core()->connect_publisher($definition->get_name()) if ($definition->get_auto_connect());
                                         } else {
                                             push @ko, $@;
                                         }
@@ -440,22 +432,10 @@ if (defined $general_configuration_file_path) {
                                         my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($rabbitmq_name);
 
                                         if (defined $publisher) {
-                                            if (my $error = $publisher->disconnect()) {
-                                                push @ko, 'Disconnect publisher ' . $publisher->get_definition()->get_name() . ' : ' . $error;
+                                            if ($publisher->get_definition()->merge($body)) {
+                                                push @ok, 'RabbitMQ ' . $publisher->get_definition()->get_name() . ' changed';
                                             } else {
-                                                push @ok, 'Disconnect publisher ' . $publisher->get_definition()->get_name();
-
-                                                if ($publisher->get_definition()->merge($body)) {
-                                                    push @ok, 'RabbitMQ ' . $publisher->get_definition()->get_name() . ' changed';
-                                                } else {
-                                                    push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->get_definition()->get_name();
-                                                }
-
-                                                if (my $error = $publisher->connect()) {
-                                                    push @ko, 'Connect publisher ' . $publisher->get_definition()->get_name() . ' : ' . $error;
-                                                } else {
-                                                    push @ok, 'Connect publisher ' . $publisher->get_definition()->get_name();
-                                                }
+                                                push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->get_definition()->get_name();
                                             }
                                         } else {
                                             push @ko, 'RabbitMQ ' . $publisher->get_definition()->get_name() . " and his publisher don't exists";
@@ -557,29 +537,32 @@ if (defined $general_configuration_file_path) {
                             }
                             default {
                                 if (defined $publisher) {
+                                    my (@ok, @ko);
+
                                     my $action = $controller->req()->query_params()->param('action') || '';
 
                                     if ($action =~ /^(connect|disconnect)$/) {
-                                        my $method = $1;
+                                        my $method = $1 . '_publisher';
 
-                                        my $method_generic_message = ucfirst($method) . ' publisher ' . $publisher->get_definition()->get_name();
-
-                                        if (my $error = $publisher->$method()) {
-                                            $logger->bad($method_generic_message . ' : ' . $error . '.', 'notice');
-                                        } else {
-                                            $logger->good($method_generic_message . '.', 'notice');
-                                        }
+                                        $scheduler->get_core()->$method($publisher->get_definition()->get_name());
                                     } elsif ($action eq 'clear_queue') {
-                                        $logger->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+                                        push @ok, 'Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.';
 
                                         $publisher->$action();
                                     }
 
                                     return $controller->render(
                                         json => {
-                                            name => $publisher->get_definition()->get_name(),
-                                            connected => $publisher->get_net()->is_connected() || 0,
-                                            messages_in_queue => scalar @{$publisher->get_queue()}
+                                            %{
+                                                ok_ko($logger, \@ok, \@ko)
+                                            },
+                                            %{
+                                                {
+                                                    name => $publisher->get_definition()->get_name(),
+                                                    connected => $publisher->is_connected() || 0,
+                                                    messages_in_queue => scalar @{$publisher->get_queue()}
+                                                }
+                                            }
                                         }
                                     );
                                 }
@@ -665,17 +648,17 @@ navel-scheduler - Control and run Navel::Scheduler
 navel-scheduler [options]
 
  Options :
-     -h, --help    show help
-     -v, --version    show version
+     -h, --help    print help
+     -v, --version    print version
 
-     -c, --general-configuration-file-path <F>    load general configuration from <F>
+     -c <F>, --general-configuration-file-path=<F>    load general configuration from file <F>
 
-     [--log-file-path] <F>   log informations in file <F>
-     [--log-severity] <F>    set severity (syslog format) to <F>
+     [--log-file-path=<F>]    log informations in file <F>
+     [--log-severity=<S>]    set severity (syslog format) to <S>
 
-     [--no-web-services]   disable the web services
+     [--no-web-services]    disable the web services
 
-     [--daemonize]   run as a standalone daemon (only work on Unix-like systems)
+     [--daemonize]    run as a standalone daemon
 
 =head1 DESCRIPTION
 

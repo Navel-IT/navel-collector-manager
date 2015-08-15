@@ -46,6 +46,14 @@ sub get_vhosts {
     shift->__get_all_by_getter('get_vhost');
 }
 
+sub get_tls {
+    shift->__get_all_by_getter('get_tls');
+}
+
+sub get_heartbeats {
+    shift->__get_all_by_getter('get_heartbeat');
+}
+
 sub get_exchanges {
     shift->__get_all_by_getter('get_exchanges');
 }

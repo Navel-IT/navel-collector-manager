@@ -54,17 +54,19 @@ sub rabbitmq_definition_validator($) {
             port => 'port',
             user => 'text',
             password => 'text',
-            timeout => 'connector_timeout',
+            timeout => 'connector_positive_integer',
             vhost => 'text',
+            tls => 'connector_boolean',
+            heartbeat => 'connector_positive_integer',
             exchange => 'text',
             delivery_mode => 'connector_props_delivery_mode',
             scheduling => 'connector_cron',
-            auto_connect => 'connector_auto_connect'
+            auto_connect => 'connector_boolean'
         }
     );
 
     $validator->type(
-        connector_timeout => sub {
+        connector_positive_integer => sub {
             my $value = shift;
 
             isint($value) && $value >= 0;
@@ -79,7 +81,7 @@ sub rabbitmq_definition_validator($) {
                 DateTime::Event::Cron::Quartz->new(shift);
             };
         },
-        connector_auto_connect => sub {
+        connector_boolean => sub {
             my $value = shift;
 
             $value == 0 || $value == 1 if (isint($value));
@@ -185,6 +187,30 @@ sub set_vhost {
     shift->merge(
         {
             vhost => shift
+        }
+    );
+}
+
+sub get_tls {
+    shift->{__tls};
+}
+
+sub set_tls {
+    shift->merge(
+        {
+            tls => shift
+        }
+    );
+}
+
+sub get_heartbeat {
+    shift->{__heartbeat};
+}
+
+sub set_heartbeat {
+    shift->merge(
+        {
+            heartbeat => shift
         }
     );
 }

@@ -160,7 +160,7 @@ sub register_connector {
                                             $self->a_connector_stop();
                                         }
                                     }
-                                )
+                                );
                             } else {
                                 $self->get_logger()->bad('Connector ' . $connector->get_name() . ' : ' . $! . '.', 'err');
 
@@ -181,7 +181,7 @@ sub register_connector {
                     $self->get_logger()->push_in_queue('Connector ' . $connector->get_name() . ' is already running.', 'info');
                 }
             } else {
-                 $self->get_logger()->push_in_queue('Too much connectors are running (maximum of ' . $self->get_maximum_simultaneous_exec() . ').', 'info');
+                $self->get_logger()->push_in_queue('Too much connectors are running (maximum of ' . $self->get_maximum_simultaneous_exec() . ').', 'info');
             }
         }
     );
@@ -204,7 +204,7 @@ sub init_publisher {
 
     croak('undefined definition') unless (defined $rabbitmq);
 
-    $self->get_logger()->push_in_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'info');
+    $self->get_logger()->push_in_queue('Initialize publisher ' . $rabbitmq->get_name() . '.', 'notice');
 
     push @{$self->get_publishers()}, Navel::RabbitMQ::Publisher->new($rabbitmq);
 
@@ -226,18 +226,56 @@ sub connect_publisher {
 
     croak('undefined definition') unless (defined $publisher);
 
-    my $publisher_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
+    my $publisher_connect_generic_message = 'Connect publisher ' . $publisher->get_definition()->get_name();
 
-    unless ($publisher->get_net()->is_connected()) {
-        my $connect_message = $publisher->connect();
+    unless ($publisher->is_connected()) {
+        my $publisher_generic_message = 'Publisher ' . $publisher->get_definition()->get_name();
 
-        if ($connect_message) {
-            $self->get_logger()->bad($publisher_generic_message . ' : ' . $connect_message . '.', 'warn')->flush_queue(1);
+        eval {
+            $publisher->connect(
+                {
+                    on_success => sub {
+                        my $amqp_connection = shift;
+
+                        $self->get_logger()->good($publisher_connect_generic_message . ' successfuly connected.', 'notice');
+
+                        $amqp_connection->open_channel(
+                            on_success => sub {
+                                $self->get_logger()->good($publisher_generic_message . ' : channel opened.', 'notice');
+                            },
+                            on_failure => sub {
+                                $self->get_logger()->bad($publisher_generic_message . ' : channel failure ... ' . join(' ', @_) . '.', 'notice');
+                            },
+                            on_close => sub {
+                                $self->get_logger()->push_in_queue($publisher_generic_message . ' : channel closed.', 'notice');
+
+                                $publisher->disconnect();
+                            }
+                        );
+                    },
+                    on_failure => sub {
+                        $self->get_logger()->bad($publisher_connect_generic_message . ' : failure ... ' . join(' ', @_) . '.', 'warn');
+                    },
+                    on_read_failure => sub {
+                        $self->get_logger()->bad($publisher_generic_message . ' : read failure ... ' . join(' ', @_) . '.', 'warn');
+                    },
+                    on_return => sub {
+                        $self->get_logger()->bad($publisher_generic_message . ' : unable to deliver frame.', 'warn');
+                    },
+                    on_close => sub {
+                        $self->get_logger()->push_in_queue($publisher_generic_message . ' disconnected.', 'notice');
+                    }
+                }
+            );
+        };
+
+        unless ($@) {
+            $self->get_logger()->push_in_queue($publisher_connect_generic_message . ' ...', 'notice');
         } else {
-            $self->get_logger()->good($publisher_generic_message . '.', 'notice')->flush_queue(1);
+            $self->get_logger()->bad($publisher_connect_generic_message . ' : ' . $@ . '.', 'warn');
         }
     } else {
-        $self->get_logger()->bad($publisher_generic_message . ' : seem already connected.', 'notice')->flush_queue(1);
+        $self->get_logger()->bad($publisher_connect_generic_message . ' : seem already connected.', 'notice');
     }
 
     $self;
@@ -265,56 +303,59 @@ sub register_publisher {
         sub {
             local $@;
 
-            my $publish_generic_message = 'Publish events for publisher ' . $publisher->get_definition()->get_name() . ' on channel ' . $Navel::RabbitMQ::Publisher::CHANNEL_ID;
+            my $publish_generic_message = 'Publish events for publisher ' . $publisher->get_definition()->get_name();
 
             if (my @queue = @{$publisher->get_queue()}) {
-                if ($publisher->get_net()->is_connected()) {
-                    $self->get_logger()->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
+                if ($publisher->is_connected()) {
+                    if (my @channels = values %{$publisher->get_net()->channels()}) {
+                        $self->get_logger()->push_in_queue('Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.', 'notice');
 
-                    $publisher->clear_queue();
+                        $publisher->clear_queue();
 
-                    eval {
-                        for my $event (@queue) {
-                            my $serialize_generic_message = 'Serialize datas for collection ' . $event->get_collection() . '.';
+                        eval {
+                            for my $event (@queue) {
+                                my $serialize_generic_message = 'Serialize datas for collection ' . $event->get_collection();
 
-                            my $serialized = eval {
-                                $event->get_datas_serialized();
-                            };
+                                my $serialized = eval {
+                                    $event->get_serialized_datas();
+                                };
 
-                            unless ($@) {
-                                $self->get_logger()->good($serialize_generic_message, 'debug');
+                                unless ($@) {
+                                    $self->get_logger()->good($serialize_generic_message . '.', 'debug');
 
-                                my $routing_key = $event->get_routing_key();
+                                    my $routing_key = $event->get_routing_key();
 
-                                $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . '.', 'debug');
+                                    $self->get_logger()->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->get_definition()->get_exchange() . '.', 'debug');
 
-                                $publisher->get_net()->publish(
-                                    $Navel::RabbitMQ::Publisher::CHANNEL_ID,
-                                    $routing_key,
-                                    $serialized,
-                                    {
-                                        exchange => $publisher->get_definition()->get_exchange()
-                                    },
-                                    {
-                                        delivery_mode => $publisher->get_definition()->get_delivery_mode()
-                                    }
-                                );
-                            } else {
-                                $self->get_logger()->bad($serialize_generic_message, 'debug');
+                                    $channels[0]->publish(
+                                        exchange => $publisher->get_definition()->get_exchange(),
+                                        routing_key => $event->get_routing_key(),
+                                        headers => {
+                                            content_type => 'amqp/json',
+                                            content_encoding => 'utf8',
+                                            delivery_mode => $publisher->get_definition()->get_delivery_mode()
+                                        },
+                                        body => $serialized
+                                    );
+                                } else {
+                                    $self->get_logger()->bad($serialize_generic_message . ' failed : ' . $@ . '.' , 'debug');
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    if ($@) {
-                        $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                        if ($@) {
+                            $self->get_logger()->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                        } else {
+                            $self->get_logger()->good($publish_generic_message . '.', 'notice');
+                        }
                     } else {
-                        $self->get_logger()->good($publish_generic_message . '.', 'notice');
+                        $self->get_logger()->bad($publish_generic_message . ' : publisher has no channel opened.', 'warn');
                     }
                 } else {
-                    $self->get_logger()->bad($publish_generic_message . ' : publisher is not connected.', 'warn');
+                    $self->get_logger()->push_in_queue($publish_generic_message . ' : publisher is not connected.', 'notice');
                 }
             } else {
-                $self->get_logger()->bad('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
+                $self->get_logger()->push_in_queue('Buffer for publisher ' . $publisher->get_definition()->get_name() . ' is empty.', 'info');
             }
         }
     );
@@ -339,10 +380,18 @@ sub disconnect_publisher {
 
     my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->get_definition()->get_name();
 
-    if (my $error = $publisher->disconnect()) {
-        $self->get_logger()->good($disconnect_generic_message . ' : ' . $error . '.', 'notice');
+    if ($publisher->is_connected()) {
+        eval {
+            $publisher->disconnect();
+        };
+
+        unless ($@) {
+            $self->get_logger()->good($disconnect_generic_message . '.', 'notice');
+        } else {
+            $self->get_logger()->bad($disconnect_generic_message . ' : ' . $@ . '.', 'warn');
+        }
     } else {
-        $self->get_logger()->good($disconnect_generic_message . '.', 'notice');
+        $self->get_logger()->bad($disconnect_generic_message . ' : seem already disconnected.', 'notice');
     }
 
     $self;
@@ -416,6 +465,10 @@ sub delete_publisher_by_definition_name {
     $definition_to_delete_index++ until ($finded = $publishers->[$definition_to_delete_index]->get_definition()->get_name() eq $definition_name);
 
     if ($finded) {
+        eval {
+            $publishers->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
+        };
+
         splice @{$publishers}, $definition_to_delete_index, 1;
     } else {
         croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
