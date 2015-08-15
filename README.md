@@ -12,8 +12,6 @@ Assuming you start the installation from scratch ...
 
 **WARNING** : if the system language is not English, you may encounter some unexpected bugs while running navel-scheduler.
 
-- **CPAN**
-
 ```shell
 yum install -y git gcc bash perl libxml2 libxml2-devel
 curl -L http://cpanmin.us | perl - App::cpanminus
@@ -28,29 +26,17 @@ cpanm ExtUtils::MakeMaker '<CPAN-ARCHIVE>'
 getent group navel-scheduler || groupadd -r navel-scheduler
 getent passwd navel-scheduler || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
 
-cp RPM/SOURCES/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
+cp SYS/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
 
 mkdir /var/run/navel-scheduler/ /var/log/navel-scheduler/
 
-cp RPM/SOURCES/etc/sysconfig/navel-scheduler /etc/sysconfig/
-chmod +x RPM/SOURCES/etc/init.d/navel-scheduler
-cp -p RPM/SOURCES/etc/init.d/navel-scheduler /etc/init.d/
+cp SYS/etc/sysconfig/navel-scheduler /etc/sysconfig/
+chmod +x SYS/etc/init.d/navel-scheduler
+cp -p SYS/etc/init.d/navel-scheduler /etc/init.d/
 
 chkconfig navel-scheduler on
 
 chown -R navel-scheduler:navel-scheduler /usr/local/bin/navel-scheduler /usr/local/etc/navel-scheduler/ /var/run/navel-scheduler/ /var/log/navel-scheduler/
-```
-
-- **RPM**
-
-```shell
-yum install -y git rpm-build gcc bash
-git clone git://github.com/Navel-IT/navel-scheduler.git
-
-cd navel-scheduler/
-
-bash build_rpm_archive.sh '<VERSION>' '<RELEASE>'
-yum localinstall '<RPM-ARCHIVE>'
 ```
 
 Prepare configuration
