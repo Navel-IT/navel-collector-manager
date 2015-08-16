@@ -23,14 +23,14 @@ prog_user='navel-scheduler'
 pidfile="/var/run/navel-scheduler/${prog}.pid"
 sysconfig="/etc/sysconfig/${prog}"
 
-[[ -r ${sysconfig} ]] && . ${sysconfig}
+[[ -r "${sysconfig}" ]] && . "${sysconfig}"
 
 #-> functions
 
 f_start() {
     ${ECHO} -n "Starting ${prog} : "
 
-    daemon --user=${prog_user} --pidfile=${pidfile} ${prog_full_path} ${OPTS}
+    daemon --user="${prog_user}" --pidfile="${pidfile}" "${prog_full_path}" ${OPTS}
 
     ${ECHO}
 }
@@ -38,7 +38,7 @@ f_start() {
 f_stop() {
     ${ECHO} -n "Stopping ${prog} : "
 
-    killproc -p ${pidfile} ${prog_full_path}
+    killproc -p "${pidfile}" "${prog_full_path}"
 
     ${ECHO}
 }
@@ -51,7 +51,7 @@ case ${1} in
     stop)
         f_stop ;;
     status)
-        status -p ${pidfile} ${prog_full_path};;
+        status -p "${pidfile}" "${prog_full_path}" ;;
     restart)
         f_stop
 
