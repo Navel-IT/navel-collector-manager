@@ -8,7 +8,7 @@ It is build on top of Mojolicious + AnyEvent and must work on all Linux platform
 Build and install
 -----------------
 
-Assuming you start the installation from scratch with `git` and `bash` installed ...
+Assuming you start the installation from scratch with `git`, `bash` and `perl` (>= 5.10.1) installed ...
 
 ```shell
 git clone git://github.com/Navel-IT/navel-scheduler.git
