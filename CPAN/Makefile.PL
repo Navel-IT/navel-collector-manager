@@ -33,9 +33,6 @@ WriteMakefile(
         }
     },
     MIN_PERL_VERSION => $min_perl_version,
-    CONFIGURE_REQUIRES => {
-       'ExtUtils::MakeMaker' => 6.64
-    },
     PREREQ_PM => {
         'Scalar::Util::Numeric' => 0,
         'File::Slurp' => 0,
