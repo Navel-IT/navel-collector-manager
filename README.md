@@ -8,35 +8,14 @@ It is build on top of Mojolicious + AnyEvent and must work on all Linux platform
 Build and install
 -----------------
 
-Assuming you start the installation from scratch ...
-
-**WARNING** : if the system language is not English, you may encounter some unexpected bugs while running navel-scheduler.
+Assuming you start the installation from scratch with `git` and `bash` installed ...
 
 ```shell
-yum install -y git gcc bash perl libxml2 libxml2-devel
-curl -L http://cpanmin.us | perl - App::cpanminus
-
 git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash build_cpan_archive.sh '<VERSION>'
-cpanm ExtUtils::MakeMaker '<CPAN-ARCHIVE>'
-
-getent group navel-scheduler || groupadd -r navel-scheduler
-getent passwd navel-scheduler || useradd -rmd /usr/local/etc/navel-scheduler/ -g navel-scheduler -s /sbin/nologin navel-scheduler
-
-cp SYS/usr/local/etc/navel-scheduler/* /usr/local/etc/navel-scheduler
-
-mkdir /var/run/navel-scheduler/ /var/log/navel-scheduler/
-
-cp SYS/etc/sysconfig/navel-scheduler /etc/sysconfig/
-chmod +x SYS/etc/init.d/navel-scheduler
-cp -p SYS/etc/init.d/navel-scheduler /etc/init.d/
-
-chkconfig navel-scheduler on
-
-chown -R navel-scheduler:navel-scheduler /usr/local/bin/navel-scheduler /usr/local/etc/navel-scheduler/ /var/run/navel-scheduler/ /var/log/navel-scheduler/
+bash install.sh '<VERSION>'
 ```
 
 Prepare configuration
