@@ -45,7 +45,6 @@ WriteMakefile(
         'AnyEvent::DateTime::Cron' => 0,
         'AnyEvent::RabbitMQ' => 1.19,
         'AnyEvent::AIO' => 0,
-        'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
         'Exporter::Easy' => 0,
         'Storable' => 0,
