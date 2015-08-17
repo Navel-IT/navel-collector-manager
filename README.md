@@ -369,7 +369,7 @@ Connectors are plain JSON files or Perl scripts which must contain a method name
 An exemple of Perl connector :
 
 ```perl
-# pragmas strict and warnings + Navel::Utils are automatically loaded
+# pragmas strict and warnings are automatically loaded
 
 #-> connector callback
 
