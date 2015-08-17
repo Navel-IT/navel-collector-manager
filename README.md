@@ -1,7 +1,7 @@
 navel-scheduler
 ===============
 
-navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
+navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
 It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only tested on RHEL/CentOS 6.6**.
 
