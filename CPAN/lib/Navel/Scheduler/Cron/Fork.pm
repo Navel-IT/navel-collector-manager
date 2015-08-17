@@ -46,8 +46,7 @@ sub new {
 
     $self->{__fork} = AnyEvent::Fork->new()->require(
         'strict',
-        'warnings',
-        'Navel::Utils'
+        'warnings'
     )->eval(
         $self->{__perl_code_string}
     );
