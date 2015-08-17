@@ -10,17 +10,27 @@ package Navel::Scheduler::Cron::Fork;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
+
+use constant {
+    SEREAL_SERIALISER => '
+use Sereal;
+
+(
+    sub {
+        Sereal::Encoder->new()->encode(\@_);
+    },
+    sub {
+        @{Sereal::Decoder->new()->decode(shift)};
+    }
+);
+    '
+};
 
 use AnyEvent::Fork;
-
 use AnyEvent::Fork::RPC;
 
-use Navel::Utils qw/
-    :all
-/;
+use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 
@@ -35,23 +45,23 @@ sub new {
         croak('one or more publisher objects are invalids.') unless ($_ eq 'Navel::RabbitMQ::Publisher');
     }
 
-    my $self = {
+    my $self = bless {
         __connector => $connector,
         __perl_code_string => $perl_code_string,
         __logger => $logger,
         __publishers => $publishers,
         __fork => undef,
         __rpc => undef
-    };
+    }, ref $class || $class;
 
     $self->{__fork} = AnyEvent::Fork->new()->require(
         'strict',
         'warnings'
     )->eval(
-        $self->{__perl_code_string}
+        $self->get_perl_code_string()
     );
 
-    $self->{__rpc} = $self->{__fork}->AnyEvent::Fork::RPC::run(
+    $self->{__rpc} = $self->get_fork()->AnyEvent::Fork::RPC::run(
         'connector',
         on_event => sub {
             my $event_type = shift;
@@ -59,7 +69,7 @@ sub new {
             if ($event_type eq 'ae_log') {
                 my ($severity, $message) = @_;
 
-                $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC log message : ' . $message . '.', 'notice');
+                $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
             }
         },
         on_error => sub {
@@ -73,12 +83,12 @@ sub new {
             ) for (@{$self->get_publishers()});
         },
         on_destroy => sub {
-            $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC : on_destroy call.', 'debug');
+            $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
         },
-        serialiser => $AnyEvent::Fork::RPC::JSON_SERIALISER
+        serialiser => SEREAL_SERIALISER
     );
 
-    bless $self, ref $class || $class;
+    $self;
 }
 
 sub when_done {

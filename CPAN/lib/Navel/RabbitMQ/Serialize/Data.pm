@@ -26,25 +26,17 @@ use Exporter::Easy (
     ]
 );
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use String::Util qw/
-    hascontent
-/;
+use Scalar::Util::Numeric 'isint';
 
-use Scalar::Util::Numeric qw/
-    isint
-/;
-
-use Navel::Definition::Connector qw/
-    :all
-/;
-
+use Navel::Definition::Connector ':all';
 use Navel::Utils qw/
-    :all
+    blessed
+    publicize
+    reftype
+    encode_sereal_constructor
+    decode_sereal_constructor
 /;
 
 our $VERSION = 0.1;
@@ -60,7 +52,7 @@ sub to($@) {
         publicize($connector);
     }
 
-    encode_json(
+    encode_sereal_constructor()->encode(
         {
             datas => $datas,
             time => time,
@@ -73,13 +65,13 @@ sub to($@) {
 sub from($) {
     my $serialized = shift;
 
-    my $deserialized = decode_json($serialized);
+    my $deserialized = decode_sereal_constructor()->decode($serialized);
 
     if (reftype($deserialized) && isint($deserialized->{time}) && exists $deserialized->{datas} && exists $deserialized->{collection}) {
         my $connector;
 
         if (defined $deserialized->{connector}) {
-            croak('deserialized datas are incorrects : connector definition is incorrect') unless (connector_definition_validator($deserialized->{connector}));
+            croak('deserialized datas are invalid : connector definition is invalid') unless (connector_definition_validator($deserialized->{connector}));
 
             $connector = Navel::Definition::Connector->new($deserialized->{connector});
         }
@@ -98,7 +90,7 @@ sub from($) {
         };
     }
 
-    croak('deserialized datas are incorrects');
+    croak('deserialized datas are invalid');
 }
 
 # sub AUTOLOAD {}

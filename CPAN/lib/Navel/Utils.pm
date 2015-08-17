@@ -10,16 +10,14 @@ package Navel::Utils;
 use strict;
 use warnings;
 
-use subs qw/
-    substitute_all_keys
-/;
+use subs 'substitute_all_keys';
 
 use Exporter::Easy (
     OK => [qw/
         :all
         blessed
         reftype
-        get_a_proper_localtime
+        human_readable_localtime
         replace_key
         substitute_all_keys
         publicize
@@ -28,12 +26,14 @@ use Exporter::Easy (
         encode_json
         decode_json
         encode_json_pretty
+        encode_sereal_constructor
+        decode_sereal_constructor
     /],
     TAGS => [
         all => [qw/
             blessed
             reftype
-            get_a_proper_localtime
+            human_readable_localtime
             replace_key
             substitute_all_keys
             publicize
@@ -42,6 +42,8 @@ use Exporter::Easy (
             encode_json
             decode_json
             encode_json_pretty
+            encode_sereal_constructor
+            decode_sereal_constructor
         /]
     ]
 );
@@ -52,6 +54,8 @@ use JSON qw/
     encode_json
     decode_json
 /;
+
+use Sereal;
 
 our $VERSION = 0.1;
 
@@ -69,7 +73,7 @@ sub reftype($) {
    defined $reftype ? $reftype : '';
 }
 
-sub get_a_proper_localtime($) {
+sub human_readable_localtime($) {
     my ($sec, $min, $hour, $mday, $mon, $year) = localtime shift;
 
     sprintf '%d/%02d/%02d %02d:%02d:%02d', 1900 + $year, $mday, $mon, $hour, $min, $sec;
@@ -115,6 +119,12 @@ sub encode_json_pretty($) {
     JSON->new()->utf8()->pretty()->encode(shift);
 }
 
+sub encode_sereal_constructor {
+    Sereal::Encoder->new();
+}
+
+sub decode_sereal_constructor {}
+    Sereal::Decoder->new();
 1;
 
 #-> END
