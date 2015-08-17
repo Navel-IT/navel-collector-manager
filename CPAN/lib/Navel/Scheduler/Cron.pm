@@ -316,8 +316,6 @@ sub register_publisher {
                                         exchange => $publisher->get_definition()->get_exchange(),
                                         routing_key => $event->get_routing_key(),
                                         headers => {
-                                            content_type => 'amqp/json',
-                                            content_encoding => 'utf8',
                                             delivery_mode => $publisher->get_definition()->get_delivery_mode()
                                         },
                                         body => $serialized
