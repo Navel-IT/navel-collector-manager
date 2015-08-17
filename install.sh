@@ -172,9 +172,20 @@ for t_os in ${supported_os[@]} ; do
     fi
 done
 
-program_version=${1}
+usage="Usage: ${0} -v <version> [-c]"
 
-[[ -z "${program_version}" ]] && f_die "Usage : ${0} <version>" 1
+while getopts 'v:c' OPT ; do
+    case ${OPT} in
+        v)
+            program_version=${OPTARG} ;;
+        c)
+            copy_configuration_file=1 ;;
+        *)
+            f_die "${usage}" 1 ;;
+    esac
+done
+
+[[ -z "${program_version}" ]] && f_die "${usage}" 1
 
 if [[ -n ${os} ]] ; then
     f_do "Installing ${program_name}."
@@ -237,14 +248,16 @@ if [[ -n ${os} ]] ; then
                         if [[ ${RETVAL} -eq 0 ]] ; then
                             f_ok
 
-                            from="${full_dirname}/${others_files_source_prefix}/${others_files_configuration_directory}/*"
-                            to="/${others_files_configuration_directory}"
+                            if [[ ${copy_configuration_file} ]] ; then
+                                from="${full_dirname}/${others_files_source_prefix}/${others_files_configuration_directory}/*"
+                                to="/${others_files_configuration_directory}"
 
-                            f_do "Copying configuration files from ${from} to ${to}."
+                                f_do "Copying configuration files from ${from} to ${to}."
 
-                            f_cp "${from}" "${to}"
+                                f_cp "${from}" "${to}"
 
-                            RETVAL=${?}
+                                RETVAL=${?}
+                            fi
 
                             if [[ ${RETVAL} -eq 0 ]] ; then
                                 f_ok
