@@ -50,6 +50,7 @@ WriteMakefile(
         'Storable' => 0,
         'Data::Validate::Struct' => 0,
         'Scalar::Util' => 0,
+        'String::Util' => 0,
         'DateTime::Event::Cron::Quartz' => 0,
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
