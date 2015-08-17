@@ -44,7 +44,7 @@ sub new {
     croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger' && ref $publishers eq 'ARRAY');
 
     for (@{$publishers}) {
-        croak('one or more publisher objects are invalids.') unless ($_ eq 'Navel::RabbitMQ::Publisher');
+        croak('one or more publisher objects are invalids.') unless (blessed($_) eq 'Navel::RabbitMQ::Publisher');
     }
 
     my $self = bless {
