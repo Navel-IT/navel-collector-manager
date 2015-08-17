@@ -190,8 +190,6 @@ done
 if [[ -n ${os} ]] ; then
     f_do "Installing ${program_name}."
 
-    echo "${pkg_to_install_via_pkg_manager[@]}"
-
     f_do "Installing packages ${pkg_to_install_via_pkg_manager[@]} using the package manager."
 
     f_install_pkg ${pkg_to_install_via_pkg_manager[@]}
