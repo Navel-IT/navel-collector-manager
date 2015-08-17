@@ -33,6 +33,7 @@ use Scalar::Util::Numeric 'isint';
 use Navel::Definition::Connector ':all';
 use Navel::Utils qw/
     blessed
+    unblessed
     publicize
     reftype
     encode_sereal_constructor
@@ -41,7 +42,7 @@ use Navel::Utils qw/
 
 our $VERSION = 0.1;
 
-#-> methods
+#-> functions
 
 sub to($@) {
     my ($datas, $connector, $collection) = @_;
