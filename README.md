@@ -15,7 +15,7 @@ git clone git://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash install.sh '<VERSION>'
+bash install.sh -v '<VERSION>' -c
 ```
 
 Prepare configuration
