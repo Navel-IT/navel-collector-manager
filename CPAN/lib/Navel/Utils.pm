@@ -123,8 +123,10 @@ sub encode_sereal_constructor {
     Sereal::Encoder->new();
 }
 
-sub decode_sereal_constructor {}
+sub decode_sereal_constructor {
     Sereal::Decoder->new();
+}
+
 1;
 
 #-> END
