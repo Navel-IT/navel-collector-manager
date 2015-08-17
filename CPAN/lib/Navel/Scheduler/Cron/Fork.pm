@@ -14,6 +14,8 @@ use parent qw/
     Navel::Base
 /;
 
+use AnyEvent::Fork;
+
 use AnyEvent::Fork::RPC;
 
 use Navel::Utils qw/
