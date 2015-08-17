@@ -113,11 +113,11 @@ if (defined $general_configuration_file_path) {
     unless ($@) {
         unless ($disable_web_services) {
             my $web_services_listeners = eval {
-                Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->get_configuration()->get_definition()->{webservices}->{definitions_from_file})->make();
+                Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file})->make();
             };
 
             unless ($@) {
-                if (@{$web_services_listeners->get_definitions()}) {
+                if (@{$web_services_listeners->{definitions}}) {
                     app()->mode('production');
 
                     app()->log()->level('fatal');
@@ -127,7 +127,7 @@ if (defined $general_configuration_file_path) {
 
                         my $userinfo = $controller->req()->url()->to_abs()->userinfo();
 
-                        unless (defined $userinfo && $userinfo eq $scheduler->get_configuration()->get_definition()->{webservices}->{credentials}->{login} . ':' . $scheduler->get_configuration()->get_definition()->{webservices}->{credentials}->{password}) {
+                        unless (defined $userinfo && $userinfo eq $scheduler->{configuration}->{definition}->{webservices}->{credentials}->{login} . ':' . $scheduler->{configuration}->{definition}->{webservices}->{credentials}->{password}) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(
@@ -148,13 +148,13 @@ if (defined $general_configuration_file_path) {
                             my (@ok, @ko);
 
                             eval {
-                                $web_services_listeners->write($scheduler->get_configuration()->get_definition()->{webservices}->{definitions_from_file});
+                                $web_services_listeners->write($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file});
 
-                                $scheduler->get_core()->get_connectors()->write($scheduler->get_configuration()->get_definition()->{connectors}->{definitions_from_file});
+                                $scheduler->{core}->{connectors}->write($scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file});
 
-                                $scheduler->get_core()->get_rabbitmq()->write($scheduler->get_configuration()->get_definition()->{rabbitmq}->{definitions_from_file});
+                                $scheduler->{core}->{rabbitmq}->write($scheduler->{configuration}->{definition}->{rabbitmq}->{definitions_from_file});
 
-                                $scheduler->get_configuration()->write($general_configuration_file_path);
+                                $scheduler->{configuration}->write($general_configuration_file_path);
                             };
 
                             unless ($@) {
@@ -177,7 +177,7 @@ if (defined $general_configuration_file_path) {
 
                     get '/scheduler/api/general' => sub {
                         shift->render(
-                            json => $scheduler->get_configuration()->get_definition()
+                            json => $scheduler->{configuration}->{definition}
                         );
                     };
 
@@ -192,9 +192,9 @@ if (defined $general_configuration_file_path) {
 
                         unless ($@) {
                             if (ref $body eq 'HASH') {
-                                my $scheduler_definition = $scheduler->get_configuration()->get_definition();
+                                my $scheduler_definition = $scheduler->{configuration}->{definition};
 
-                                if ($scheduler->get_configuration()->set_definition(
+                                if ($scheduler->{configuration}->set_definition(
                                     {
                                         %{$scheduler_definition},
                                         %{
@@ -232,7 +232,7 @@ if (defined $general_configuration_file_path) {
                             connectors => []
                         );
 
-                        for (values %{$scheduler->get_core()->get_cron()->jobs()}) {
+                        for (values %{$scheduler->{core}->{cron}->jobs()}) {
                             if ($_->{name} =~ /^(connector|publisher)_(.*)/) {
                                 push @{$jobs{$1 . 's'}}, $2;
                             }
@@ -257,12 +257,12 @@ if (defined $general_configuration_file_path) {
                                 unless ($@) {
                                     if (ref $body eq 'HASH') {
                                         my $definition = eval {
-                                            $scheduler->get_core()->get_connectors()->add_definition(
+                                            $scheduler->{core}->{connectors}->add_definition(
                                                 {
                                                     %{$body},
                                                     %{
                                                         {
-                                                            exec_directory_path => $scheduler->get_configuration()->get_definition()->{connectors}->{connectors_exec_directory}
+                                                            exec_directory_path => $scheduler->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
                                                         }
                                                     }
                                                 }
@@ -270,9 +270,9 @@ if (defined $general_configuration_file_path) {
                                         };
 
                                         unless ($@) {
-                                            $scheduler->get_core()->register_connector($definition->get_name());
+                                            $scheduler->{core}->register_connector($definition->{name});
 
-                                            push @ok, 'Connector ' . $definition->get_name() . ' added and registered';
+                                            push @ok, 'Connector ' . $definition->{name} . ' added and registered';
                                         } else {
                                             push @ko, $@;
                                         }
@@ -289,7 +289,7 @@ if (defined $general_configuration_file_path) {
                             }
                             default {
                                 $controller->render(
-                                    json => $scheduler->get_core()->get_connectors()->get_names()
+                                    json => $scheduler->{core}->{connectors}->name()
                                 );
                             }
                         }
@@ -310,7 +310,7 @@ if (defined $general_configuration_file_path) {
 
                                 unless ($@) {
                                     if (ref $body eq 'HASH') {
-                                        my $connector_definition = $scheduler->get_core()->get_connectors()->get_by_name($connector_name);
+                                        my $connector_definition = $scheduler->{core}->{connectors}->definition_by_name($connector_name);
 
                                         if (defined $connector_definition) {
                                             delete $body->{name};
@@ -337,9 +337,9 @@ if (defined $general_configuration_file_path) {
                             when ('DEL') {
                                 my (@ok, @ko);
 
-                                if ($scheduler->get_core()->unregister_job_by_name('connector_' . $connector_name)) {
+                                if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
                                     eval {
-                                        $scheduler->get_core()->get_connectors()->delete_definition($connector_name);
+                                        $scheduler->{core}->{connectors}->delete_definition($connector_name);
                                     };
 
                                     unless ($@) {
@@ -357,7 +357,7 @@ if (defined $general_configuration_file_path) {
                             }
                             default {
                                 $controller->render(
-                                    json => $scheduler->get_core()->get_connectors()->get_properties_by_name($connector_name) || {}
+                                    json => $scheduler->{core}->{connectors}->definition_properties_by_name($connector_name) || {}
                                 );
                             }
                         }
@@ -377,15 +377,15 @@ if (defined $general_configuration_file_path) {
                                 unless ($@) {
                                     if (ref $body eq 'HASH') {
                                         my $definition = eval {
-                                            $scheduler->get_core()->get_rabbitmq()->add_definition($body);
+                                            $scheduler->{core}->{rabbitmq}->add_definition($body);
                                         };
 
                                         unless ($@) {
-                                            $scheduler->get_core()->init_publisher($definition->get_name())->register_publisher($definition->get_name());
+                                            $scheduler->{core}->init_publisher($definition->{name})->register_publisher($definition->{name});
 
-                                            push @ok, 'RabbitMQ ' . $definition->get_name() . ' added and publisher associated with registered';
+                                            push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered';
 
-                                            $scheduler->get_core()->connect_publisher($definition->get_name()) if ($definition->get_auto_connect());
+                                            $scheduler->{core}->connect_publisher($definition->{name}) if ($definition->{auto_connect});
                                         } else {
                                             push @ko, $@;
                                         }
@@ -402,7 +402,7 @@ if (defined $general_configuration_file_path) {
                             }
                             default {
                                 $controller->render(
-                                    json => $scheduler->get_core()->get_rabbitmq()->get_names()
+                                    json => $scheduler->{core}->{rabbitmq}->name()
                                 );
                             }
                         }
@@ -423,16 +423,16 @@ if (defined $general_configuration_file_path) {
 
                                 unless ($@) {
                                     if (ref $body eq 'HASH') {
-                                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($rabbitmq_name);
+                                        my $publisher = $scheduler->{core}->publisher_by_definition_name($rabbitmq_name);
 
                                         if (defined $publisher) {
-                                            if ($publisher->get_definition()->merge($body)) {
-                                                push @ok, 'RabbitMQ ' . $publisher->get_definition()->get_name() . ' changed';
+                                            if ($publisher->{definition}->merge($body)) {
+                                                push @ok, 'RabbitMQ ' . $publisher->{definition}->{name} . ' changed';
                                             } else {
-                                                push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->get_definition()->get_name();
+                                                push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->{definition}->{name};
                                             }
                                         } else {
-                                            push @ko, 'RabbitMQ ' . $publisher->get_definition()->get_name() . " and his publisher don't exists";
+                                            push @ko, 'RabbitMQ ' . $publisher->{definition}->{name} . " and his publisher don't exists";
                                         }
                                     } else {
                                         push @ko, 'Body need to be a hashtable';
@@ -448,18 +448,18 @@ if (defined $general_configuration_file_path) {
                             when ('DEL') {
                                 my (@ok, @ko);
 
-                                if ($scheduler->get_core()->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
+                                if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
                                     push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
 
                                     eval {
-                                        $scheduler->get_core()->delete_publisher_by_definition_name($rabbitmq_name);
+                                        $scheduler->{core}->delete_publisher_by_definition_name($rabbitmq_name);
                                     };
 
                                     unless ($@) {
                                         push @ok, 'Publisher ' . $rabbitmq_name . ' unregistered, disconnected and deleted';
 
                                         eval {
-                                            $scheduler->get_core()->get_rabbitmq()->delete_definition($rabbitmq_name);
+                                            $scheduler->{core}->{rabbitmq}->delete_definition($rabbitmq_name);
                                         };
 
                                         unless ($@) {
@@ -480,7 +480,7 @@ if (defined $general_configuration_file_path) {
                             }
                             default {
                                 $controller->render(
-                                    json => $scheduler->get_core()->get_rabbitmq()->get_properties_by_name($rabbitmq_name) || {}
+                                    json => $scheduler->{core}->{rabbitmq}->definition_properties_by_name($rabbitmq_name) || {}
                                 );
                             }
                         }
@@ -488,7 +488,7 @@ if (defined $general_configuration_file_path) {
 
                     get '/scheduler/api/publishers' => sub {
                         shift->render(
-                            json => [map { $_->get_definition()->get_name() } @{$scheduler->get_core()->get_publishers()}]
+                            json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
                         );
                     };
 
@@ -497,7 +497,7 @@ if (defined $general_configuration_file_path) {
 
                         my $publisher_name = $controller->param('publisher');
 
-                        my $publisher = $scheduler->get_core()->get_publisher_by_definition_name($publisher_name);
+                        my $publisher = $scheduler->{core}->publisher_by_definition_name($publisher_name);
 
                         given ($controller->req()->method()) {
                             when ('PUT') {
@@ -514,9 +514,9 @@ if (defined $general_configuration_file_path) {
                                         };
 
                                         unless ($@) {
-                                            push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->get_definition()->get_name();
+                                            push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
                                         } else {
-                                            push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->get_definition()->get_name() . ' : ' . $@;
+                                            push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->{definition}->{name} . ' : ' . $@;
                                         }
                                     } else {
                                         push @ko, $@;
@@ -538,9 +538,9 @@ if (defined $general_configuration_file_path) {
                                     if ($action =~ /^(connect|disconnect)$/) {
                                         my $method = $1 . '_publisher';
 
-                                        $scheduler->get_core()->$method($publisher->get_definition()->get_name());
+                                        $scheduler->{core}->$method($publisher->{definition}->{name});
                                     } elsif ($action eq 'clear_queue') {
-                                        push @ok, 'Clear queue for publisher ' . $publisher->get_definition()->get_name() . '.';
+                                        push @ok, 'Clear queue for publisher ' . $publisher->{definition}->{name} . '.';
 
                                         $publisher->$action();
                                     }
@@ -552,9 +552,9 @@ if (defined $general_configuration_file_path) {
                                             },
                                             %{
                                                 {
-                                                    name => $publisher->get_definition()->get_name(),
+                                                    name => $publisher->{definition}->{name},
                                                     connected => $publisher->is_connected() || 0,
-                                                    messages_in_queue => scalar @{$publisher->get_queue()}
+                                                    messages_in_queue => scalar @{$publisher->{queue}}
                                                 }
                                             }
                                         }
@@ -569,26 +569,26 @@ if (defined $general_configuration_file_path) {
                     };
 
                     get '/scheduler/api/webservices' => {
-                        json => $web_services_listeners->get_names()
+                        json => $web_services_listeners->name()
                     };
 
                     get '/scheduler/api/webservices/(:webservice)' => sub {
                         my $controller = shift;
 
                         $controller->render(
-                            json => $web_services_listeners->get_properties_by_name($controller->param('webservice')) || {}
+                            json => $web_services_listeners->definition_properties_by_name($controller->param('webservice')) || {}
                         );
                     };
 
                     $prefork_server = Mojo::Server::Prefork->new(
                         app => app(),
-                        listen => $web_services_listeners->get_urls()
+                        listen => $web_services_listeners->url()
                     );
 
                     $logger->push_in_queue('Starting the webservices ...', 'notice')->flush_queue(1);
 
                     eval {
-                        while (my ($method, $value) = each %{$scheduler->get_configuration()->get_definition()->{webservices}->{mojo_server}}) {
+                        while (my ($method, $value) = each %{$scheduler->{configuration}->{definition}->{webservices}->{mojo_server}}) {
                             $prefork_server->$method($value);
                         }
 

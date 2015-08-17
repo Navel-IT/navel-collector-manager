@@ -29,9 +29,9 @@ sub new {
     croak('one or more objects are invalids') unless (blessed($definition) eq 'Navel::Definition::RabbitMQ');
 
     bless {
-        __definition => $definition,
-        __net => undef,
-        __queue => []
+        definition => $definition,
+        net => undef,
+        queue => []
     }, ref $class || $class;
 }
 
@@ -40,16 +40,16 @@ sub connect {
 
     croak('one or more callbacks are not coderef') unless (ref $callbacks eq 'HASH' && ref $callbacks->{on_success} eq 'CODE' && ref $callbacks->{on_failure} eq 'CODE' && ref $callbacks->{on_read_failure} eq 'CODE' && ref $callbacks->{on_return} eq 'CODE' && ref $callbacks->{on_close} eq 'CODE');
 
-    $self->{__net} = AnyEvent::RabbitMQ->new()->load_xml_spec()->connect(
-        host => $self->get_definition()->get_host(),
-        port => $self->get_definition()->get_port(),
-        user => $self->get_definition()->get_user(),
-        pass => $self->get_definition()->get_password(),
-        vhost => $self->get_definition()->get_vhost(),
-        timeout => $self->get_definition()->get_timeout(),
-        tls => $self->get_definition()->get_tls(),
+    $self->{net} = AnyEvent::RabbitMQ->new()->load_xml_spec()->connect(
+        host => $self->{definition}->{host},
+        port => $self->{definition}->{port},
+        user => $self->{definition}->{user},
+        pass => $self->{definition}->{password},
+        vhost => $self->{definition}->{vhost},
+        timeout => $self->{definition}->{timeout},
+        tls => $self->{definition}->{tls},
         tune => {
-            heartbeat => $self->get_definition()->get_heartbeat()
+            heartbeat => $self->{definition}->{heartbeat}
         },
         on_success => $callbacks->{on_success},
         on_failure => $callbacks->{on_failure},
@@ -64,7 +64,7 @@ sub connect {
 sub disconnect {
     my $self = shift;
 
-    undef $self->{__net};
+    undef $self->{net};
 
     $self;
 }
@@ -72,19 +72,15 @@ sub disconnect {
 sub is_connected {
     my $self = shift;
 
-    blessed($self->get_net()) eq 'AnyEvent::RabbitMQ' && $self->get_net()->is_open();
+    blessed($self->{net}) eq 'AnyEvent::RabbitMQ' && $self->{net}->is_open();
 }
 
-sub get_definition {
-    shift->{__definition};
-}
+sub clear_queue {
+    my $self = shift;
 
-sub get_net {
-    shift->{__net};
-}
+    undef @{$self->{queue}};
 
-sub get_queue {
-    shift->{__queue};
+    $self;
 }
 
 sub push_in_queue {
@@ -94,15 +90,7 @@ sub push_in_queue {
 
     $event->$status_method() if (defined $status_method);
 
-    push @{$self->get_queue()}, $event;
-
-    $self;
-}
-
-sub clear_queue {
-    my $self = shift;
-
-    undef @{$self->get_queue()};
+    push @{$self->{queue}}, $event;
 
     $self;
 }

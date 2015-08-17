@@ -20,44 +20,19 @@ sub new {
     shift->SUPER::new('Navel::Definition::RabbitMQ', 1);
 }
 
-sub get_hosts {
-    shift->__get_all_by_getter('get_host');
-}
-
-sub get_ports {
-    shift->__get_all_by_getter('get_port');
-}
-
-sub get_users {
-    shift->__get_all_by_getter('get_user');
-}
-
-sub get_passwords {
-    shift->__get_all_by_getter('get_password');
-}
-
-sub get_vhosts {
-    shift->__get_all_by_getter('get_vhost');
-}
-
-sub get_tls {
-    shift->__get_all_by_getter('get_tls');
-}
-
-sub get_heartbeats {
-    shift->__get_all_by_getter('get_heartbeat');
-}
-
-sub get_exchanges {
-    shift->__get_all_by_getter('get_exchanges');
-}
-
-sub get_delivery_modes {
-    shift->__get_all_by_getter('get_delivery_mode');
-}
-
-sub get_schedulings {
-    shift->__get_all_by_getter('get_scheduling');
+BEGIN {
+    __PACKAGE__->create_getters(qw/
+        host
+        port
+        user
+        password
+        vhost
+        tls
+        heartbeat
+        exchange
+        delivery_mode
+        scheduling
+    /);
 }
 
 # sub AUTOLOAD {}

@@ -20,40 +20,18 @@ sub new {
     shift->SUPER::new('Navel::Definition::WebService', 1);
 }
 
-sub get_interface_masks {
-    shift->__get_all_by_getter('get_interface_mask');
-}
-
-sub get_ports {
-    shift->__get_all_by_getter('get_port');
-}
-
-sub get_tls {
-    shift->__get_all_by_getter('get_tls');
-}
-
-sub get_cas {
-    shift->__get_all_by_getter('get_ca');
-}
-
-sub get_certs {
-    shift->__get_all_by_getter('get_cert');
-}
-
-sub get_ciphers {
-    shift->__get_all_by_getter('get_ciphers');
-}
-
-sub get_keys {
-    shift->__get_all_by_getter('get_key');
-}
-
-sub get_verifies {
-    shift->__get_all_by_getter('get_verify');
-}
-
-sub get_urls {
-    shift->__get_all_by_getter('get_url');
+BEGIN {
+    __PACKAGE__->create_getters(qw/
+        interface_mask
+        port
+        tls
+        cas
+        cert
+        cipher
+        key
+        verifie
+        url
+    /);
 }
 
 # sub AUTOLOAD {}

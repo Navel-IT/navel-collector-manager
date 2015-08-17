@@ -99,160 +99,25 @@ sub merge {
    );
 }
 
-sub get_original_properties {
-    shift->SUPER::get_original_properties(\@RUNTIME_PROPERTIES);
+sub original_properties {
+    shift->SUPER::original_properties(\@RUNTIME_PROPERTIES);
 }
 
-sub set_name {
-    shift->merge(
-        {
-            name => shift
-        }
-    );
-}
-
-sub get_host {
-    shift->{__host};
-}
-
-sub set_host {
-    shift->merge(
-        {
-            host => shift
-        }
-    );
-}
-
-sub get_port {
-    shift->{__port};
-}
-
-sub set_port {
-    shift->merge(
-        {
-            port => shift
-        }
-    );
-}
-
-sub get_user {
-    shift->{__user};
-}
-
-sub set_user {
-    shift->merge(
-        {
-            user => shift
-        }
-    );
-}
-
-sub get_password {
-    shift->{__password};
-}
-
-sub set_password {
-    shift->merge(
-        {
-            password => shift
-        }
-    );
-}
-
-sub get_timeout {
-    shift->{__timeout};
-}
-
-sub set_timeout {
-    shift->merge(
-        {
-            timeout => shift
-        }
-    );
-}
-
-sub get_vhost {
-    shift->{__vhost};
-}
-
-sub set_vhost {
-    shift->merge(
-        {
-            vhost => shift
-        }
-    );
-}
-
-sub get_tls {
-    shift->{__tls};
-}
-
-sub set_tls {
-    shift->merge(
-        {
-            tls => shift
-        }
-    );
-}
-
-sub get_heartbeat {
-    shift->{__heartbeat};
-}
-
-sub set_heartbeat {
-    shift->merge(
-        {
-            heartbeat => shift
-        }
-    );
-}
-
-sub get_exchange {
-    shift->{__exchange};
-}
-
-sub set_exchange {
-    shift->merge(
-        {
-            exchange => shift
-        }
-    );
-}
-
-sub get_delivery_mode {
-    shift->{__delivery_mode};
-}
-
-sub set_delivery_mode {
-    shift->merge(
-        {
-            delivery_mode => shift
-        }
-    );
-}
-
-sub get_scheduling {
-    shift->{__scheduling};
-}
-
-sub set_scheduling {
-    shift->merge(
-        {
-            scheduling => shift
-        }
-    );
-}
-
-sub get_auto_connect {
-    shift->{__auto_connect};
-}
-
-sub set_auto_connect {
-    shift->merge(
-        {
-            auto_connect => shift
-        }
-    );
+BEGIN {
+    __PACKAGE__->create_setters(qw/
+        host
+        port
+        user
+        password
+        timeout
+        vhost
+        tls
+        heartbeat
+        exchange
+        delivery_mode
+        scheduling
+        auto_connect
+    /);
 }
 
 # sub AUTOLOAD {}

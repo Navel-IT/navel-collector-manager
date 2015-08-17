@@ -17,9 +17,7 @@ use Carp 'croak';
 use Storable 'dclone';
 
 use Navel::Utils qw/
-    privasize
     unblessed
-    publicize
 /;
 
 our $VERSION = 0.1;
@@ -31,27 +29,19 @@ sub new {
 
     croak('definition is invalid') unless ($validator->($parameters));
 
-    my $self = dclone($parameters);
-
-    privasize($self);
-
-    bless $self, ref $class || $class;
+    bless dclone($parameters), ref $class || $class;
 }
 
-sub get_properties {
-    my $self_copy = unblessed(shift);
-
-    publicize($self_copy);
-
-    $self_copy;
+sub properties {
+    unblessed(shift);
 }
 
-sub get_original_properties {
-    my ($self_copy, $runtime_properties) = (shift->get_properties(), shift);
+sub original_properties {
+    my ($properties, $runtime_properties) = (shift->properties(), shift);
 
-    delete $self_copy->{$_} for (@{$runtime_properties});
+    delete $properties->{$_} for (@{$runtime_properties});
 
-    $self_copy;
+    $properties;
 }
 
 sub merge {
@@ -59,20 +49,38 @@ sub merge {
 
     if ($validator->(
         {
-            %{$self->get_properties()},
+            %{$self->properties()},
             %{$properties_values}
         }
     )) {
         while (my ($property, $value) = each %{$properties_values}) {
-            $self->{'__' . $property} = $value;
+            $self->{$property} = $value;
         }
 
         1;
     }
 }
 
-sub get_name {
-    shift->{__name};
+BEGIN {
+    sub create_setters {
+        my $class = shift;
+
+        no strict 'refs';
+
+        $class = ref $class || $class;
+
+        for my $property (@_) {
+            *{$class . '::set_' . $property} = sub {
+                shift->merge(
+                    {
+                        $property => shift
+                    }
+                );
+            };
+        }
+    }
+
+    __PACKAGE__->create_setters('name');
 }
 
 # sub AUTOLOAD {}

@@ -30,17 +30,19 @@ sub new {
     my ($class, $definition_package, $do_not_need_at_least_one) = @_;
 
     bless {
-        __definition_package => $definition_package,
-        __do_not_need_at_least_one => $do_not_need_at_least_one,
-        __raw => [],
-        __definitions => []
+        definition_package => $definition_package,
+        do_not_need_at_least_one => $do_not_need_at_least_one,
+        raw => [],
+        definitions => []
     }, ref $class || $class;
 }
 
 sub read {
     my $self = shift;
 
-    $self->__set_raw($self->SUPER::read(shift));
+    $self->{raw} = $self->SUPER::read(shift);
+
+    $self;
 }
 
 sub write {
@@ -50,8 +52,8 @@ sub write {
         shift,
         [
             map {
-                $_->get_original_properties()
-            } @{$self->get_definitions()}
+                $_->original_properties()
+            } @{$self->{definitions}}
         ]
     );
 
@@ -62,96 +64,54 @@ sub make_definition {
     my ($self, $raw_definition) = @_;
 
     my $definition = eval {
-        my $definition_package = $self->get_definition_package();
+        my $definition_package = $self->{definition_package};
 
         $definition_package->new($raw_definition);
     };
 
-    $@ ? croak($self->get_definition_package() . ' : ' . $@) : $definition;
+    $@ ? croak($self->{definition_package} . ' : ' . $@) : $definition;
 };
 
 sub make {
     my ($self, $extra_parameters) = @_;
 
-    if (eval 'require ' . $self->get_definition_package()) {
-        if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $self->get_do_not_need_at_least_one()) {
+    if (eval 'require ' . $self->{definition_package}) {
+        if (reftype($self->{raw}) eq 'ARRAY' and @{$self->{raw}} || $self->{do_not_need_at_least_one}) {
             my (@definitions, @names);
 
-            for (@{$self->get_raw()}) {
+            for (@{$self->{raw}}) {
                 my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_);
 
                 push @definitions, $definition;
 
-                push @names, $definition->get_name();
+                push @names, $definition->{name};
             }
 
-            @names == uniq(@names) ? $self->__set_definitions(\@definitions) : croak($self->get_definition_package() . ' : duplicate definition detected');
+            @names == uniq(@names) ? $self->{definitions} = \@definitions : croak($self->{definition_package} . ' : duplicate definition detected');
         } else {
-            croak($self->get_definition_package() . ' : raw datas need to exists and to be encapsulated in an array');
+            croak($self->{definition_package} . ' : raw datas need to exists and to be encapsulated in an array');
         }
     } else {
-        croak($self->get_definition_package() . ' : require failed');
+        croak($self->{definition_package} . ' : require failed');
     }
 
     $self;
 }
 
-sub get_definition_package {
-    shift->{__definition_package};
-}
-
-sub get_do_not_need_at_least_one {
-    shift->{__do_not_need_at_least_one};
-}
-
-sub get_raw {
-    shift->{__raw};
-}
-
-sub __set_raw {
-    my ($self, $value) = @_;
-
-    $self->{__raw} = $value;
-
-    $self;
-}
-
-sub get_definitions {
-    shift->{__definitions};
-}
-
-sub __set_definitions {
-    my ($self, $value) = @_;
-
-    $self->{__definitions} = $value;
-
-    $self;
-}
-
-sub __get_all_by_getter {
-    my ($self, $getter_name) = @_;
-
-    [ map { $_->$getter_name() } @{$self->get_definitions()} ];
-}
-
-sub get_names {
-    shift->__get_all_by_getter('get_name');
-}
-
-sub get_by_name {
+sub definition_by_name {
     my ($self, $definition_name) = @_;
 
-    for (@{$self->get_definitions()}) {
-        return $_ if ($_->get_name() eq $definition_name);
+    for (@{$self->{definitions}}) {
+        return $_ if ($_->{name} eq $definition_name);
     }
 
     undef;
 }
 
-sub get_properties_by_name {
-    my $definition = shift->get_by_name(shift);
+sub definition_properties_by_name {
+    my $definition = shift->definition_by_name(shift);
 
-    defined $definition ? $definition->get_properties() : undef;
+    defined $definition ? $definition->properties() : undef;
 }
 
 sub add_definition {
@@ -159,10 +119,10 @@ sub add_definition {
 
     my $definition = $self->make_definition($raw_definition);
 
-    unless (defined $self->get_by_name($definition->get_name())) {
-        push @{$self->get_definitions()}, $definition;
+    unless (defined $self->definition_by_name($definition->{name})) {
+        push @{$self->{definitions}}, $definition;
     } else {
-        croak($self->get_definition_package() . ' : duplicate definition detected');
+        croak($self->{definition_package} . ' : duplicate definition detected');
     }
 
     $definition;
@@ -171,21 +131,49 @@ sub add_definition {
 sub delete_definition {
     my ($self, $definition_name) = @_;
 
-    my $definitions = $self->get_definitions();
+    my $definitions = $self->{definitions};
 
     my $definition_to_delete_index = 0;
 
     my $finded;
 
-    $definition_to_delete_index++ until ($finded = $definitions->[$definition_to_delete_index]->get_name() eq $definition_name);
+    $definition_to_delete_index++ until ($finded = $definitions->[$definition_to_delete_index]->{name} eq $definition_name);
 
     if ($finded) {
         splice @{$definitions}, $definition_to_delete_index, 1;
     } else {
-        croak($self->get_definition_package() . ' : definition ' . $definition_name . ' does not exists');
+        croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists');
     }
 
     $definition_name;
+}
+
+sub all_by_property_name {
+    my ($self, $property_name) = @_;
+
+    [
+        map {
+            $_->can($property_name) ? $_->$property_name() : $_->{$property_name}
+        } @{$self->{definitions}}
+    ];
+}
+
+BEGIN {
+    sub create_getters {
+        my $class = shift;
+
+        no strict 'refs';
+
+        $class = ref $class || $class;
+
+        for my $property (@_) {
+            *{$class . '::' . $property} = sub {
+                shift->all_by_property_name($property);
+            };
+        }
+    }
+
+    __PACKAGE__->create_getters('name');
 }
 
 # sub AUTOLOAD {}

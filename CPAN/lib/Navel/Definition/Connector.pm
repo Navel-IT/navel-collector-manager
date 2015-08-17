@@ -94,114 +94,34 @@ sub merge {
    );
 }
 
-sub get_original_properties {
-    shift->SUPER::get_original_properties(\@RUNTIME_PROPERTIES);
-}
-
-sub set_name {
-    shift->merge(
-        {
-            name => shift
-        }
-    );
-}
-
-sub get_collection {
-    shift->{__collection};
-}
-
-sub set_collection {
-    shift->merge(
-        {
-            collection => shift
-        }
-    );
-}
-
-sub get_type {
-    shift->{__type};
+sub original_properties {
+    shift->SUPER::original_properties(\@RUNTIME_PROPERTIES);
 }
 
 sub is_type_code {
-    shift->get_type() eq CONNECTOR_TYPE_CODE;
+    shift->{type} eq CONNECTOR_TYPE_CODE;
 }
 
 sub is_type_json {
-    shift->get_type() eq CONNECTOR_TYPE_JSON;
+    shift->{type} eq CONNECTOR_TYPE_JSON;
 }
 
-sub set_type {
-    shift->merge(
-        {
-            type => shift
-        }
-    );
-}
-
-sub get_singleton {
-    shift->{__singleton};
-}
-
-sub set_singleton {
-    shift->merge(
-        {
-            singleton => shift
-        }
-    );
-}
-
-sub get_scheduling {
-    shift->{__scheduling};
-}
-
-sub set_scheduling {
-    shift->merge(
-        {
-            scheduling => shift
-        }
-    );
-}
-
-sub get_source {
-    shift->{__source};
-}
-
-sub set_source {
-    shift->merge(
-        {
-            source => shift
-        }
-    );
-}
-
-sub get_input {
-    shift->{__input};
-}
-
-sub set_input {
-    shift->merge(
-        {
-            input => shift
-        }
-    );
-}
-
-sub get_exec_directory_path {
-    shift->{__exec_directory_path};
-}
-
-sub set_exec_directory_path {
-    shift->merge(
-        {
-            exec_directory_path => shift
-        }
-    );
-}
-
-sub get_exec_file_path {
+sub exec_file_path {
     my $self = shift;
 
-    $self->get_exec_directory_path() . '/' . ($self->get_source() || $self->get_name());
+    $self->{exec_directory_path} . '/' . ($self->{source} || $self->{name});
+}
+
+BEGIN {
+    __PACKAGE__->create_setters(qw/
+        collection
+        type
+        singleton
+        scheduling
+        source
+        input
+        exec_directory_path
+    /);
 }
 
 # sub AUTOLOAD {}

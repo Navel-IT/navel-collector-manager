@@ -47,69 +47,57 @@ sub new {
     my ($class, $default_severity, $severity, $file_path) = @_;
 
     bless {
-        __severity => eval {
+        severity => eval {
             Navel::Logger::Severity->new($severity)
         } || Navel::Logger::Severity->new($default_severity),
-        __file_path => $file_path,
-        __queue => []
+        file_path => $file_path,
+        queue => []
     }, ref $class || $class;
 }
 
-sub get_severity {
-    shift->{__severity};
-}
-
-sub get_file_path {
-    shift->{__file_path};
-}
-
-sub get_queue {
-    shift->{__queue};
-}
-
-sub push_in_queue { # need changes relatives to the comments below
+sub push_in_queue {
     my ($self, $messages, $severity) = @_;
 
-    push @{$self->get_queue()}, '[' . human_readable_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
+    push @{$self->{queue}}, '[' . human_readable_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->{severity}->does_it_log($severity));
 
     $self;
 }
 
-sub good { # need to switch to STDOUT when ! $fh->isa('IO::File')
+sub good {
     shift->push_in_queue('[OK] ' . shift, shift);
 }
 
-sub bad { # need to switch to STDERR when ! $fh->isa('IO::File')
+sub bad {
     shift->push_in_queue('[KO] ' . shift, shift);
-}
-
-sub join_queue {
-    my ($self, $separator) = @_;
-
-    join $separator, @{$self->get_queue()};
 }
 
 sub clear_queue {
     my $self = shift;
 
-    undef @{$self->get_queue()};
+    undef @{$self->{queue}};
 
     $self;
+}
+
+sub join_queue {
+    my ($self, $separator) = @_;
+
+    join $separator, @{$self->{queue}};
 }
 
 sub flush_queue {
     my ($self, $clear_queue) = @_;
 
-    if (@{$self->get_queue()}) {
-        if (defined $self->get_file_path()) {
+    if (@{$self->{queue}}) {
+        if (defined $self->{file_path}) {
             eval {
                 append_file(
-                    $self->get_file_path(),
+                    $self->{file_path},
                     {
                         binmode => ':utf8'
                     },
                     [
-                        map { $_ . "\n" } @{$self->get_queue()}
+                        map { $_ . "\n" } @{$self->{queue}}
                     ]
                 );
             };

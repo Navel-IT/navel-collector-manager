@@ -48,22 +48,22 @@ sub new {
     }
 
     my $self = bless {
-        __connector => $connector,
-        __perl_code_string => $perl_code_string,
-        __logger => $logger,
-        __publishers => $publishers,
-        __fork => undef,
-        __rpc => undef
+        connector => $connector,
+        perl_code_string => $perl_code_string,
+        logger => $logger,
+        publishers => $publishers,
+        fork => undef,
+        rpc => undef
     }, ref $class || $class;
 
-    $self->{__fork} = AnyEvent::Fork->new()->require(
+    $self->{fork} = AnyEvent::Fork->new()->require(
         'strict',
         'warnings'
     )->eval(
-        $self->get_perl_code_string()
+        $self->{perl_code_string}
     );
 
-    $self->{__rpc} = $self->get_fork()->AnyEvent::Fork::RPC::run(
+    $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
         'connector',
         on_event => sub {
             my $event_type = shift;
@@ -71,21 +71,21 @@ sub new {
             if ($event_type eq 'ae_log') {
                 my ($severity, $message) = @_;
 
-                $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
+                $self->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
             }
         },
         on_error => sub {
-            $self->get_logger()->bad('Execution of connector ' . $self->{__connector}->get_name() . ' failed (fatal error) : ' . shift() . '.', 'err');
+            $self->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
 
             $_->push_in_queue(
                 {
                     connector => $connector
                 },
                 'set_ko_exception'
-            ) for (@{$self->get_publishers()});
+            ) for (@{$self->{publishers}});
         },
         on_destroy => sub {
-            $self->get_logger()->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
+            $self->{logger}->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
         },
         serialiser => SEREAL_SERIALISER
     );
@@ -96,43 +96,19 @@ sub new {
 sub when_done {
     my ($self, $callback) = @_;
 
-    if (defined $self->get_rpc()) {
-        $self->get_rpc()->(
-            $self->get_connector()->get_properties(),
-            $self->get_connector()->get_input(),
+    if (defined $self->{rpc}) {
+        $self->{rpc}->(
+            $self->{connector}->properties(),
+            $self->{connector}->{input},
             $callback
         );
 
-        $self->get_logger()->push_in_queue('Spawned a new process.', 'debug');
+        $self->{logger}->push_in_queue('Spawned a new process.', 'debug');
 
-        undef $self->{__rpc};
+        undef $self->{rpc};
     }
 
     $self;
-}
-
-sub get_connector {
-    shift->{__connector};
-}
-
-sub get_perl_code_string {
-    shift->{__perl_code_string};
-}
-
-sub get_logger {
-    shift->{__logger};
-}
-
-sub get_publishers {
-    shift->{__publishers};
-}
-
-sub get_fork {
-    shift->{__fork};
-}
-
-sub get_rpc {
-    shift->{__rpc};
 }
 
 # sub AUTOLOAD {}

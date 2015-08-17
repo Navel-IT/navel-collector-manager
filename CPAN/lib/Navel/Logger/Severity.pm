@@ -38,18 +38,14 @@ sub new {
     croak('severity ' . $severity . ' is invalid') unless (exists $severities{$severity});
 
     bless {
-        __severity => $severity
+        severity => $severity
     }, ref $class || $class;
 }
 
 sub does_it_log {
     my ($self, $severity) = @_;
 
-    defined $severity && exists $severities{$severity} && $severities{$self->get_severity()} >= $severities{$severity};
-}
-
-sub get_severity {
-    shift->{__severity};
+    defined $severity && exists $severities{$severity} && $severities{$self->{severity}} >= $severities{$severity};
 }
 
 # sub AUTOLOAD {}

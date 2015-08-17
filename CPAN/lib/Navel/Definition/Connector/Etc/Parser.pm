@@ -20,36 +20,17 @@ sub new {
     shift->SUPER::new('Navel::Definition::Connector', 1);
 }
 
-sub get_collections {
-    shift->__get_all_by_getter('get_collection');
-}
-
-sub get_types {
-    shift->__get_all_by_getter('get_type');
-}
-
-sub get_singletons {
-    shift->__get_all_by_getter('get_singleton');
-}
-
-sub get_schedulings {
-    shift->__get_all_by_getter('get_scheduling');
-}
-
-sub get_sources {
-    shift->__get_all_by_getter('get_source');
-}
-
-sub get_inputs {
-    shift->__get_all_by_getter('get_input');
-}
-
-sub get_exec_directory_paths {
-    shift->__get_all_by_getter('get_exec_directory_path');
-}
-
-sub get_exec_file_paths {
-    shift->__get_all_by_getter('get_exec_file_path');
+BEGIN {
+    __PACKAGE__->create_getters(qw/
+        collection
+        type
+        singleton
+        scheduling
+        source
+        input
+        exec_directory_path
+        exec_file_path
+    /);
 }
 
 # sub AUTOLOAD {}

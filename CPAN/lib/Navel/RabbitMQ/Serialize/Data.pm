@@ -34,7 +34,6 @@ use Navel::Definition::Connector ':all';
 use Navel::Utils qw/
     blessed
     unblessed
-    publicize
     reftype
     encode_sereal_constructor
     decode_sereal_constructor
@@ -47,11 +46,7 @@ our $VERSION = 0.1;
 sub to($@) {
     my ($datas, $connector, $collection) = @_;
 
-    if (blessed($connector) eq 'Navel::Definition::Connector') {
-        $connector = unblessed($connector);
-
-        publicize($connector);
-    }
+    $connector = unblessed($connector) if (blessed($connector) eq 'Navel::Definition::Connector');
 
     encode_sereal_constructor()->encode(
         {

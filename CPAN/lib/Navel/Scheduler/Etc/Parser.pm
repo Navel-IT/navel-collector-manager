@@ -30,19 +30,12 @@ use Exporter::Easy (
 
 use Carp 'croak';
 
-use Storable 'dclone';
-
 use Scalar::Util::Numeric qw/
     isint
     isfloat
 /;
 
 use Data::Validate::Struct;
-
-use Navel::Utils qw/
-    publicize
-    privasize
-/;
 
 our $VERSION = 0.1;
 
@@ -122,7 +115,7 @@ sub new {
     my $class = shift;
 
     bless {
-        __definition => {}
+        definition => {}
     }, ref $class || $class;
 }
 
@@ -137,7 +130,7 @@ sub read {
 sub write {
     my $self = shift;
 
-    $self->SUPER::write(shift, $self->get_definition());
+    $self->SUPER::write(shift, $self->{definition});
 
     $self;
 }
@@ -145,30 +138,16 @@ sub write {
 sub make {
     my $self = shift;
 
-    croak('general definition is invalid') unless (scheduler_definition_validator($self->get_definition()));
+    croak('general definition is invalid') unless (scheduler_definition_validator($self->{definition}));
 
     $self;
-}
-
-sub get_definition {
-    my $self = shift;
-
-    my $definition = dclone($self->{__definition});
-
-    publicize($definition);
-
-    $definition;
 }
 
 sub set_definition {
     my ($self, $value) = @_;
 
     if (scheduler_definition_validator($value)) {
-        my $value = dclone($value);
-
-        privasize($value);
-
-        $self->{__definition} = $value;
+        $self->{definition} = $value;
 
         1;
     }

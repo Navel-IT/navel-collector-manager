@@ -41,46 +41,38 @@ sub new {
     croak('general configuration file path is missing') unless (defined $configuration_path);
 
     bless {
-        __core => undef,
-        __configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)->make()
+        core => undef,
+        configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)->make()
     }, ref $class || $class;
 }
 
 sub run {
     my ($self, $logger) = @_;
 
-    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{connectors}->{definitions_from_file})->make(
+    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->{configuration}->{definition}->{connectors}->{definitions_from_file})->make(
         {
-            exec_directory_path => $self->get_configuration()->get_definition()->{connectors}->{connectors_exec_directory}
+            exec_directory_path => $self->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
         }
     );
 
-    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->get_configuration()->get_definition()->{rabbitmq}->{definitions_from_file})->make();
+    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file})->make();
 
-    $self->{__core} = Navel::Scheduler::Cron->new(
+    $self->{core} = Navel::Scheduler::Cron->new(
         $connectors,
         $rabbitmq,
         $logger,
-        $self->get_configuration()->get_definition()->{connectors}->{maximum_simultaneous_exec}
+        $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec}
     );
 
-    my $run = $self->get_core()->register_logger()->register_connectors()->init_publishers();
+    my $run = $self->{core}->register_logger()->register_connectors()->init_publishers();
 
-    for (@{$self->get_core()->get_publishers()}) {
-        $self->get_core()->connect_publisher($_->get_definition()->get_name()) if ($_->get_definition()->get_auto_connect());
+    for (@{$self->{core}->{publishers}}) {
+        $self->{core}->connect_publisher($_->{definition}->{name}) if ($_->{definition}->{auto_connect});
     }
 
     $run->register_publishers()->start();
 
     $self;
-}
-
-sub get_core {
-    shift->{__core};
-}
-
-sub get_configuration {
-    shift->{__configuration};
 }
 
 # sub AUTOLOAD {}

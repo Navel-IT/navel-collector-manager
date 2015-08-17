@@ -35,37 +35,25 @@ sub new {
     my $self = bless {}, ref $class || $class;
 
     if (blessed($definition->{connector}) eq 'Navel::Definition::Connector') {
-        $self->{__connector} = $definition->{connector};
-        $self->{__collection} = $self->{__connector}->get_collection();
+        $self->{connector} = $definition->{connector};
+        $self->{collection} = $self->{connector}->{collection};
     } else {
         croak('collection cannot be undefined') unless (defined $definition->{collection});
 
-        $self->{__connector} = undef;
-        $self->{__collection} = $definition->{collection};
+        $self->{connector} = undef;
+        $self->{collection} = $definition->{collection};
     }
 
     $self->set_ok();
-    $self->set_datas($definition->{__datas});
+    $self->{datas} = $definition->{datas};
 
     $self;
-}
-
-sub get_connector {
-    shift->{__connector};
-}
-
-sub get_collection {
-    shift->{__collection};
-}
-
-sub get_status_code {
-    shift->{__status_code};
 }
 
 sub set_ok {
     my $self = shift;
 
-    $self->{__status_code} = OK;
+    $self->{status_code} = OK;
 
     $self;
 }
@@ -73,7 +61,7 @@ sub set_ok {
 sub set_ko_no_source {
     my $self = shift;
 
-    $self->{__status_code} = KO_NO_SOURCE;
+    $self->{status_code} = KO_NO_SOURCE;
 
     $self;
 }
@@ -81,37 +69,26 @@ sub set_ko_no_source {
 sub set_ko_exception {
     my $self = shift;
 
-    $self->{__status_code} = KO_EXCEPTION;
+    $self->{status_code} = KO_EXCEPTION;
 
     $self;
 }
 
-sub get_datas {
-    shift->{__datas};
-}
-
-sub get_serialized_datas {
+sub serialized_datas {
     my $self = shift;
 
     to(
-        $self->get_datas(),
-        $self->get_connector(),
-        $self->get_collection()
+        $self->{datas},
+        $self->{connector},
+        $self->{collection}
     );
 }
 
-sub set_datas {
+
+sub routing_key {
     my $self = shift;
 
-    $self->{__datas} = shift;
-
-    $self;
-}
-
-sub get_routing_key {
-    my $self = shift;
-
-    join '.', 'navel', $self->get_collection(), $self->get_status_code();
+    join '.', 'navel', $self->{collection}, $self->{status_code};
 }
 
 # sub AUTOLOAD {}
