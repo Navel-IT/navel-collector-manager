@@ -35,6 +35,7 @@ WriteMakefile(
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
         'Scalar::Util::Numeric' => 0,
+        'String::Util' => 0,
         'File::Slurp' => 0,
         'IO::AIO' => 0,
         'JSON' => 0,
