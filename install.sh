@@ -84,6 +84,8 @@ f_define_variables_for_rhel() {
     full_dirname=$(${READLINK} -f ${dirname})
 
     pkg_to_install_via_pkg_manager=(
+        'tar'
+        'curl'
         'gcc'
         'libxml2'
         'libxml2-devel'
@@ -110,13 +112,13 @@ f_tar() {
     fi
 }
 
-f_add_user() {
+f_useradd() {
     if f_os_is_rhel ; then
         ${GETENT} passwd "${1}" 1>/dev/null || ${USERADD} -rmd "${3}" -g "${2}" -s /sbin/nologin ${1}
     fi
 }
 
-f_add_group() {
+f_groupadd() {
     if f_os_is_rhel ; then
         ${GETENT} group "${1}" 1>/dev/null || ${GROUPADD} -r "${1}"
     fi
@@ -219,7 +221,7 @@ if [[ -n ${os} ]] ; then
 
                     f_do "Creating group ${program_group}."
 
-                    f_add_group "${program_group}"
+                    f_groupadd "${program_group}"
 
                     RETVAL=${?}
 
@@ -228,7 +230,7 @@ if [[ -n ${os} ]] ; then
 
                         f_do "Creating user ${program_user} with home directory ${program_home_directory}."
 
-                        f_add_user "${program_user}" "${program_group}" "${program_home_directory}"
+                        f_useradd "${program_user}" "${program_group}" "${program_home_directory}"
 
                         RETVAL=${?}
 
