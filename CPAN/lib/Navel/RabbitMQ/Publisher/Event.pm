@@ -16,22 +16,12 @@ use constant {
     KO_EXCEPTION => 2
 };
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use Navel::RabbitMQ::Serialize::Data qw/
-    to
-/;
-
-use Navel::Utils qw/
-    :all
-/;
+use Navel::RabbitMQ::Serialize::Data 'to';
+use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 
@@ -40,9 +30,9 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $definition) = @_;
 
-    croak() unless (ref $definition eq 'HASH');
+    croak('event definition is invalid') unless (ref $definition eq 'HASH');
 
-    my $self = {};
+    my $self = bless {}, ref $class || $class;
 
     if (blessed($definition->{connector}) eq 'Navel::Definition::Connector') {
         $self->{__connector} = $definition->{connector};
@@ -53,8 +43,6 @@ sub new {
         $self->{__connector} = undef;
         $self->{__collection} = $definition->{collection};
     }
-
-    $self = bless $self, ref $class || $class;
 
     $self->set_ok();
     $self->set_datas($definition->{__datas});

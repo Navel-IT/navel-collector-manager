@@ -11,7 +11,6 @@ use 5.10.1;
 use lib '/usr/local/share/navel-scheduler/lib';
 
 use Getopt::Long;
-
 use Pod::Usage;
 
 use Proc::Daemon;
@@ -19,21 +18,16 @@ use Proc::Daemon;
 use Cwd;
 
 use Mojolicious::Lite;
-
 use Mojo::Server::Prefork;
 
 use EV;
 
 use Navel::Logger;
-
-use Navel::Scheduler qw/
-    $VERSION
-/;
-
+use Navel::Scheduler '$VERSION';
 use Navel::Definition::WebService::Etc::Parser;
-
 use Navel::Utils qw/
-    :all
+    encode_json
+    decode_json
 /;
 
 #-> defaults

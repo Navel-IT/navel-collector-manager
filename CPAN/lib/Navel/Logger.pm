@@ -12,9 +12,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
 use Exporter::Easy (
     OK => [qw/
@@ -28,19 +26,12 @@ use Exporter::Easy (
     ]
 );
 
-use String::Util qw/
-    crunch
-/;
+use String::Util 'crunch';
 
-use File::Slurp qw/
-    append_file
-/;
+use File::Slurp 'append_file';
 
 use Navel::Logger::Severity;
-
-use Navel::Utils qw/
-    :all
-/;
+use Navel::Utils 'human_readable_localtime';
 
 our $VERSION = 0.1;
 
@@ -79,7 +70,7 @@ sub get_queue {
 sub push_in_queue { # need changes relatives to the comments below
     my ($self, $messages, $severity) = @_;
 
-    push @{$self->get_queue()}, '[' . get_a_proper_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
+    push @{$self->get_queue()}, '[' . human_readable_localtime(time) . '] [' . $severity . '] ' . crunch($messages) if (defined $messages && $self->get_severity()->does_it_log($severity));
 
     $self;
 }

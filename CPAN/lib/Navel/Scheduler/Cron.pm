@@ -10,36 +10,21 @@ package Navel::Scheduler::Cron;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use Scalar::Util::Numeric qw/
-    isint
-/;
+use Scalar::Util::Numeric 'isint';
 
 use AnyEvent::DateTime::Cron;
-
 use AnyEvent::AIO;
 
 use IO::AIO;
 
 use Navel::Scheduler::Cron::Fork;
-
 use Navel::RabbitMQ::Publisher;
-
-use Navel::RabbitMQ::Serialize::Data qw/
-    to
-/;
-
-use Navel::Utils qw/
-    :all
-/;
+use Navel::RabbitMQ::Serialize::Data 'to';
+use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 

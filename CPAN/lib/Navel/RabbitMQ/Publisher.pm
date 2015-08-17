@@ -10,22 +10,14 @@ package Navel::RabbitMQ::Publisher;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
 use AnyEvent::RabbitMQ 1.19;
 
 use Navel::RabbitMQ::Publisher::Event;
-
-use Navel::Utils qw/
-    :all
-/;
+use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 

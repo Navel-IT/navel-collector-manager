@@ -10,18 +10,9 @@ package Navel::Logger::Severity;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
-
-use Navel::Utils qw/
-    :all
-/;
+use Carp 'croak';
 
 our $VERSION = 0.1;
 
@@ -44,7 +35,7 @@ sub new {
     my ($class, $severity) = @_;
 
     croak('severity must be defined') unless (defined $severity);
-    croak('severity ' . $severity . ' is incorrect') unless (exists $severities{$severity});
+    croak('severity ' . $severity . ' is invalid') unless (exists $severities{$severity});
 
     bless {
         __severity => $severity

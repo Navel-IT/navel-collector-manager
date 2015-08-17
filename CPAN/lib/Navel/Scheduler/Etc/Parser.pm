@@ -28,14 +28,9 @@ use Exporter::Easy (
     ]
 );
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use Storable qw/
-    dclone
-/;
+use Storable 'dclone';
 
 use Scalar::Util::Numeric qw/
     isint
@@ -45,7 +40,8 @@ use Scalar::Util::Numeric qw/
 use Data::Validate::Struct;
 
 use Navel::Utils qw/
-    :all
+    publicize
+    privasize
 /;
 
 our $VERSION = 0.1;

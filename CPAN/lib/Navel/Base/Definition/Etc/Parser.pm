@@ -16,18 +16,11 @@ use parent qw/
     Navel::Base::Definition::Etc::Parser::Writer
 /;
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use List::MoreUtils qw/
-    uniq
-/;
+use List::MoreUtils 'uniq';
 
-use Navel::Utils qw/
-    :all
-/;
+use Navel::Utils 'reftype';
 
 our $VERSION = 0.1;
 
@@ -84,8 +77,8 @@ sub make {
         if (reftype($self->get_raw()) eq 'ARRAY' and @{$self->get_raw()} || $self->get_do_not_need_at_least_one()) {
             my (@definitions, @names);
 
-            for my $parameters (@{$self->get_raw()}) {
-                my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$parameters}, %{$extra_parameters} } : $parameters);
+            for (@{$self->get_raw()}) {
+                my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_);
 
                 push @definitions, $definition;
 

@@ -10,9 +10,7 @@ package Navel::Scheduler;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
 use Exporter::Easy (
     OK => [qw/
@@ -26,22 +24,12 @@ use Exporter::Easy (
     ]
 );
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
 use Navel::Scheduler::Cron;
-
 use Navel::Scheduler::Etc::Parser;
-
 use Navel::Definition::Connector::Etc::Parser;
-
 use Navel::Definition::RabbitMQ::Etc::Parser;
-
-use Navel::Utils qw/
-    :all
-/;
 
 our $VERSION = 0.1;
 

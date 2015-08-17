@@ -10,9 +10,7 @@ package Navel::Definition::Connector;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base::Definition
-/;
+use parent 'Navel::Base::Definition';
 
 use constant {
     CONNECTOR_TYPE_CODE => 'code',
@@ -33,15 +31,9 @@ use Exporter::Easy (
 
 use Data::Validate::Struct;
 
-use Scalar::Util::Numeric qw/
-    isint
-/;
+use Scalar::Util::Numeric 'isint';
 
 use DateTime::Event::Cron::Quartz;
-
-use Navel::Utils qw/
-    :all
-/;
 
 our $VERSION = 0.1;
 

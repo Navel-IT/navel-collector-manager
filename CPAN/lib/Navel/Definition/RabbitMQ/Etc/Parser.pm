@@ -10,13 +10,7 @@ package Navel::Definition::RabbitMQ::Etc::Parser;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base::Definition::Etc::Parser
-/;
-
-use Navel::Utils qw/
-    :all
-/;
+use parent 'Navel::Base::Definition::Etc::Parser';
 
 our $VERSION = 0.1;
 

@@ -34,10 +34,6 @@ use Scalar::Util::Numeric qw/
 
 use Mojo::URL;
 
-use Navel::Utils qw/
-    :all
-/;
-
 our $VERSION = 0.1;
 
 our @RUNTIME_PROPERTIES;

@@ -10,20 +10,13 @@ package Navel::Base::Definition::Etc::Parser::Reader;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
 use File::Slurp;
 
-use Navel::Utils qw/
-    :all
-/;
+use Navel::Utils 'decode_json';
 
 our $VERSION = 0.1;
 

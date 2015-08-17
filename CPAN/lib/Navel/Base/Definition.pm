@@ -10,21 +10,16 @@ package Navel::Base::Definition;
 use strict;
 use warnings;
 
-use parent qw/
-    Navel::Base
-/;
+use parent 'Navel::Base';
 
-use Carp qw/
-    carp
-    croak
-/;
+use Carp 'croak';
 
-use Storable qw/
-    dclone
-/;
+use Storable 'dclone';
 
 use Navel::Utils qw/
-    :all
+    privasize
+    unblessed
+    publicize
 /;
 
 our $VERSION = 0.1;
