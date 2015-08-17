@@ -135,7 +135,7 @@ f_mkdir() {
 
     if f_os_is_rhel ; then
         for directory in ${@} ; do
-            ( [[ -f "${directory}" ]] || ${MKDIR} -p "${directory}" ) || let fails++
+            ( [[ -d "${directory}" ]] || ${MKDIR} -p "${directory}" ) || let fails++
         done
     fi
 
