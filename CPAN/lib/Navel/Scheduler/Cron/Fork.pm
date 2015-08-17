@@ -27,6 +27,8 @@ use Sereal;
     '
 };
 
+use Carp 'croak';
+
 use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
