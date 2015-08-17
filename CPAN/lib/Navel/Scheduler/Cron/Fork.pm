@@ -39,7 +39,7 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $perl_code_string, $logger, $publishers) = @_;
+    my ($class, $connector, $perl_code_string, $publishers, $logger) = @_;
 
     croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger' && ref $publishers eq 'ARRAY');
 
