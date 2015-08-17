@@ -11,7 +11,7 @@ Build and install
 Assuming you start the installation from scratch with `git`, `bash` and `perl` (>= 5.10.1) with core modules installed ...
 
 ```shell
-git clone git://github.com/Navel-IT/navel-scheduler.git
+git clone https://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
