@@ -254,7 +254,7 @@ if [[ -n ${os} ]] ; then
 
                                 f_do "Creating directories ${program_run_directory} and ${program_log_directory}."
 
-                                f_mkdir "${program_log_directory}" "${program_log_directory}"
+                                f_mkdir "${program_run_directory}" "${program_log_directory}"
 
                                 RETVAL=${?}
 
