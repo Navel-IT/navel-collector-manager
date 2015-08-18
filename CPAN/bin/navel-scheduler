@@ -10,17 +10,21 @@ use 5.10.1;
 
 use lib '/usr/local/share/navel-scheduler/lib';
 
+use subs qw/
+    under
+    get
+    del
+    post
+    put
+    any
+/;
+
 use Getopt::Long;
 use Pod::Usage;
 
 use Proc::Daemon;
 
 use Cwd;
-
-use Mojolicious::Lite;
-use Mojo::Server::Prefork;
-
-use EV;
 
 use Navel::Logger;
 use Navel::Scheduler '$VERSION';
@@ -117,8 +121,12 @@ if (defined $general_configuration_file_path) {
 
             unless ($@) {
                 if (@{$web_services_listeners->{definitions}}) {
-                    app()->mode('production');
+                    require Mojolicious::Lite;
+                    Mojolicious::Lite->import();
+                    require Mojo::Server::Prefork;
+                    Mojo::Server::Prefork->import();
 
+                    app()->mode('production');
                     app()->log()->level('fatal');
 
                     under sub {
