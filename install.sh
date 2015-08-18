@@ -14,9 +14,7 @@ supported_os=(
 cpanminus_url='http://cpanmin.us'
 cpanminus_module='App::cpanminus'
 
-pre_modules=(
-    'CPAN'
-)
+pre_modules=()
 
 program_user="${program_name}"
 program_group="${program_name}"
@@ -174,7 +172,7 @@ done
 
 usage="Usage: ${0} -v <version> [-c]"
 
-while getopts 'v:c' OPT ; do
+while getopts 'v:c' OPT 2>/dev/null ; do
     case ${OPT} in
         v)
             program_version=${OPTARG} ;;
