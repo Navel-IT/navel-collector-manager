@@ -116,13 +116,13 @@ f_install_pkg() {
 
 f_tar() {
     if f_os_is_rhel ; then
-        ${RM} ${@}
+        ${TAR} ${@}
     fi
 }
 
 f_rm() {
     if f_os_is_rhel ; then
-        ${TAR} -f ${@}
+        ${RM} -f ${@}
     fi
 }
 
