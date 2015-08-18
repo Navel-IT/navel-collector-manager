@@ -8,6 +8,9 @@
 
 use 5.10.1;
 
+use strict;
+use warnings;
+
 use lib '/usr/local/share/navel-scheduler/lib';
 
 use subs qw/
