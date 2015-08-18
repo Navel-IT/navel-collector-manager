@@ -86,7 +86,7 @@ sub register_connector {
 
             if ( ! $self->{maximum_simultaneous_exec} || $self->{maximum_simultaneous_exec} > $self->{connectors_running}) {
                 unless ($self->{locks}->{$job_name}) {
-                    $self->a_connector_start();
+                    $self->{connectors_running}++;
 
                     $self->{locks}->{$job_name} = $connector->{singleton};
 
@@ -126,7 +126,7 @@ sub register_connector {
 
                                                     $self->{locks}->{$job_name} = 0;
 
-                                                    $self->a_connector_stop();
+                                                    $self->{connectors_running}--;
                                                 }
                                             );
                                         } else {
@@ -141,7 +141,7 @@ sub register_connector {
 
                                             $self->{locks}->{$job_name} = 0;
 
-                                            $self->a_connector_stop();
+                                            $self->{connectors_running}--;
                                         }
                                     }
                                 );
@@ -159,7 +159,7 @@ sub register_connector {
 
                                 $self->{locks}->{$job_name} = 0;
 
-                                $self->a_connector_stop();
+                                $self->{connectors_running}--;
                             }
                         }
                     );
@@ -428,33 +428,23 @@ sub publisher_by_definition_name {
 sub delete_publisher_by_definition_name {
     my ($self, $definition_name) = @_;
 
-    my $publishers = $self->{publishers};
-
     my $definition_to_delete_index = 0;
 
     my $finded;
 
-    $definition_to_delete_index++ until ($finded = $publishers->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
+    $definition_to_delete_index++ until ($finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
 
     if ($finded) {
         eval {
-            $publishers->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
+            $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
         };
 
-        splice @{$publishers}, $definition_to_delete_index, 1;
+        splice @{$self->{publishers}}, $definition_to_delete_index, 1;
     } else {
         croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists');
     }
 
     undef;
-}
-
-sub a_connector_start {
-    shift->{connectors_running}++;
-}
-
-sub a_connector_stop {
-    shift->{connectors_running}--;
 }
 
 # sub AUTOLOAD {}
