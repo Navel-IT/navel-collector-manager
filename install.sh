@@ -116,7 +116,7 @@ f_install_pkg() {
 
 f_tar() {
     if f_os_is_rhel ; then
-        ${TAR} ${@}
+        ${RM} ${@}
     fi
 }
 
@@ -199,7 +199,7 @@ while getopts 'v:c' OPT 2>/dev/null ; do
     esac
 done
 
-[[ f_match "${program_version}" '^[0-9]+\.[0-9]+$' ]] || f_die "${usage}" 1
+f_match "${program_version}" '^[0-9]+\.[0-9]+$' || f_die "${usage}" 1
 
 if [[ -n ${os} ]] ; then
     f_do "Installing ${program_name}."
