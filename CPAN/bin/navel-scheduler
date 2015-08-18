@@ -69,20 +69,19 @@ my $getopts = Getopt::Long::Parser->new();
 $getopts->configure('bundling');
 
 $getopts->getoptions(
-    'h|help' => sub {
-        pod2usage(0);
-    },
-    'v|version' => sub {
-        say $VERSION;
-
-        exit 0;
-    },
     'c|general-configuration-file-path=s' => \$general_configuration_file_path,
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
     'no-web-services' => \$disable_web_services,
-    'daemonize' => \$daemonize
+    'daemonize' => \$daemonize,
+    'help' => sub {
+        pod2usage(0);
+    },
+    'version' => sub {
+        say $VERSION;
 
+        exit 0;
+    }
 ) || pod2usage(1);
 
 if (defined $general_configuration_file_path) {
@@ -641,22 +640,43 @@ navel-scheduler - Control and run Navel::Scheduler
 
 navel-scheduler [options]
 
- Options :
-     -h, --help    print help
-     -v, --version    print version
+=head1 OPTIONS
 
-     -c <F>, --general-configuration-file-path=<F>    load general configuration from file <F>
+=over 4
 
-     [--log-file-path=<F>]    log informations in file <F>
-     [--log-severity=<S>]    set severity (syslog format) to <S>
+=item B<-c FILE, --general-configuration-file-path=FILE>
 
-     [--no-web-services]    disable the web services
+Load general configuration from FILE.
 
-     [--daemonize]    run as a standalone daemon
+=item B<[--log-file-path=FILE]>
+
+Log output to FILE.
+
+=item B<[--log-severity=SEVERITY]>
+
+Set severity (syslog format) to SEVERITY.
+
+=item B<[--no-web-services]>
+
+Disable the web services.
+
+=item B<[--daemonize]>
+
+Run as a standalone daemon.
+
+=item B<[--help]>
+
+Print help.
+
+=item B<[--version]>
+
+Print version.
+
+=back
 
 =head1 DESCRIPTION
 
-navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-router.
+navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
 =head1 AUTHOR
 
