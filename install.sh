@@ -63,9 +63,11 @@ f_define_variables_for_rhel() {
     DIRNAME='dirname'
     READLINK='readlink'
     ECHO='echo'
+    GREP='grep'
     YUM='yum'
     CURL='curl'
     PERL='perl'
+    RM='rm'
     TAR='tar'
     CPANM='cpanm'
     GETENT='getent'
@@ -98,6 +100,14 @@ f_define_variables_for_rhel() {
 
 # wrappers
 
+f_match() {
+    if f_os_is_rhel ; then
+        ( ${ECHO} "${1}" | ${GREP} -E "${2}" &>/dev/null ) && return 0
+    fi
+
+    return 1
+}
+
 f_install_pkg() {
     if f_os_is_rhel ; then
         ${YUM} install -y ${@}
@@ -107,6 +117,12 @@ f_install_pkg() {
 f_tar() {
     if f_os_is_rhel ; then
         ${TAR} ${@}
+    fi
+}
+
+f_rm() {
+    if f_os_is_rhel ; then
+        ${TAR} -f ${@}
     fi
 }
 
@@ -183,7 +199,7 @@ while getopts 'v:c' OPT 2>/dev/null ; do
     esac
 done
 
-[[ -z "${program_version}" ]] && f_die "${usage}" 1
+[[ f_match "${program_version}" '^[0-9]+\.[0-9]+$' ]] || f_die "${usage}" 1
 
 if [[ -n ${os} ]] ; then
     f_do "Installing ${program_name}."
@@ -216,6 +232,8 @@ if [[ -n ${os} ]] ; then
 
             if [[ ${RETVAL} -eq 0 ]] ; then
                 f_ok
+
+                trap "f_rm '${full_dirname}/${cpan_archive_name}'" EXIT INT TERM
 
                 f_do "Installing CPAN archive and modules ${pre_modules[@]}."
 
