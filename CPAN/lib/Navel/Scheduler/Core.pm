@@ -316,7 +316,7 @@ sub register_publisher {
                                     $channels[0]->publish(
                                         exchange => $publisher->{definition}->{exchange},
                                         routing_key => $event->routing_key(),
-                                        headers => {
+                                        header => {
                                             delivery_mode => $publisher->{definition}->{delivery_mode}
                                         },
                                         body => $serialized
