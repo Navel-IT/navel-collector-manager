@@ -5,15 +5,15 @@
 
 #-> initialization
 
-package Navel::Scheduler::Etc::Parser;
+package Navel::Scheduler::Parser;
 
 use strict;
 use warnings;
 
 use parent qw/
     Navel::Base
-    Navel::Base::Definition::Etc::Parser::Reader
-    Navel::Base::Definition::Etc::Parser::Writer
+    Navel::Base::Definition::Parser::Reader
+    Navel::Base::Definition::Parser::Writer
 /;
 
 use Exporter::Easy (
@@ -167,7 +167,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Etc::Parser
+Navel::Scheduler::Parser
 
 =head1 AUTHOR
 

@@ -26,10 +26,10 @@ use Exporter::Easy (
 
 use Carp 'croak';
 
-use Navel::Scheduler::Cron;
-use Navel::Scheduler::Etc::Parser;
-use Navel::Definition::Connector::Etc::Parser;
-use Navel::Definition::RabbitMQ::Etc::Parser;
+use Navel::Scheduler::Parser;
+use Navel::Scheduler::Core;
+use Navel::Definition::Connector::Parser;
+use Navel::Definition::RabbitMQ::Parser;
 
 our $VERSION = 0.1;
 
@@ -42,22 +42,22 @@ sub new {
 
     bless {
         core => undef,
-        configuration => Navel::Scheduler::Etc::Parser->new()->read($configuration_path)->make()
+        configuration => Navel::Scheduler::Parser->new()->read($configuration_path)->make()
     }, ref $class || $class;
 }
 
 sub run {
     my ($self, $logger) = @_;
 
-    my $connectors = Navel::Definition::Connector::Etc::Parser->new()->read($self->{configuration}->{definition}->{connectors}->{definitions_from_file})->make(
+    my $connectors = Navel::Definition::Connector::Parser->new()->read($self->{configuration}->{definition}->{connectors}->{definitions_from_file})->make(
         {
             exec_directory_path => $self->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
         }
     );
 
-    my $rabbitmq = Navel::Definition::RabbitMQ::Etc::Parser->new()->read($self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file})->make();
+    my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new()->read($self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file})->make();
 
-    $self->{core} = Navel::Scheduler::Cron->new(
+    $self->{core} = Navel::Scheduler::Core->new(
         $connectors,
         $rabbitmq,
         $logger,

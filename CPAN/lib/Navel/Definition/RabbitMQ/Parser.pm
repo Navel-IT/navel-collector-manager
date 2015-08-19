@@ -5,31 +5,33 @@
 
 #-> initialization
 
-package Navel::Definition::Connector::Etc::Parser;
+package Navel::Definition::RabbitMQ::Parser;
 
 use strict;
 use warnings;
 
-use parent 'Navel::Base::Definition::Etc::Parser';
+use parent 'Navel::Base::Definition::Parser';
 
 our $VERSION = 0.1;
 
 #-> methods
 
 sub new {
-    shift->SUPER::new('Navel::Definition::Connector', 1);
+    shift->SUPER::new('Navel::Definition::RabbitMQ', 1);
 }
 
 BEGIN {
     __PACKAGE__->create_getters(qw/
-        collection
-        type
-        singleton
+        host
+        port
+        user
+        password
+        vhost
+        tls
+        heartbeat
+        exchange
+        delivery_mode
         scheduling
-        source
-        input
-        exec_directory_path
-        exec_file_path
     /);
 }
 
@@ -47,7 +49,7 @@ __END__
 
 =head1 NAME
 
-Navel::Definition::Connector::Etc::Parser
+Navel::Definition::RabbitMQ::Parser
 
 =head1 AUTHOR
 

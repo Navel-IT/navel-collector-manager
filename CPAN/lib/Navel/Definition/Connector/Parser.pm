@@ -5,32 +5,31 @@
 
 #-> initialization
 
-package Navel::Definition::WebService::Etc::Parser;
+package Navel::Definition::Connector::Parser;
 
 use strict;
 use warnings;
 
-use parent 'Navel::Base::Definition::Etc::Parser';
+use parent 'Navel::Base::Definition::Parser';
 
 our $VERSION = 0.1;
 
 #-> methods
 
 sub new {
-    shift->SUPER::new('Navel::Definition::WebService', 1);
+    shift->SUPER::new('Navel::Definition::Connector', 1);
 }
 
 BEGIN {
     __PACKAGE__->create_getters(qw/
-        interface_mask
-        port
-        tls
-        cas
-        cert
-        cipher
-        key
-        verifie
-        url
+        collection
+        type
+        singleton
+        scheduling
+        source
+        input
+        exec_directory_path
+        exec_file_path
     /);
 }
 
@@ -48,7 +47,7 @@ __END__
 
 =head1 NAME
 
-Navel::Definition::WebService::Etc::Parser
+Navel::Definition::Connector::Parser
 
 =head1 AUTHOR
 

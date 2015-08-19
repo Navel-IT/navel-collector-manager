@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Cron;
+package Navel::Scheduler::Core;
 
 use strict;
 use warnings;
@@ -21,7 +21,7 @@ use AnyEvent::AIO;
 
 use IO::AIO;
 
-use Navel::Scheduler::Cron::Fork;
+use Navel::Scheduler::Core::Fork;
 use Navel::RabbitMQ::Publisher;
 use Navel::RabbitMQ::Serialize::Data 'to';
 use Navel::Utils 'blessed';
@@ -33,7 +33,7 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $connectors, $rabbitmq, $logger, $maximum_simultaneous_exec) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Etc::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Etc::Parser' && blessed($logger) eq 'Navel::Logger' && isint($maximum_simultaneous_exec) && $maximum_simultaneous_exec >= 0);
+    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger' && isint($maximum_simultaneous_exec) && $maximum_simultaneous_exec >= 0);
 
     my $self = {
         connectors => $connectors,
@@ -106,7 +106,7 @@ sub register_connector {
                                         close $fh or $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
 
                                         if ($connector->is_type_code()) {
-                                            Navel::Scheduler::Cron::Fork->new(
+                                            Navel::Scheduler::Core::Fork->new(
                                                 $connector,
                                                 $connector_content,
                                                 $self->{publishers},
@@ -434,17 +434,15 @@ sub delete_publisher_by_definition_name {
 
     $definition_to_delete_index++ until ($finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
 
-    if ($finded) {
-        eval {
-            $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
-        };
+    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless ($finded);
 
-        splice @{$self->{publishers}}, $definition_to_delete_index, 1;
-    } else {
-        croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists');
-    }
+    eval {
+        $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
+    };
 
-    undef;
+    splice @{$self->{publishers}}, $definition_to_delete_index, 1;
+
+    $self->{rabbitmq}->delete_definition($definition_name);
 }
 
 # sub AUTOLOAD {}
@@ -461,7 +459,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Cron
+Navel::Scheduler::Core
 
 =head1 AUTHOR
 

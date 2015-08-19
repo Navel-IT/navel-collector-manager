@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Base::Definition::Etc::Parser::Writer;
+package Navel::Base::Definition::Parser::Writer;
 
 use strict;
 use warnings;
@@ -52,7 +52,7 @@ __END__
 
 =head1 NAME
 
-Navel::Base::Definition::Etc::Parser::Writer
+Navel::Base::Definition::Parser::Writer
 
 =head1 AUTHOR
 

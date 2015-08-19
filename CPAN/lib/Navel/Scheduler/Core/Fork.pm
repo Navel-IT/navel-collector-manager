@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Cron::Fork;
+package Navel::Scheduler::Core::Fork;
 
 use strict;
 use warnings;
@@ -125,7 +125,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Cron::Fork
+Navel::Scheduler::Core::Fork
 
 =head1 AUTHOR
 

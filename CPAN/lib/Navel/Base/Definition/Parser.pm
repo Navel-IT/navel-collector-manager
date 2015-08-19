@@ -5,15 +5,15 @@
 
 #-> initialization
 
-package Navel::Base::Definition::Etc::Parser;
+package Navel::Base::Definition::Parser;
 
 use strict;
 use warnings;
 
 use parent qw/
     Navel::Base
-    Navel::Base::Definition::Etc::Parser::Reader
-    Navel::Base::Definition::Etc::Parser::Writer
+    Navel::Base::Definition::Parser::Reader
+    Navel::Base::Definition::Parser::Writer
 /;
 
 use Carp 'croak';
@@ -64,9 +64,7 @@ sub make_definition {
     my ($self, $raw_definition) = @_;
 
     my $definition = eval {
-        my $definition_package = $self->{definition_package};
-
-        $definition_package->new($raw_definition);
+        $self->{definition_package}->new($raw_definition);
     };
 
     $@ ? croak($self->{definition_package} . ' : ' . $@) : $definition;
@@ -114,40 +112,6 @@ sub definition_properties_by_name {
     defined $definition ? $definition->properties() : undef;
 }
 
-sub add_definition {
-    my ($self, $raw_definition) = @_;
-
-    my $definition = $self->make_definition($raw_definition);
-
-    unless (defined $self->definition_by_name($definition->{name})) {
-        push @{$self->{definitions}}, $definition;
-    } else {
-        croak($self->{definition_package} . ' : duplicate definition detected');
-    }
-
-    $definition;
-}
-
-sub delete_definition {
-    my ($self, $definition_name) = @_;
-
-    my $definitions = $self->{definitions};
-
-    my $definition_to_delete_index = 0;
-
-    my $finded;
-
-    $definition_to_delete_index++ until ($finded = $definitions->[$definition_to_delete_index]->{name} eq $definition_name);
-
-    if ($finded) {
-        splice @{$definitions}, $definition_to_delete_index, 1;
-    } else {
-        croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists');
-    }
-
-    $definition_name;
-}
-
 sub all_by_property_name {
     my ($self, $property_name) = @_;
 
@@ -156,6 +120,36 @@ sub all_by_property_name {
             $_->can($property_name) ? $_->$property_name() : $_->{$property_name}
         } @{$self->{definitions}}
     ];
+}
+
+sub add_definition {
+    my ($self, $raw_definition) = @_;
+
+    my $definition = $self->make_definition($raw_definition);
+
+    croak($self->{definition_package} . ' : duplicate definition detected') if (defined $self->definition_by_name($definition->{name}));
+
+    push @{$self->{definitions}}, $definition;
+
+    $definition;
+}
+
+sub delete_definition {
+    my ($self, $definition_name, $do_before_slice) = @_;
+
+    my $definition_to_delete_index = 0;
+
+    my $finded;
+
+    $definition_to_delete_index++ until ($finded = $self->{definitions}->[$definition_to_delete_index]->{name} eq $definition_name);
+
+    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless ($finded);
+
+    $do_before_slice->($self->{definitions}->[$definition_to_delete_index]) if (ref $do_before_slice eq 'CODE');
+
+    splice @{$self->{definitions}}, $definition_to_delete_index, 1;
+
+    $definition_name;
 }
 
 BEGIN {
@@ -190,7 +184,7 @@ __END__
 
 =head1 NAME
 
-Navel::Base::Definition::Etc::Parser
+Navel::Base::Definition::Parser
 
 =head1 AUTHOR
 

@@ -63,30 +63,26 @@ sub from($) {
 
     my $deserialized = decode_sereal_constructor()->decode($serialized);
 
-    if (reftype($deserialized) && isint($deserialized->{time}) && exists $deserialized->{datas} && exists $deserialized->{collection}) {
-        my $connector;
+    croak('deserialized datas are invalid') unless (reftype($deserialized) && isint($deserialized->{time}) && exists $deserialized->{datas} && exists $deserialized->{collection});
 
-        if (defined $deserialized->{connector}) {
-            croak('deserialized datas are invalid : connector definition is invalid') unless (connector_definition_validator($deserialized->{connector}));
+    my $connector;
 
-            $connector = Navel::Definition::Connector->new($deserialized->{connector});
-        }
+    if (defined $deserialized->{connector}) {
+        croak('deserialized datas are invalid : connector definition is invalid') unless (connector_definition_validator($deserialized->{connector}));
 
-        if (defined $deserialized->{collection}) {
-            $deserialized->{collection} = sprintf '%s', $deserialized->{collection};
-        }
-
-        return {
-            %{$deserialized},
-            %{
-                {
-                    connector => $connector
-                }
-            }
-        };
+        $connector = Navel::Definition::Connector->new($deserialized->{connector});
     }
 
-    croak('deserialized datas are invalid');
+    $deserialized->{collection} = sprintf '%s', $deserialized->{collection} if (defined $deserialized->{collection});
+
+    {
+        %{$deserialized},
+        %{
+            {
+                connector => $connector
+            }
+        }
+    };
 }
 
 # sub AUTOLOAD {}
