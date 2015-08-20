@@ -17,7 +17,11 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    shift->SUPER::new('Navel::Definition::RabbitMQ', 1);
+    shift->SUPER::new(
+        'Navel::Definition::RabbitMQ',
+        1,
+        @_
+    );
 }
 
 BEGIN {

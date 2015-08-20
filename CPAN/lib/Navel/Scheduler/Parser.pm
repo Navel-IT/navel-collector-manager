@@ -49,10 +49,12 @@ sub scheduler_definition_validator($) {
             connectors => {
                 definitions_from_file => 'text',
                 connectors_exec_directory => 'text',
-                maximum_simultaneous_exec => 'general_maximum_simultaneous_exec'
+                maximum => 'general_positive_integer',
+                maximum_simultaneous_exec => 'general_positive_integer'
             },
             rabbitmq => {
-                definitions_from_file => 'text'
+                definitions_from_file => 'text',
+                maximum => 'general_positive_integer'
             },
             webservices => {
                 definitions_from_file => 'text',
@@ -66,7 +68,7 @@ sub scheduler_definition_validator($) {
     );
 
     $validator->type(
-        general_maximum_simultaneous_exec => sub {
+        general_positive_integer => sub {
             my $value = shift;
 
             isint($value) && $value >= 0;

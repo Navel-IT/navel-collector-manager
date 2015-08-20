@@ -28,10 +28,12 @@ Prepare configuration
     "connectors" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
         "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
+        "maximum" : 0,
         "maximum_simultaneous_exec" : 0
     },
     "rabbitmq" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
+        "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json",
+        "maximum" : 0
     },
     "webservices" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/webservices.json",

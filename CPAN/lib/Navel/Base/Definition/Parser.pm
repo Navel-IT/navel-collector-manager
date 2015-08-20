@@ -18,8 +18,6 @@ use parent qw/
 
 use Carp 'croak';
 
-use List::MoreUtils 'uniq';
-
 use Navel::Utils 'reftype';
 
 our $VERSION = 0.1;
@@ -27,14 +25,16 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $definition_package, $do_not_need_at_least_one) = @_;
+    my ($class, $definition_package, $do_not_need_at_least_one, $maximum) = @_;
 
-    bless {
+    my $self = bless {
         definition_package => $definition_package,
         do_not_need_at_least_one => $do_not_need_at_least_one,
         raw => [],
         definitions => []
     }, ref $class || $class;
+
+    $self->set_maximum($maximum);
 }
 
 sub read {
@@ -75,23 +75,25 @@ sub make {
 
     if (eval 'require ' . $self->{definition_package}) {
         if (reftype($self->{raw}) eq 'ARRAY' and @{$self->{raw}} || $self->{do_not_need_at_least_one}) {
-            my (@definitions, @names);
-
-            for (@{$self->{raw}}) {
-                my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_);
-
-                push @definitions, $definition;
-
-                push @names, $definition->{name};
-            }
-
-            @names == uniq(@names) ? $self->{definitions} = \@definitions : croak($self->{definition_package} . ' : duplicate definition detected');
+            $self->add_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_) for (@{$self->{raw}});
         } else {
             croak($self->{definition_package} . ' : raw datas need to exists and to be encapsulated in an array');
         }
     } else {
         croak($self->{definition_package} . ' : require failed');
     }
+
+    $self;
+}
+
+sub set_maximum {
+    my ($self, $maximum) = @_;
+
+    $maximum = $maximum || 0;
+
+    croak('maximum must be an integer equal or greater than 0') unless ($maximum =~ /^[0-9]+$/);
+
+    $self->{maximum} = $maximum;
 
     $self;
 }
@@ -126,6 +128,8 @@ sub add_definition {
     my ($self, $raw_definition) = @_;
 
     my $definition = $self->make_definition($raw_definition);
+
+    croak($self->{definition_package} . ' : the maximum number of definition (' . $self->{maximum} . ') has been reached') if ($self->{maximum} && @{$self->{definitions}} > $self->{maximum});
 
     croak($self->{definition_package} . ' : duplicate definition detected') if (defined $self->definition_by_name($definition->{name}));
 

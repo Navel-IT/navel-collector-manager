@@ -54,7 +54,6 @@ WriteMakefile(
         'DateTime::Event::Cron::Quartz' => 0,
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
-        'List::MoreUtils' => 0,
         'Cwd' => 0,
         'Proc::Daemon' => 0,
         'Mojolicious' => 0,
