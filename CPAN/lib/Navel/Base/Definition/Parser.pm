@@ -18,8 +18,6 @@ use parent qw/
 
 use Carp 'croak';
 
-use List::MoreUtils 'uniq';
-
 use Navel::Utils 'reftype';
 
 our $VERSION = 0.1;
@@ -75,17 +73,7 @@ sub make {
 
     if (eval 'require ' . $self->{definition_package}) {
         if (reftype($self->{raw}) eq 'ARRAY' and @{$self->{raw}} || $self->{do_not_need_at_least_one}) {
-            my (@definitions, @names);
-
-            for (@{$self->{raw}}) {
-                my $definition = $self->make_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_);
-
-                push @definitions, $definition;
-
-                push @names, $definition->{name};
-            }
-
-            @names == uniq(@names) ? $self->{definitions} = \@definitions : croak($self->{definition_package} . ' : duplicate definition detected');
+            $self->add_definition(reftype($extra_parameters) eq 'HASH' ? { %{$_}, %{$extra_parameters} } : $_) for (@{$self->{raw}});    
         } else {
             croak($self->{definition_package} . ' : raw datas need to exists and to be encapsulated in an array');
         }
