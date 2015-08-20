@@ -18,6 +18,8 @@ use parent qw/
 
 use Carp 'croak';
 
+use Scalar::Util::Numeric 'isint';
+
 use Navel::Utils 'reftype';
 
 our $VERSION = 0.1;
@@ -91,7 +93,7 @@ sub set_maximum {
 
     $maximum = $maximum || 0;
 
-    croak('maximum must be an integer equal or greater than 0') unless ($maximum =~ /^[0-9]+$/);
+    croak('maximum must be an integer equal or greater than 0') unless (isint($maximum) && $maximum >= 0);
 
     $self->{maximum} = $maximum;
 
@@ -130,7 +132,6 @@ sub add_definition {
     my $definition = $self->make_definition($raw_definition);
 
     croak($self->{definition_package} . ' : the maximum number of definition (' . $self->{maximum} . ') has been reached') if ($self->{maximum} && @{$self->{definitions}} > $self->{maximum});
-
     croak($self->{definition_package} . ' : duplicate definition detected') if (defined $self->definition_by_name($definition->{name}));
 
     push @{$self->{definitions}}, $definition;

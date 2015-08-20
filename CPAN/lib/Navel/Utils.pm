@@ -48,13 +48,12 @@ use Exporter::Easy (
     ]
 );
 
-require Scalar::Util;
+use String::Util 'crunch';
 
 use JSON qw/
     encode_json
     decode_json
 /;
-
 use Sereal;
 
 our $VERSION = 0.1;

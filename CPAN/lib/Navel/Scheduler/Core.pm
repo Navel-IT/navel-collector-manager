@@ -31,11 +31,11 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connectors, $rabbitmq, $logger, $maximum_simultaneous_exec) = @_;
+    my ($class, $connectors, $rabbitmq, $logger, $connectors_maximum_simultaneous_exec) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger' && isint($maximum_simultaneous_exec) && $maximum_simultaneous_exec >= 0);
+    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger' && isint($connectors_maximum_simultaneous_exec) && $connectors_maximum_simultaneous_exec >= 0);
 
-    my $self = {
+    bless {
         connectors => $connectors,
         rabbitmq => $rabbitmq,
         publishers => [],
@@ -43,12 +43,15 @@ sub new {
         cron => AnyEvent::DateTime::Cron->new(
             quartz => 1
         ),
-        locks => {},
-        maximum_simultaneous_exec => $maximum_simultaneous_exec,
-        connectors_running => 0
-    };
-
-    bless $self, ref $class || $class;
+        jobs => {
+            enabled => {},
+            connectors => {
+                locks => {},
+                maximum_simultaneous_exec => $connectors_maximum_simultaneous_exec,
+                running => 0
+            }
+        }
+    }, ref $class || $class;
 }
 
 sub register_logger {
@@ -56,12 +59,14 @@ sub register_logger {
 
     my $job_name = 'logger_0';
 
+    $self->{jobs}->{enabled}->{$job_name} = 1;
+
     $self->{cron}->add(
         '*/2 * * * * ?',
         name => $job_name,
         single => 1,
         sub {
-            $self->{logger}->flush_queue(1);
+            $self->{logger}->flush_queue(1) if ($self->{jobs}->{enabled}->{$job_name});
         }
     );
 
@@ -77,6 +82,9 @@ sub register_connector {
 
     my $job_name = 'connector_' . $connector->{name};
 
+    $self->{jobs}->{enabled}->{$job_name} = 1;
+    $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
+
     $self->{cron}->add(
         $connector->{scheduling},
         name => $job_name,
@@ -84,90 +92,94 @@ sub register_connector {
         sub {
             local ($@, $!);
 
-            if ( ! $self->{maximum_simultaneous_exec} || $self->{maximum_simultaneous_exec} > $self->{connectors_running}) {
-                unless ($self->{locks}->{$job_name}) {
-                    $self->{connectors_running}++;
+            if ( ! $self->{jobs}->{connectors}->{maximum_simultaneous_exec} || $self->{jobs}->{connectors}->{maximum_simultaneous_exec} > $self->{jobs}->{connectors}->{running}) {
+                if ($self->{jobs}->{enabled}->{$job_name}) {
+                    unless ($self->{jobs}->{connectors}->{locks}->{$job_name}) {
+                        $self->{jobs}->{connectors}->{running}++;
 
-                    $self->{locks}->{$job_name} = $connector->{singleton};
+                        $self->{jobs}->{connectors}->{locks}->{$job_name} = $connector->{singleton};
 
-                    aio_open($connector->exec_file_path(), IO::AIO::O_RDONLY, 0,
-                        sub {
-                            my $fh = shift;
+                        aio_open($connector->exec_file_path(), IO::AIO::O_RDONLY, 0,
+                            sub {
+                                my $fh = shift;
 
-                            my $get_and_push_generic_message = 'Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.';
+                                my $get_and_push_generic_message = 'Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.';
 
-                            if ($fh) {
-                                my $connector_content = '';
+                                if ($fh) {
+                                    my $connector_content = '';
 
-                                $self->{logger}->good('Connector ' . $connector->{name} . ' : successfuly opened file ' . $connector->exec_file_path() . '.', 'debug');
+                                    $self->{logger}->good('Connector ' . $connector->{name} . ' : successfuly opened file ' . $connector->exec_file_path() . '.', 'debug');
 
-                                aio_read($fh, 0, -s $fh, $connector_content, 0,
-                                    sub {
-                                        close $fh or $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
+                                    aio_read($fh, 0, -s $fh, $connector_content, 0,
+                                        sub {
+                                            close $fh or $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
 
-                                        if ($connector->is_type_code()) {
-                                            Navel::Scheduler::Core::Fork->new(
-                                                $connector,
-                                                $connector_content,
-                                                $self->{publishers},
-                                                $self->{logger}
-                                            )->when_done(
-                                                sub {
-                                                    my $datas = shift;
+                                            if ($connector->is_type_code()) {
+                                                Navel::Scheduler::Core::Fork->new(
+                                                    $connector,
+                                                    $connector_content,
+                                                    $self->{publishers},
+                                                    $self->{logger}
+                                                )->when_done(
+                                                    sub {
+                                                        my $datas = shift;
 
-                                                    $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
+                                                        $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
 
-                                                    $_->push_in_queue(
-                                                        {
-                                                            connector => $connector,
-                                                            datas => $datas
-                                                        }
-                                                    ) for (@{$self->{publishers}});
+                                                        $_->push_in_queue(
+                                                            {
+                                                                connector => $connector,
+                                                                datas => $datas
+                                                            }
+                                                        ) for (@{$self->{publishers}});
 
-                                                    $self->{locks}->{$job_name} = 0;
+                                                        $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
 
-                                                    $self->{connectors_running}--;
-                                                }
-                                            );
-                                        } else {
-                                            $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
+                                                        $self->{jobs}->{connectors}->{running}--;
+                                                    }
+                                                );
+                                            } else {
+                                                $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
 
-                                            $_->push_in_queue(
-                                                {
-                                                    connector => $connector,
-                                                    datas => $connector_content
-                                                }
-                                            ) for (@{$self->{publishers}});
+                                                $_->push_in_queue(
+                                                    {
+                                                        connector => $connector,
+                                                        datas => $connector_content
+                                                    }
+                                                ) for (@{$self->{publishers}});
 
-                                            $self->{locks}->{$job_name} = 0;
+                                                $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
 
-                                            $self->{connectors_running}--;
+                                                $self->{jobs}->{connectors}->{running}--;
+                                            }
                                         }
-                                    }
-                                );
-                            } else {
-                                $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
+                                    );
+                                } else {
+                                    $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
 
-                                $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
+                                    $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
 
-                                $_->push_in_queue(
-                                    {
-                                        connector => $connector
-                                    },
-                                    'set_ko_no_source'
-                                ) for (@{$self->{publishers}});
+                                    $_->push_in_queue(
+                                        {
+                                            connector => $connector
+                                        },
+                                        'set_ko_no_source'
+                                    ) for (@{$self->{publishers}});
 
-                                $self->{locks}->{$job_name} = 0;
+                                    $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
 
-                                $self->{connectors_running}--;
+                                    $self->{jobs}->{connectors}->{running}--;
+                                }
                             }
-                        }
-                    );
+                        );
+                    } else {
+                        $self->{logger}->push_in_queue('Connector ' . $connector->{name} . ' is already running.', 'debug');
+                    }
                 } else {
-                    $self->{logger}->push_in_queue('Connector ' . $connector->{name} . ' is already running.', 'info');
+                    $self->{logger}->push_in_queue('Job ' . $job_name . ' is disabled.', 'debug');
                 }
             } else {
-                $self->{logger}->push_in_queue('Too much connectors are running (maximum of ' . $self->{maximum_simultaneous_exec} . ').', 'info');
+                $self->{logger}->push_in_queue('Too much connectors are running (maximum of ' . $self->{jobs}->{connectors}->{maximum_simultaneous_exec} . ').', 'debug');
             }
         }
     );
@@ -282,64 +294,72 @@ sub register_publisher {
 
     croak('undefined definition') unless (defined $publisher);
 
+    my $job_name = 'publisher_' . $publisher->{definition}->{name};
+
+    $self->{jobs}->{enabled}->{$job_name} = 1;
+
     $self->{cron}->add(
         $publisher->{definition}->{scheduling},
-        name => 'publisher_' . $publisher->{definition}->{name},
+        name => $job_name,
         single => 1,
         sub {
             local $@;
 
-            my $publish_generic_message = 'Publish events for publisher ' . $publisher->{definition}->{name};
+            if ($self->{jobs}->{enabled}->{$job_name}) {
+                my $publish_generic_message = 'Publish events for publisher ' . $publisher->{definition}->{name};
 
-            if (my @queue = @{$publisher->{queue}}) {
-                if ($publisher->is_connected()) {
-                    if (my @channels = values %{$publisher->{net}->channels()}) {
-                        $self->{logger}->push_in_queue('Clear queue for publisher ' . $publisher->{definition}->{name} . '.', 'notice');
+                if (my @queue = @{$publisher->{queue}}) {
+                    if ($publisher->is_connected()) {
+                        if (my @channels = values %{$publisher->{net}->channels()}) {
+                            $self->{logger}->push_in_queue('Clear queue for publisher ' . $publisher->{definition}->{name} . '.', 'notice');
 
-                        $publisher->clear_queue();
+                            $publisher->clear_queue();
 
-                        eval {
-                            for my $event (@queue) {
-                                my $serialize_generic_message = 'Serialize datas for collection ' . $event->{collection};
+                            eval {
+                                for my $event (@queue) {
+                                    my $serialize_generic_message = 'Serialize datas for collection ' . $event->{collection};
 
-                                my $serialized = eval {
-                                    $event->serialized_datas();
-                                };
+                                    my $serialized = eval {
+                                        $event->serialized_datas();
+                                    };
 
-                                unless ($@) {
-                                    $self->{logger}->good($serialize_generic_message . '.', 'debug');
+                                    unless ($@) {
+                                        $self->{logger}->good($serialize_generic_message . '.', 'debug');
 
-                                    my $routing_key = $event->routing_key();
+                                        my $routing_key = $event->routing_key();
 
-                                    $self->{logger}->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.', 'debug');
+                                        $self->{logger}->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.', 'debug');
 
-                                    $channels[0]->publish(
-                                        exchange => $publisher->{definition}->{exchange},
-                                        routing_key => $event->routing_key(),
-                                        header => {
-                                            delivery_mode => $publisher->{definition}->{delivery_mode}
-                                        },
-                                        body => $serialized
-                                    );
-                                } else {
-                                    $self->{logger}->bad($serialize_generic_message . ' failed : ' . $@ . '.' , 'debug');
+                                        $channels[0]->publish(
+                                            exchange => $publisher->{definition}->{exchange},
+                                            routing_key => $event->routing_key(),
+                                            header => {
+                                                delivery_mode => $publisher->{definition}->{delivery_mode}
+                                            },
+                                            body => $serialized
+                                        );
+                                    } else {
+                                        $self->{logger}->bad($serialize_generic_message . ' failed : ' . $@ . '.' , 'warn');
+                                    }
                                 }
-                            }
-                        };
+                            };
 
-                        if ($@) {
-                            $self->{logger}->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                            if ($@) {
+                                $self->{logger}->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                            } else {
+                                $self->{logger}->good($publish_generic_message . '.', 'notice');
+                            }
                         } else {
-                            $self->{logger}->good($publish_generic_message . '.', 'notice');
+                            $self->{logger}->bad($publish_generic_message . ' : publisher has no channel opened.', 'warn');
                         }
                     } else {
-                        $self->{logger}->bad($publish_generic_message . ' : publisher has no channel opened.', 'warn');
+                        $self->{logger}->push_in_queue($publish_generic_message . ' : publisher is not connected.', 'notice');
                     }
                 } else {
-                    $self->{logger}->push_in_queue($publish_generic_message . ' : publisher is not connected.', 'notice');
+                    $self->{logger}->push_in_queue('Buffer for publisher ' . $publisher->{definition}->{name} . ' is empty.', 'info');
                 }
             } else {
-                $self->{logger}->push_in_queue('Buffer for publisher ' . $publisher->{definition}->{name} . ' is empty.', 'info');
+                $self->{logger}->push_in_queue('Job ' . $job_name . ' is disabled.', 'debug');
             }
         }
     );
