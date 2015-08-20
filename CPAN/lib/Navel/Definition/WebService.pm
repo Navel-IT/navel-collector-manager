@@ -68,14 +68,14 @@ sub web_service_definition_validator($) {
 sub new {
     shift->SUPER::new(
         \&web_service_definition_validator,
-        shift
+        @_
     );
 }
 
 sub merge {
    shift->SUPER::merge(
         \&web_service_definition_validator,
-        shift
+        @_ 
    );
 }
 

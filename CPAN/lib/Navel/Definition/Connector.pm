@@ -83,14 +83,14 @@ sub connector_definition_validator($) {
 sub new {
     shift->SUPER::new(
         \&connector_definition_validator,
-        shift
+        @_
     );
 }
 
 sub merge {
    shift->SUPER::merge(
         \&connector_definition_validator,
-        shift
+        @_
    );
 }
 

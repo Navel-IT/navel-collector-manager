@@ -88,14 +88,14 @@ sub rabbitmq_definition_validator($) {
 sub new {
     shift->SUPER::new(
         \&rabbitmq_definition_validator,
-        shift
+        @_
     );
 }
 
 sub merge {
    shift->SUPER::merge(
         \&rabbitmq_definition_validator,
-        shift
+        @_
    );
 }
 
