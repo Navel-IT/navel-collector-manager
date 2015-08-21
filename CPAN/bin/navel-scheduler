@@ -503,8 +503,10 @@ if (defined $general_configuration_file_path) {
                         }
                     };
 
-                    get '/scheduler/api/publishers' => {
-                        json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
+                    get '/scheduler/api/publishers' => sub {
+                        shift->render(
+                            json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
+                        );
                     };
 
                     any [qw/GET PUT/] => '/scheduler/api/publishers/(:publisher)' => sub {
