@@ -256,13 +256,12 @@ if (defined $general_configuration_file_path) {
                         my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
 
                         if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
-                            given ($controller->req()->query_params()->param('action') || '') {
-                                when ('enable') {
-                                    $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
-                                }
-                                when ('disable') {
-                                    $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
-                                }
+                            my $action = $controller->req()->query_params()->param('action') || '';
+
+                            if ($action eq 'enable') {
+                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
+                            } elsif ($action eq 'disable') {
+                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
                             }
 
                             return $controller->render(
@@ -280,233 +279,227 @@ if (defined $general_configuration_file_path) {
                     any [qw/GET POST/] => '/scheduler/api/connectors' => sub {
                         my $controller = shift;
 
-                        given ($controller->req()->method()) {
-                            when ('POST') {
-                                my (@ok, @ko);
+                        my $http_method = $controller->req()->method();
 
-                                my $body = eval {
-                                    decode_json($controller->req()->body());
-                                };
+                        if ($http_method eq 'POST') {
+                            my (@ok, @ko);
 
-                                unless ($@) {
-                                    if (ref $body eq 'HASH') {
-                                        my $definition = eval {
-                                            $scheduler->{core}->{connectors}->add_definition(
-                                                {
-                                                    %{$body},
-                                                    %{
-                                                        {
-                                                            exec_directory_path => $scheduler->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
-                                                        }
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            unless ($@) {
+                                if (ref $body eq 'HASH') {
+                                    my $definition = eval {
+                                        $scheduler->{core}->{connectors}->add_definition(
+                                            {
+                                                %{$body},
+                                                %{
+                                                    {
+                                                        exec_directory_path => $scheduler->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
                                                     }
                                                 }
-                                            );
-                                        };
+                                            }
+                                        );
+                                    };
 
-                                        unless ($@) {
-                                            $scheduler->{core}->register_connector($definition->{name});
+                                    unless ($@) {
+                                        $scheduler->{core}->register_connector($definition->{name});
 
-                                            push @ok, 'Connector ' . $definition->{name} . ' added and registered';
-                                        } else {
-                                            push @ko, $@;
-                                        }
+                                        push @ok, 'Connector ' . $definition->{name} . ' added and registered';
                                     } else {
-                                        push @ko, 'Body need to be a hashtable';
+                                        push @ko, $@;
                                     }
                                 } else {
-                                    push @ko, $@;
+                                    push @ko, 'Body need to be a hashtable';
                                 }
+                            } else {
+                                push @ko, $@;
+                            }
 
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
-                            }
-                            default {
-                                $controller->render(
-                                    json => $scheduler->{core}->{connectors}->name()
-                                );
-                            }
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } else {
+                            $controller->render(
+                                json => $scheduler->{core}->{connectors}->name()
+                            );
                         }
                     };
 
                     any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
                         my $controller = shift;
 
+                        my $http_method = $controller->req()->method();
+
                         my $connector_name = $controller->param('connector');
 
-                        given ($controller->req()->method()) {
-                            when ('PUT') {
-                                my (@ok, @ko);
+                        if ($http_method eq 'PUT') {
+                            my (@ok, @ko);
 
-                                my $body = eval {
-                                    decode_json($controller->req()->body());
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            unless ($@) {
+                                if (ref $body eq 'HASH') {
+                                    my $connector_definition = $scheduler->{core}->{connectors}->definition_by_name($connector_name);
+
+                                    if (defined $connector_definition) {
+                                        delete $body->{name};
+
+                                        if ($connector_definition->merge($body)) {
+                                            push @ok, 'Connector ' . $connector_name . ' changed';
+                                        } else {
+                                            push @ko, 'An error occurred while modifying connector ' . $connector_name;
+                                        }
+                                    } else {
+                                        push @ko, 'Connector ' . $connector_name . " don't exists";
+                                    }
+                                } else {
+                                    push @ko, 'Body need to be a hashtable';
+                                }
+                            } else {
+                                push @ko, $@;
+                            }
+
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } elsif ($http_method eq 'DEL') {
+                            my (@ok, @ko);
+
+                            if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
+                                eval {
+                                    $scheduler->{core}->{connectors}->delete_definition($connector_name);
                                 };
 
                                 unless ($@) {
-                                    if (ref $body eq 'HASH') {
-                                        my $connector_definition = $scheduler->{core}->{connectors}->definition_by_name($connector_name);
-
-                                        if (defined $connector_definition) {
-                                            delete $body->{name};
-
-                                            if ($connector_definition->merge($body)) {
-                                                push @ok, 'Connector ' . $connector_name . ' changed';
-                                            } else {
-                                                push @ko, 'An error occurred while modifying connector ' . $connector_name;
-                                            }
-                                        } else {
-                                            push @ko, 'Connector ' . $connector_name . " don't exists";
-                                        }
-                                    } else {
-                                        push @ko, 'Body need to be a hashtable';
-                                    }
+                                    push @ok, 'Connector ' . $connector_name . ' unregistered and deleted';
                                 } else {
                                     push @ko, $@;
                                 }
-
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
+                            } else {
+                                push @ko, 'Connector ' . $connector_name . " don't exists";
                             }
-                            when ('DEL') {
-                                my (@ok, @ko);
 
-                                if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
-                                    eval {
-                                        $scheduler->{core}->{connectors}->delete_definition($connector_name);
-                                    };
-
-                                    unless ($@) {
-                                        push @ok, 'Connector ' . $connector_name . ' unregistered and deleted';
-                                    } else {
-                                        push @ko, $@;
-                                    }
-                                } else {
-                                    push @ko, 'Connector ' . $connector_name . " don't exists";
-                                }
-
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
-                            }
-                            default {
-                                $controller->render(
-                                    json => $scheduler->{core}->{connectors}->definition_properties_by_name($connector_name) || {}
-                                );
-                            }
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } else {
+                            $controller->render(
+                                json => $scheduler->{core}->{connectors}->definition_properties_by_name($connector_name) || {}
+                            );
                         }
                     };
 
                     any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
                         my $controller = shift;
 
-                        given ($controller->req()->method()) {
-                            when ('POST') {
-                                my (@ok, @ko);
+                        my $http_method = $controller->req()->method();
 
-                                my $body = eval {
-                                    decode_json($controller->req()->body());
-                                };
+                        if ($http_method eq 'POST') {
+                            my (@ok, @ko);
 
-                                unless ($@) {
-                                    if (ref $body eq 'HASH') {
-                                        my $definition = eval {
-                                            $scheduler->{core}->{rabbitmq}->add_definition($body);
-                                        };
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
 
-                                        unless ($@) {
-                                            $scheduler->{core}->init_publisher($definition->{name})->register_publisher($definition->{name});
+                            unless ($@) {
+                                if (ref $body eq 'HASH') {
+                                    my $definition = eval {
+                                        $scheduler->{core}->{rabbitmq}->add_definition($body);
+                                    };
 
-                                            push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered';
+                                    unless ($@) {
+                                        $scheduler->{core}->init_publisher($definition->{name})->register_publisher($definition->{name});
 
-                                            $scheduler->{core}->connect_publisher($definition->{name}) if ($definition->{auto_connect});
-                                        } else {
-                                            push @ko, $@;
-                                        }
+                                        push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered';
+
+                                        $scheduler->{core}->connect_publisher($definition->{name}) if ($definition->{auto_connect});
                                     } else {
-                                        push @ko, 'Body need to be a hashtable';
+                                        push @ko, $@;
                                     }
                                 } else {
-                                    push @ko, $@;
+                                    push @ko, 'Body need to be a hashtable';
                                 }
+                            } else {
+                                push @ko, $@;
+                            }
 
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
-                            }
-                            default {
-                                $controller->render(
-                                    json => $scheduler->{core}->{rabbitmq}->name()
-                                );
-                            }
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } else {
+                            $controller->render(
+                                json => $scheduler->{core}->{rabbitmq}->name()
+                            );
                         }
                     };
 
                     any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
                         my $controller = shift;
 
+                        my $http_method = $controller->req()->method();
+
                         my $rabbitmq_name = $controller->param('rabbitmq');
 
-                        given ($controller->req()->method()) {
-                            when ('PUT') {
-                                my (@ok, @ko);
+                        if ($http_method eq 'PUT') {
+                            my (@ok, @ko);
 
-                                my $body = eval {
-                                    decode_json($controller->req()->body());
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            unless ($@) {
+                                if (ref $body eq 'HASH') {
+                                    my $publisher = $scheduler->{core}->publisher_by_definition_name($rabbitmq_name);
+
+                                    if (defined $publisher) {
+                                        if ($publisher->{definition}->merge($body)) {
+                                            push @ok, 'RabbitMQ ' . $publisher->{definition}->{name} . ' changed';
+                                        } else {
+                                            push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->{definition}->{name};
+                                        }
+                                    } else {
+                                        push @ko, 'RabbitMQ ' . $publisher->{definition}->{name} . " and his publisher don't exists";
+                                    }
+                                } else {
+                                    push @ko, 'Body need to be a hashtable';
+                                }
+                            } else {
+                                push @ko, $@;
+                            }
+
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } elsif ($http_method eq 'DEL') {
+                            my (@ok, @ko);
+
+                            if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
+                                push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
+
+                                eval {
+                                    $scheduler->{core}->delete_publisher_by_definition_name($rabbitmq_name);
                                 };
 
                                 unless ($@) {
-                                    if (ref $body eq 'HASH') {
-                                        my $publisher = $scheduler->{core}->publisher_by_definition_name($rabbitmq_name);
-
-                                        if (defined $publisher) {
-                                            if ($publisher->{definition}->merge($body)) {
-                                                push @ok, 'RabbitMQ ' . $publisher->{definition}->{name} . ' changed';
-                                            } else {
-                                                push @ko, 'An error occurred while modifying RabbitMQ ' . $publisher->{definition}->{name};
-                                            }
-                                        } else {
-                                            push @ko, 'RabbitMQ ' . $publisher->{definition}->{name} . " and his publisher don't exists";
-                                        }
-                                    } else {
-                                        push @ko, 'Body need to be a hashtable';
-                                    }
+                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher deleted';
                                 } else {
                                     push @ko, $@;
                                 }
-
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
+                            } else {
+                                push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists";
                             }
-                            when ('DEL') {
-                                my (@ok, @ko);
 
-                                if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
-                                    push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
-
-                                    eval {
-                                        $scheduler->{core}->delete_publisher_by_definition_name($rabbitmq_name);
-                                    };
-
-                                    unless ($@) {
-                                        push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher deleted';
-                                    } else {
-                                        push @ko, $@;
-                                    }
-                                } else {
-                                    push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists";
-                                }
-
-                                $controller->render(
-                                    json => ok_ko($logger, \@ok, \@ko)
-                                );
-                            }
-                            default {
-                                $controller->render(
-                                    json => $scheduler->{core}->{rabbitmq}->definition_properties_by_name($rabbitmq_name) || {}
-                                );
-                            }
+                            $controller->render(
+                                json => ok_ko($logger, \@ok, \@ko)
+                            );
+                        } else {
+                            $controller->render(
+                                json => $scheduler->{core}->{rabbitmq}->definition_properties_by_name($rabbitmq_name) || {}
+                            );
                         }
                     };
 
