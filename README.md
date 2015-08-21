@@ -151,19 +151,39 @@ The following endpoints are currently availables for informations and runtime mo
     }
 }
 ```
-  - /scheduler/api/cron/jobs
+  - /scheduler/api/jobs
 ```json
 {
-    "publishers" : [
-        "rabbitmq-1",
-        "rabbitmq-2"
-    ],
-    "connectors" : [
-        "glpi-1",
-        "collectd-1"
+    "types" : [
+        "connector",
+        "publisher",
+        "logger"
     ]
 }
-
+```
+  - /scheduler/api/jobs/(:job_type)
+```json
+[
+    "glpi-1"
+]
+```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)
+```json
+{
+    "enabled" : 1
+}
+```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)?action=disable
+```json
+{
+    "enabled" : 0
+}
+```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)?action=enable
+```json
+{
+    "enabled" : 1
+}
 ```
   - /scheduler/api/connectors
 ```json
