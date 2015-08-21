@@ -12,6 +12,12 @@ use warnings;
 
 use parent 'Navel::Base';
 
+use constant {
+    CONNECTOR_JOB_PREFIX => 'connector_',
+    PUBLISHER_JOB_PREFIX => 'publisher_',
+    LOGGER_JOB_PREFIX => 'logger_'
+};
+
 use Carp 'croak';
 
 use Scalar::Util::Numeric 'isint';
@@ -57,7 +63,7 @@ sub new {
 sub register_logger {
     my $self = shift;
 
-    my $job_name = 'logger_0';
+    my $job_name = LOGGER_JOB_PREFIX . '0';
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
 
@@ -80,7 +86,7 @@ sub register_connector {
 
     croak('undefined definition') unless (defined $connector);
 
-    my $job_name = 'connector_' . $connector->{name};
+    my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
     $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
@@ -294,7 +300,7 @@ sub register_publisher {
 
     croak('undefined definition') unless (defined $publisher);
 
-    my $job_name = 'publisher_' . $publisher->{definition}->{name};
+    my $job_name = PUBLISHER_JOB_PREFIX . $publisher->{definition}->{name};
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
 
@@ -409,8 +415,68 @@ sub disconnect_publishers {
     $self;
 }
 
+sub publisher_by_definition_name {
+    my ($self, $definition_name) = @_;
+
+    for (@{$self->{publishers}}) {
+        return $_ if ($_->{definition}->{name} eq $definition_name);
+    }
+
+    undef;
+}
+
+sub delete_publisher_by_definition_name {
+    my ($self, $definition_name) = @_;
+
+    croak('definition_name must be defined') unless (defined $definition_name);
+
+    my $definition_to_delete_index = 0;
+
+    my $finded;
+
+    $definition_to_delete_index++ until ($finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
+
+    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless ($finded);
+
+    eval {
+        $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
+    };
+
+    splice @{$self->{publishers}}, $definition_to_delete_index, 1;
+
+    $self->{rabbitmq}->delete_definition($definition_name);
+}
+
+sub job_types {
+    my $self = shift;
+
+    my %types;
+
+    for (values %{$self->{cron}->jobs()}) {
+        $types{$1} = undef if ($_->{name} =~ /^(.*)_/);
+    }
+
+    [keys %types];
+}
+
+sub job_names_by_type {
+    my ($self, $job_type) = @_;
+
+    croak('job_type must be defined') unless (defined $job_type);
+
+    my @jobs;
+
+    for (values %{$self->{cron}->jobs()}) {
+        push @jobs, $2 if ($_->{name} =~ /^($job_type)_(.*)/);
+    }
+
+    \@jobs;
+}
+
 sub unregister_job_by_name {
     my ($self, $job_name) = @_;
+
+    croak('job_name must be defined') unless (defined $job_name);
 
     my $jobs = $self->{cron}->jobs();
 
@@ -433,36 +499,6 @@ sub stop {
     $self->{cron}->stop();
 
     $self;
-}
-
-sub publisher_by_definition_name {
-    my ($self, $definition_name) = @_;
-
-    for (@{$self->{publishers}}) {
-        return $_ if ($_->{definition}->{name} eq $definition_name);
-    }
-
-    undef;
-}
-
-sub delete_publisher_by_definition_name {
-    my ($self, $definition_name) = @_;
-
-    my $definition_to_delete_index = 0;
-
-    my $finded;
-
-    $definition_to_delete_index++ until ($finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
-
-    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless ($finded);
-
-    eval {
-        $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
-    };
-
-    splice @{$self->{publishers}}, $definition_to_delete_index, 1;
-
-    $self->{rabbitmq}->delete_definition($definition_name);
 }
 
 # sub AUTOLOAD {}

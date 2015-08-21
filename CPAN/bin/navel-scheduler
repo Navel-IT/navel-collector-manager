@@ -234,20 +234,46 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api/cron/jobs' => sub {
-                        my %jobs = (
-                            publishers => [],
-                            connectors => []
-                        );
-
-                        for (values %{$scheduler->{core}->{cron}->jobs()}) {
-                            if ($_->{name} =~ /^(connector|publisher)_(.*)/) {
-                                push @{$jobs{$1 . 's'}}, $2;
+                    get '/scheduler/api/jobs' => sub {
+                        shift->render(
+                            json => {
+                                types => $scheduler->{core}->job_types()
                             }
+                        );
+                    };
+
+                    get '/scheduler/api/jobs/(:job_type)' => sub {
+                        my $controller = shift;
+
+                        $controller->render(
+                            json => $scheduler->{core}->job_names_by_type($controller->param('job_type'))
+                        );
+                    };
+
+                    get '/scheduler/api/jobs/(:job_type)/(:job_name)' => sub {
+                        my $controller = shift;
+
+                        my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
+
+                        if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
+                            given ($controller->req()->query_params()->param('action') || '') {
+                                when ('enable') {
+                                    $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
+                                }
+                                when ('disable') {
+                                    $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
+                                }
+                            }
+
+                            return $controller->render(
+                                json => {
+                                    enabled => $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}
+                                }
+                            );
                         }
 
-                        shift->render(
-                            json => \%jobs
+                        $controller->render(
+                            json => {}
                         );
                     };
 
@@ -484,10 +510,8 @@ if (defined $general_configuration_file_path) {
                         }
                     };
 
-                    get '/scheduler/api/publishers' => sub {
-                        shift->render(
-                            json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
-                        );
+                    get '/scheduler/api/publishers' => {
+                        json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
                     };
 
                     any [qw/GET PUT/] => '/scheduler/api/publishers/(:publisher)' => sub {

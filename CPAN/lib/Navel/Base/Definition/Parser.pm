@@ -103,6 +103,8 @@ sub set_maximum {
 sub definition_by_name {
     my ($self, $definition_name) = @_;
 
+    croak('definition_name must be defined') unless (defined $definition_name);
+
     for (@{$self->{definitions}}) {
         return $_ if ($_->{name} eq $definition_name);
     }
@@ -118,6 +120,8 @@ sub definition_properties_by_name {
 
 sub all_by_property_name {
     my ($self, $property_name) = @_;
+
+    croak('property_name must be defined') unless (defined $property_name);
 
     [
         map {
@@ -141,6 +145,8 @@ sub add_definition {
 
 sub delete_definition {
     my ($self, $definition_name, $do_before_slice) = @_;
+
+    croak('definition_name must be defined') unless (defined $definition_name);
 
     my $definition_to_delete_index = 0;
 
