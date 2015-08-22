@@ -186,12 +186,14 @@ for t_os in ${supported_os[@]} ; do
     fi
 done
 
-usage="Usage: ${0} -v <version> [-c]"
+usage="Usage: ${0} -v <version> [-b <directory of the binary program>]$ [-c (copy defaults configuration files)]"
 
-while getopts 'v:c' OPT 2>/dev/null ; do
+while getopts 'v:b:c' OPT 2>/dev/null ; do
     case ${OPT} in
         v)
             program_version=${OPTARG} ;;
+        b)
+            program_binary_directory=${OPTARG} ;;
         c)
             copy_configuration_file=1 ;;
         *)
@@ -303,9 +305,13 @@ if [[ -n ${os} ]] ; then
                                         from="${full_dirname}/${others_files_source_prefix}/${others_files_init_directory}/${program_name}"
                                         to="/${others_files_init_directory}/${program_name}"
 
+                                        default_program_binary_directory="/usr/local/bin"
+
+                                        [[ -z "${program_binary_directory}" ]] && program_binary_directory="${default_program_binary_directory}"
+
                                         f_do "Copying init script from ${from} to ${to}."
 
-                                        f_cp "${from}" "${to}"
+                                        f_cp "${from}" "${to}" && ${PERL} -p -i -e "s'${default_program_binary_directory}'${program_binary_directory}'g" "/${others_files_init_directory}/${program_name}"
 
                                         RETVAL=${?}
 
@@ -326,11 +332,11 @@ if [[ -n ${os} ]] ; then
                                                 if [[ ${RETVAL} -eq 0 ]] ; then
                                                     f_ok
 
-                                                    program_binaries_directory="/usr/local/bin/${program_name}"
+                                                    program_binary_path="${program_binary_directory}/${program_name}"
 
-                                                    f_do "Chowning directories and files (${program_binaries_directory}, ${program_home_directory}, ${others_files_configuration_directory}, ${program_run_directory} and ${program_log_directory}) to ${program_user}:${program_group}."
+                                                    f_do "Chowning directories and files (${program_binary_path}, ${program_home_directory}, ${others_files_configuration_directory}, ${program_run_directory} and ${program_log_directory}) to ${program_user}:${program_group}."
 
-                                                    f_chown -R "${program_user}:${program_group}" "${program_binaries_directory}" "${program_home_directory}" "${others_files_configuration_directory}" "${program_run_directory}" "${program_log_directory}"
+                                                    f_chown -R "${program_user}:${program_group}" "${program_binary_path}" "${program_home_directory}" "${others_files_configuration_directory}" "${program_run_directory}" "${program_log_directory}"
 
                                                     RETVAL=${?}
 
