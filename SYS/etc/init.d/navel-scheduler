@@ -18,9 +18,9 @@ prog='navel-scheduler'
 
 prog_full_path="/usr/local/bin/${prog}"
 
-prog_user='navel-scheduler'
+prog_user="${prog}"
 
-pidfile="/var/run/navel-scheduler/${prog}.pid"
+pidfile="/var/run/${prog}/${prog}.pid"
 sysconfig="/etc/sysconfig/${prog}"
 
 [[ -r "${sysconfig}" ]] && . "${sysconfig}"
