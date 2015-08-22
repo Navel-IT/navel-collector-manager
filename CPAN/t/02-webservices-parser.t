@@ -12,7 +12,7 @@ use Test::More tests => 2;
 use Test::Exception;
 
 BEGIN {
-    use_ok('Navel::Definition::WebService::Etc::Parser');
+    use_ok('Navel::Definition::WebService::Parser');
 }
 
 #-> main
@@ -20,7 +20,7 @@ BEGIN {
 my $web_services_definitions_path = 't/02-webservices.json';
 
 lives_ok {
-    Navel::Definition::WebService::Etc::Parser->new()->read($web_services_definitions_path)->make();
+    Navel::Definition::WebService::Parser->new()->read($web_services_definitions_path)->make();
 } 'making configuration from ' . $web_services_definitions_path;
 
 #-> END
