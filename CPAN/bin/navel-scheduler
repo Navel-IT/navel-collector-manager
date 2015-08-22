@@ -117,7 +117,7 @@ if (defined $general_configuration_file_path) {
     unless ($@) {
         unless ($disable_web_services) {
             my $web_services_listeners = eval {
-                Navel::Definition::WebService::Etc::Parser->new()->read($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file})->make();
+                Navel::Definition::WebService::Parser->new()->read($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file})->make();
             };
 
             unless ($@) {
