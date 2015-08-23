@@ -3,7 +3,7 @@
 
 #-> BEGIN
 
-#-> set vars
+#-> set (avoid changing these variables)
 
 program_name='navel-scheduler'
 
@@ -23,8 +23,14 @@ navel_base_git_repo=(
     'https://github.com/Navel-IT/navel-base.git'
 )
 
+usage="Usage: ${0} -n <branch of ${navel_base_git_repo}> -v <version> [-b <directory of the binary program>] [-c (copy defaults configuration files)]"
+
 version_regex='^[0-9]+\.[0-9]+$'
 navel_base_git_repo_branch_regex='^(master|devel)$'
+
+disable_install_step=()
+
+disable_install_step[7]=1
 
 #-> functions
 
@@ -288,8 +294,6 @@ for t_os in ${supported_os[@]} ; do
     fi
 done
 
-usage="Usage: ${0} -n <branch of ${navel_base_git_repo}> -v <version> [-b <directory of the binary program>]$ [-c (copy defaults configuration files)]"
-
 while getopts 'n:v:b:c' OPT 2>/dev/null ; do
     case ${OPT} in
         n)
@@ -299,7 +303,7 @@ while getopts 'n:v:b:c' OPT 2>/dev/null ; do
         b)
             program_binary_directory=${OPTARG} ;;
         c)
-            copy_configuration_file=1 ;;
+            unset disable_install_step[7] ;;
         *)
             f_die "${usage}" 1 ;;
     esac
@@ -316,14 +320,16 @@ if [[ -n ${os} ]] ; then
     step_number=1
 
     while [[ $(type -t "f_install_step_${step_number}") == 'function' ]] ; do
-        eval "f_install_step_${step_number}"
+        if [[ ! ${disable_install_step[${step_number}]} ]] ; then
+            eval "f_install_step_${step_number}"
 
-        RETVAL=${?}
+            RETVAL=${?}
 
-        if [[ ${RETVAL} -eq 0 ]] ; then
-            f_ok
-        else
-            f_die "The installation of ${program_name} cannot continue." ${RETVAL}
+            if [[ ${RETVAL} -eq 0 ]] ; then
+                f_ok
+            else
+                f_die "The installation of ${program_name} cannot continue." ${RETVAL}
+            fi
         fi
 
         let step_number++
