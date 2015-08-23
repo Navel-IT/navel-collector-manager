@@ -193,9 +193,9 @@ done
 
 usage="Usage: ${0} -n <branch of ${navel_base_git_repo}> -v <version> [-b <directory of the binary program>]$ [-c (copy defaults configuration files)]"
 
-while getopts 'v:b:c' OPT 2>/dev/null ; do
+while getopts 'n:v:b:c' OPT 2>/dev/null ; do
     case ${OPT} in
-        g)
+        n)
             git_branch=${OPTARG} ;;
         v)
             program_version=${OPTARG} ;;
