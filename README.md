@@ -11,17 +11,17 @@ Build and install
 Assuming you start the installation from scratch with `git`, `bash` and `perl` (>= 5.10.1) with core modules installed ...
 
 ```shell
-git clone https://github.com/Navel-IT/navel-scheduler.git
+git clone -b 'BRANCH' https://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash install.sh -v 'VERSION' -c
+bash install.sh -n 'BRANCH' -v 'VERSION' -c
 ```
 
 If you use Perlbrew :
 
 ```shell
-bash install.sh -v 'VERSION' -c -b 'NAVEL-SCHEDULER_BINARY' # NAVEL-SCHEDULER_BINARY (/root/perl5/perlbrew/perls/perl-5.22.0/bin for exemple) is in one of paths of the variable $PERLBREW_PATH
+bash install.sh -n 'BRANCH' -v 'VERSION' -c -b 'NAVEL-SCHEDULER_BINARY' # NAVEL-SCHEDULER_BINARY (/root/perl5/perlbrew/perls/perl-5.22.0/bin for exemple) is in one of paths of the variable $PERLBREW_PATH
 ```
 
 **Note** : if it is necessary, fix the execute permissions on the path of NAVEL-SCHEDULER_BINARY.

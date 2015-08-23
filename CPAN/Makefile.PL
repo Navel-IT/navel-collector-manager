@@ -17,7 +17,7 @@ my $min_perl_version = '5.10.1';
 WriteMakefile(
     NAME => 'Navel::Scheduler',
     VERSION_FROM => 'lib/Navel/Scheduler.pm',
-    ABSTRACT => 'Navel scheduler',
+    ABSTRACT => 'navel-scheduler',
     AUTHOR => 'Yoann Le Garff, Nicolas Boquet and Yann Le Bras',
     LICENSE => 'GNU GPL v3',
     META_MERGE => {
@@ -26,7 +26,7 @@ WriteMakefile(
         },
         resources => {
             license => 'http://www.gnu.org/copyleft/gpl.html',
-            repository => 'http://github.com/navel-it/navel-scheduler'
+            repository => 'http://github.com/Navel-IT/navel-scheduler'
         },
         no_index => {
             directory => ['t']
@@ -34,32 +34,22 @@ WriteMakefile(
     },
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
-        'Scalar::Util::Numeric' => 0,
-        'File::Slurp' => 0,
-        'IO::AIO' => 0,
-        'JSON' => 0,
-        'Sereal' => 0,
-        'IPC::Cmd' => 0,
-        'Carp' => 0,
-        'EV' => 0,
-        'AnyEvent::DateTime::Cron' => 0,
-        'AnyEvent::RabbitMQ' => 1.19,
-        'AnyEvent::AIO' => 0,
-        'AnyEvent::Fork::RPC' => 0,
+        'Navel' => 0,
         'Exporter::Easy' => 0,
-        'Storable' => 0,
+        'Carp' => 0,
+        'Scalar::Util::Numeric' => 0,
+        'AnyEvent::DateTime::Cron' => 0,
+        'AnyEvent::AIO' => 0,
+        'IO::AIO' => 0,
         'Data::Validate::Struct' => 0,
-        'Scalar::Util' => 0,
-        'String::Util' => 0,
-        'DateTime::Event::Cron::Quartz' => 0,
+        'Sereal' => 0,
+        'AnyEvent::Fork' => 0,
+        'AnyEvent::Fork::RPC' => 0,
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
-        'Cwd' => 0,
         'Proc::Daemon' => 0,
-        'Mojolicious' => 0,
-        'Time::HiRes' => 0,
-        'Compress::Raw::Zlib' => 0,
-        'IO::Compress::Gzip' => 0
+        'Cwd' => 0,
+        'Mojolicious::Lite' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,
