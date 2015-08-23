@@ -179,6 +179,103 @@ f_chown() {
     fi
 }
 
+#-> installation steps
+
+f_install_step_1() {
+    f_do "Installing packages ${pkg_to_install_via_pkg_manager[@]} using the package manager."
+
+    f_install_pkg ${pkg_to_install_via_pkg_manager[@]}
+}
+
+f_install_step_2() {
+    f_do "Installing ${cpanminus_module} via ${CURL}."
+
+    ${CURL} -L "${cpanminus_url}" | ${PERL} - "${cpanminus_module}"
+}
+
+f_install_step_3() {
+    cpan_archive_name="${program_name}-${program_version}.tar.gz"
+
+    f_tar cvzf "${dirname}/${cpan_archive_name}" "${dirname}/CPAN"
+}
+
+f_install_step_4() {
+    trap "f_rm '${full_dirname}/${cpan_archive_name}'" EXIT INT TERM
+
+    f_do "Installing ${navel_base_git_repo}@${git_branch} and CPAN archive."
+
+    ${CPANM} "${navel_base_git_repo}@${git_branch}" "${full_dirname}/${cpan_archive_name}"
+}
+
+f_install_step_5() {
+    f_do "Creating group ${program_group}."
+
+    f_groupadd "${program_group}"
+}
+
+f_install_step_6() {
+    f_do "Creating user ${program_user} with home directory ${program_home_directory}."
+
+    f_useradd "${program_user}" "${program_group}" "${program_home_directory}"
+}
+
+f_install_step_7() {
+    local from="${full_dirname}/${others_files_source_prefix}/${others_files_configuration_directory}/*" to="/${others_files_configuration_directory}"
+
+    f_do "Copying configuration files from ${from} to ${to}."
+
+    f_cp "${from}" "${to}"
+}
+
+f_install_step_8() {
+    program_run_directory="/var/run/${program_name}/"
+    program_log_directory="/var/log/${program_name}/"
+
+    f_do "Creating directories ${program_run_directory} and ${program_log_directory}."
+
+    f_mkdir "${program_run_directory}" "${program_log_directory}"
+}
+
+f_install_step_9() {
+    local from="${full_dirname}/${others_files_source_prefix}/${others_files_sysconfig_directory}/${program_name}" to="/${others_files_sysconfig_directory}/${program_name}"
+
+    f_do "Copying sysconfig script from ${from} to ${to}."
+
+    f_cp "${from}" "${to}"
+}
+
+f_install_step_10() {
+    local from="${full_dirname}/${others_files_source_prefix}/${others_files_init_directory}/${program_name}" default_program_binary_directory="/usr/local/bin"
+
+    to="/${others_files_init_directory}/${program_name}"
+
+    [[ -z "${program_binary_directory}" ]] && program_binary_directory="${default_program_binary_directory}"
+
+    f_do "Copying init script from ${from} to ${to}."
+
+    f_cp "${from}" "${to}" && ${PERL} -p -i -e "s'${default_program_binary_directory}'${program_binary_directory}'g" "/${others_files_init_directory}/${program_name}"
+}
+
+f_install_step_11() {
+    f_do "Chmoding init script for execution."
+
+    f_chmod +x "${to}"
+}
+
+f_install_step_12() {
+    f_do "Configuring service ${program_name} to start at boot."
+
+    f_configure_service_to_start_at_boot "${program_name}"
+}
+
+f_install_step_13() {
+    local program_binary_path="${program_binary_directory}/${program_name}"
+
+    f_do "Chowning directories and files (${program_binary_path}, ${program_home_directory}, ${others_files_configuration_directory}, ${program_run_directory} and ${program_log_directory}) to ${program_user}:${program_group}."
+
+    f_chown -R "${program_user}:${program_group}" "${program_binary_path}" "${program_home_directory}" "${others_files_configuration_directory}" "${program_run_directory}" "${program_log_directory}"
+}
+
 #-> main
 
 for t_os in ${supported_os[@]} ; do
@@ -216,159 +313,25 @@ done
 if [[ -n ${os} ]] ; then
     f_do "Installing ${program_name}."
 
-    f_do "Installing packages ${pkg_to_install_via_pkg_manager[@]} using the package manager."
+    step_number=1
 
-    f_install_pkg ${pkg_to_install_via_pkg_manager[@]}
-
-    RETVAL=${?}
-
-    if [[ ${RETVAL} -eq 0 ]] ; then
-        f_ok
-
-        f_do "Installing ${cpanminus_module} via ${CURL}."
-
-        ${CURL} -L "${cpanminus_url}" | ${PERL} - "${cpanminus_module}"
+    while [[ $(type -t "f_install_step_${step_number}") == 'function' ]] ; do
+        eval "f_install_step_${step_number}"
 
         RETVAL=${?}
 
         if [[ ${RETVAL} -eq 0 ]] ; then
             f_ok
-
-            f_do "Building CPAN archive version ${program_version}."
-
-            cpan_archive_name="${program_name}-${program_version}.tar.gz"
-
-            f_tar cvzf "${dirname}/${cpan_archive_name}" "${dirname}/CPAN"
-
-            RETVAL=${?}
-
-            if [[ ${RETVAL} -eq 0 ]] ; then
-                f_ok
-
-                trap "f_rm '${full_dirname}/${cpan_archive_name}'" EXIT INT TERM
-
-                f_do "Installing ${navel_base_git_repo}@${git_branch} and CPAN archive."
-
-                ${CPANM} "${navel_base_git_repo}@${git_branch}" "${full_dirname}/${cpan_archive_name}"
-
-                RETVAL=${?}
-
-                if [[ ${RETVAL} -eq 0 ]] ; then
-                    f_ok
-
-                    f_do "Creating group ${program_group}."
-
-                    f_groupadd "${program_group}"
-
-                    RETVAL=${?}
-
-                    if [[ ${RETVAL} -eq 0 ]] ; then
-                        f_ok
-
-                        f_do "Creating user ${program_user} with home directory ${program_home_directory}."
-
-                        f_useradd "${program_user}" "${program_group}" "${program_home_directory}"
-
-                        RETVAL=${?}
-
-                        if [[ ${RETVAL} -eq 0 ]] ; then
-                            f_ok
-
-                            if [[ ${copy_configuration_file} ]] ; then
-                                from="${full_dirname}/${others_files_source_prefix}/${others_files_configuration_directory}/*"
-                                to="/${others_files_configuration_directory}"
-
-                                f_do "Copying configuration files from ${from} to ${to}."
-
-                                f_cp "${from}" "${to}"
-
-                                RETVAL=${?}
-                            fi
-
-                            if [[ ${RETVAL} -eq 0 ]] ; then
-                                f_ok
-
-                                program_run_directory="/var/run/${program_name}/"
-                                program_log_directory="/var/log/${program_name}/"
-
-                                f_do "Creating directories ${program_run_directory} and ${program_log_directory}."
-
-                                f_mkdir "${program_run_directory}" "${program_log_directory}"
-
-                                RETVAL=${?}
-
-                                if [[ ${RETVAL} -eq 0 ]] ; then
-                                    f_ok
-
-                                    from="${full_dirname}/${others_files_source_prefix}/${others_files_sysconfig_directory}/${program_name}"
-                                    to="/${others_files_sysconfig_directory}/${program_name}"
-
-                                    f_do "Copying sysconfig script from ${from} to ${to}."
-
-                                    f_cp "${from}" "${to}"
-
-                                    RETVAL=${?}
-
-                                    if [[ ${RETVAL} -eq 0 ]] ; then
-                                        f_ok
-
-                                        from="${full_dirname}/${others_files_source_prefix}/${others_files_init_directory}/${program_name}"
-                                        to="/${others_files_init_directory}/${program_name}"
-
-                                        default_program_binary_directory="/usr/local/bin"
-
-                                        [[ -z "${program_binary_directory}" ]] && program_binary_directory="${default_program_binary_directory}"
-
-                                        f_do "Copying init script from ${from} to ${to}."
-
-                                        f_cp "${from}" "${to}" && ${PERL} -p -i -e "s'${default_program_binary_directory}'${program_binary_directory}'g" "/${others_files_init_directory}/${program_name}"
-
-                                        RETVAL=${?}
-
-                                        if [[ ${RETVAL} -eq 0 ]] ; then
-                                            f_ok
-
-                                            f_do "Chmoding init script for execution."
-
-                                            f_chmod +x "${to}"
-
-                                            if [[ ${RETVAL} -eq 0 ]] ; then
-                                                f_ok
-
-                                                f_do "Configuring service ${program_name} to start at boot."
-
-                                                f_configure_service_to_start_at_boot "${program_name}"
-
-                                                if [[ ${RETVAL} -eq 0 ]] ; then
-                                                    f_ok
-
-                                                    program_binary_path="${program_binary_directory}/${program_name}"
-
-                                                    f_do "Chowning directories and files (${program_binary_path}, ${program_home_directory}, ${others_files_configuration_directory}, ${program_run_directory} and ${program_log_directory}) to ${program_user}:${program_group}."
-
-                                                    f_chown -R "${program_user}:${program_group}" "${program_binary_path}" "${program_home_directory}" "${others_files_configuration_directory}" "${program_run_directory}" "${program_log_directory}"
-
-                                                    RETVAL=${?}
-
-                                                    if [[ ${RETVAL} -eq 0 ]] ; then
-                                                        f_ok "The installation of ${program_name} is done."
-
-                                                        exit ${RETVAL}
-                                                    fi
-                                                fi
-                                            fi
-                                        fi
-                                    fi
-                                fi
-                            fi
-                        fi
-                    fi
-                fi
-            fi
+        else
+            f_die "The installation of ${program_name} cannot continue." ${RETVAL}
         fi
-    fi
 
-    f_die "The installation of ${program_name} cannot continue." ${RETVAL}
+        let step_number++
+    done
+
+    f_ok "The installation of ${program_name} is done."
+
+    exit ${RETVAL}
 else
     f_die 'This OS is not supported.' 1
 fi
