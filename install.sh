@@ -19,12 +19,12 @@ others_files_source_prefix='SYS'
 cpanminus_url='http://cpanmin.us'
 cpanminus_module='App::cpanminus'
 
-navel_git_repo=(
-    'https://github.com/Navel-IT/navel.git'
+navel_base_git_repo=(
+    'https://github.com/Navel-IT/navel-base.git'
 )
 
 version_regex='^[0-9]+\.[0-9]+$'
-navel_git_repo_branch_regex='^(master|devel)$'
+navel_base_git_repo_branch_regex='^(master|devel)$'
 
 #-> functions
 
@@ -191,7 +191,7 @@ for t_os in ${supported_os[@]} ; do
     fi
 done
 
-usage="Usage: ${0} -n <branch of ${navel_git_repo}> -v <version> [-b <directory of the binary program>]$ [-c (copy defaults configuration files)]"
+usage="Usage: ${0} -n <branch of ${navel_base_git_repo}> -v <version> [-b <directory of the binary program>]$ [-c (copy defaults configuration files)]"
 
 while getopts 'v:b:c' OPT 2>/dev/null ; do
     case ${OPT} in
@@ -210,7 +210,7 @@ done
 
 (
     f_match "${program_version}" "${version_regex}" &&
-    f_match "${git_branch}" "${navel_git_repo_branch_regex}"
+    f_match "${git_branch}" "${navel_base_git_repo_branch_regex}"
 ) || f_die "${usage}" 1
 
 if [[ -n ${os} ]] ; then
@@ -247,9 +247,9 @@ if [[ -n ${os} ]] ; then
 
                 trap "f_rm '${full_dirname}/${cpan_archive_name}'" EXIT INT TERM
 
-                f_do "Installing ${navel_git_repo}@${git_branch} and CPAN archive."
+                f_do "Installing ${navel_base_git_repo}@${git_branch} and CPAN archive."
 
-                ${CPANM} "${navel_git_repo}@${git_branch}" "${full_dirname}/${cpan_archive_name}"
+                ${CPANM} "${navel_base_git_repo}@${git_branch}" "${full_dirname}/${cpan_archive_name}"
 
                 RETVAL=${?}
 

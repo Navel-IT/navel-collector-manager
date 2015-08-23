@@ -34,7 +34,7 @@ WriteMakefile(
     },
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
-        'Navel' => 0,
+        'Navel::Base' => 0,
         'Exporter::Easy' => 0,
         'Carp' => 0,
         'Scalar::Util::Numeric' => 0,
