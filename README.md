@@ -413,7 +413,7 @@ sub connector {
 }
 ```
 
-**Note** : `STDOUT` and `STDIN` are closed.
+**Note** : `STDOUT` and `STDERR` are closed.
 
 **Note** : the `__connector` function is reserved.
 
