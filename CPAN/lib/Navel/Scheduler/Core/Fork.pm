@@ -24,7 +24,7 @@ use Sereal;
         @{Sereal::Decoder->new()->decode(shift)};
     }
 );
-    '
+'
 };
 
 use Carp 'croak';
@@ -39,24 +39,41 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $core, $connector, $connector_content) = @_;
+    my ($class, $core, $connector_execution_timeout, $connector, $connector_content) = @_;
+
+    $connector_execution_timeout = $connector_execution_timeout || 0;
 
     croak('one or more objects are invalids.') unless (blessed($core) eq 'Navel::Scheduler::Core' && blessed($connector) eq 'Navel::Definition::Connector');
 
     my $self = bless {
         core => $core,
+        connector_execution_timeout => $connector_execution_timeout,
         connector => $connector,
         connector_content => $connector_content,
         fork => undef,
         rpc => undef
     }, ref $class || $class;
 
-    $self->{fork} = AnyEvent::Fork->new()->eval('
+    my $connector_init_content = '
 BEGIN {
     close STDOUT;
     close STDERR;
 }
-    ' . $self->{connector_content} . '
+';
+
+    if ($self->{connector_execution_timeout}) {
+        $connector_init_content .= '
+$SIG{ALRM} = sub {
+    AnyEvent::Fork::RPC::event("connector : execution timeout after ' . $self->{connector_execution_timeout} . ' second' . ($self->{connector_execution_timeout} > 1 ? 's' : '') . '.");
+
+    die;
+};
+
+alarm ' . $self->{connector_execution_timeout} . ';
+';
+    }
+
+    $self->{fork} = AnyEvent::Fork->new()->eval($connector_init_content . $self->{connector_content} . '
 sub __connector {
     connector(@_);
 }');

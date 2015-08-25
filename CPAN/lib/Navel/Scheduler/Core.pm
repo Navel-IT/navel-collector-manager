@@ -20,8 +20,6 @@ use constant {
 
 use Carp 'croak';
 
-use Scalar::Util::Numeric 'isint';
-
 use AnyEvent::DateTime::Cron;
 use AnyEvent::AIO;
 
@@ -37,11 +35,12 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connectors, $rabbitmq, $logger, $connectors_maximum_simultaneous_exec) = @_;
+    my ($class, $configuration, $connectors, $rabbitmq, $logger) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger' && isint($connectors_maximum_simultaneous_exec) && $connectors_maximum_simultaneous_exec >= 0);
+    croak('one or more objects are invalids.') unless (blessed($configuration) eq 'Navel::Scheduler::Parser' && blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger');
 
     bless {
+        configuration => $configuration,
         connectors => $connectors,
         rabbitmq => $rabbitmq,
         publishers => [],
@@ -53,7 +52,6 @@ sub new {
             enabled => {},
             connectors => {
                 locks => {},
-                maximum_simultaneous_exec => $connectors_maximum_simultaneous_exec,
                 running => 0
             }
         }
@@ -98,7 +96,7 @@ sub register_connector {
         sub {
             local ($@, $!);
 
-            if ( ! $self->{jobs}->{connectors}->{maximum_simultaneous_exec} || $self->{jobs}->{connectors}->{maximum_simultaneous_exec} > $self->{jobs}->{connectors}->{running}) {
+            if ( ! $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} || $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} > $self->{jobs}->{connectors}->{running}) {
                 if ($self->{jobs}->{enabled}->{$job_name}) {
                     unless ($self->{jobs}->{connectors}->{locks}->{$connector->{name}}) {
                         $self->{jobs}->{connectors}->{running}++;
@@ -121,6 +119,7 @@ sub register_connector {
                                             if ($connector->is_type_code()) {
                                                 Navel::Scheduler::Core::Fork->new(
                                                     $self,
+                                                    $self->{configuration}->{definition}->{connectors}->{execution_timeout},
                                                     $connector,
                                                     $connector_content
                                                 )->when_done(
@@ -165,7 +164,7 @@ sub register_connector {
                     $self->{logger}->push_in_queue('Job ' . $job_name . ' is disabled.', 'debug');
                 }
             } else {
-                $self->{logger}->push_in_queue('Too much connectors are running (maximum of ' . $self->{jobs}->{connectors}->{maximum_simultaneous_exec} . ').', 'debug');
+                $self->{logger}->push_in_queue('Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').', 'debug');
             }
         }
     );

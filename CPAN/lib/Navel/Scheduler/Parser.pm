@@ -50,7 +50,8 @@ sub scheduler_definition_validator($) {
                 definitions_from_file => 'text',
                 connectors_exec_directory => 'text',
                 maximum => 'general_positive_integer',
-                maximum_simultaneous_exec => 'general_positive_integer'
+                maximum_simultaneous_exec => 'general_positive_integer',
+                execution_timeout => 'general_positive_integer'
             },
             rabbitmq => {
                 definitions_from_file => 'text',

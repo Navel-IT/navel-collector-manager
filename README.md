@@ -37,7 +37,8 @@ Prepare configuration
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
         "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
         "maximum" : 0,
-        "maximum_simultaneous_exec" : 0
+        "maximum_simultaneous_exec" : 0,
+        "execution_timeout" : 0
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json",
@@ -143,7 +144,9 @@ The following endpoints are currently availables for informations and runtime mo
     "connectors" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
         "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
-        "maximum_simultaneous_exec" : 0
+        "maximum" : 0,
+        "maximum_simultaneous_exec" : 0,
+        "execution_timeout" : 0
     },
     "rabbitmq" : {
         "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"

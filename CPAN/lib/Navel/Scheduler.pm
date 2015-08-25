@@ -58,10 +58,10 @@ sub run {
     my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new($self->{configuration}->{definition}->{rabbitmq}->{maximum})->read($self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file})->make();
 
     $self->{core} = Navel::Scheduler::Core->new(
+        $self->{configuration},
         $connectors,
         $rabbitmq,
-        $logger,
-        $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec}
+        $logger
     );
 
     my $run = $self->{core}->register_logger()->register_connectors()->init_publishers();
