@@ -89,7 +89,7 @@ sub register_connector {
     my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
-    $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
+    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
 
     $self->{cron}->add(
         $connector->{scheduling},
@@ -100,16 +100,14 @@ sub register_connector {
 
             if ( ! $self->{jobs}->{connectors}->{maximum_simultaneous_exec} || $self->{jobs}->{connectors}->{maximum_simultaneous_exec} > $self->{jobs}->{connectors}->{running}) {
                 if ($self->{jobs}->{enabled}->{$job_name}) {
-                    unless ($self->{jobs}->{connectors}->{locks}->{$job_name}) {
+                    unless ($self->{jobs}->{connectors}->{locks}->{$connector->{name}}) {
                         $self->{jobs}->{connectors}->{running}++;
 
-                        $self->{jobs}->{connectors}->{locks}->{$job_name} = $connector->{singleton};
+                        $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = $connector->{singleton};
 
                         aio_open($connector->exec_file_path(), IO::AIO::O_RDONLY, 0,
                             sub {
                                 my $fh = shift;
-
-                                my $get_and_push_generic_message = 'Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.';
 
                                 if ($fh) {
                                     my $connector_content = '';
@@ -122,59 +120,41 @@ sub register_connector {
 
                                             if ($connector->is_type_code()) {
                                                 Navel::Scheduler::Core::Fork->new(
+                                                    $self,
                                                     $connector,
-                                                    $connector_content,
-                                                    $self->{publishers},
-                                                    $self->{logger}
+                                                    $connector_content
                                                 )->when_done(
                                                     sub {
-                                                        my $datas = shift;
-
-                                                        $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
-
-                                                        $_->push_in_queue(
+                                                        $self->a_connector_stop(
+                                                            $connector,
                                                             {
                                                                 connector => $connector,
-                                                                datas => $datas
+                                                                datas => shift
                                                             }
-                                                        ) for (@{$self->{publishers}});
-
-                                                        $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
-
-                                                        $self->{jobs}->{connectors}->{running}--;
+                                                        );
                                                     }
                                                 );
                                             } else {
-                                                $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
-
-                                                $_->push_in_queue(
+                                                $self->a_connector_stop(
+                                                    $connector,
                                                     {
                                                         connector => $connector,
                                                         datas => $connector_content
                                                     }
-                                                ) for (@{$self->{publishers}});
-
-                                                $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
-
-                                                $self->{jobs}->{connectors}->{running}--;
+                                                );
                                             }
                                         }
                                     );
                                 } else {
                                     $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
 
-                                    $self->{logger}->push_in_queue($get_and_push_generic_message, 'info');
-
-                                    $_->push_in_queue(
+                                    $self->a_connector_stop(
+                                        $connector,
                                         {
                                             connector => $connector
                                         },
                                         'set_ko_no_source'
-                                    ) for (@{$self->{publishers}});
-
-                                    $self->{jobs}->{connectors}->{locks}->{$job_name} = 0;
-
-                                    $self->{jobs}->{connectors}->{running}--;
+                                    );
                                 }
                             }
                         );
@@ -485,6 +465,25 @@ sub unregister_job_by_name {
     }
 }
 
+sub a_connector_stop {
+    my ($self, $connector, $to_push_in_queue, $push_in_queue_status_method) = @_;
+
+    croak('connector definition is invalid') unless (blessed($connector) eq 'Navel::Definition::Connector');
+
+    $self->{logger}->push_in_queue('Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.', 'info');
+
+    $_->push_in_queue(
+        $to_push_in_queue,
+        $push_in_queue_status_method
+    ) for (@{$self->{publishers}});
+
+    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
+
+    $self->{jobs}->{connectors}->{running}--;
+
+    1;
+}
+
 sub start {
     my $self = shift;
 
@@ -526,3 +525,4 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
+
