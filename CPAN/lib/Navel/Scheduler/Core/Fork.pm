@@ -51,13 +51,12 @@ sub new {
         rpc => undef
     }, ref $class || $class;
 
-    $self->{fork} = AnyEvent::Fork->new()->require(
-        'strict',
-        'warnings'
-    )->eval(
+    $self->{fork} = AnyEvent::Fork->new()->eval(
         '
-close STDOUT;
-close STDERR;
+BEGIN {
+    close STDOUT;
+    close STDERR;
+}
     ' . $self->{connector_content} . '
 sub __connector {
     connector(@_);
