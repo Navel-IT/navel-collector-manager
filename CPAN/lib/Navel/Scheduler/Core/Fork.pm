@@ -51,8 +51,7 @@ sub new {
         rpc => undef
     }, ref $class || $class;
 
-    $self->{fork} = AnyEvent::Fork->new()->eval(
-        '
+    $self->{fork} = AnyEvent::Fork->new()->eval('
 BEGIN {
     close STDOUT;
     close STDERR;
@@ -60,20 +59,12 @@ BEGIN {
     ' . $self->{connector_content} . '
 sub __connector {
     connector(@_);
-}
-'
-    );
+}');
 
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
         '__connector',
         on_event => sub {
-            my $event_type = shift;
-
-            if ($event_type eq 'ae_log') {
-                my ($severity, $message) = @_;
-
-                $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
-            }
+            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . shift() . '.', 'notice');
         },
         on_error => sub {
             $self->{core}->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
