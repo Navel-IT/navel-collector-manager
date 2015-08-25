@@ -399,9 +399,8 @@ Connectors are plain JSON files or Perl scripts which must contain a method name
 An exemple of Perl connector :
 
 ```perl
-# pragmas strict and warnings are automatically loaded
-
-#-> connector callback
+use strict;
+use warnings;
 
 sub connector {
     my ($connector_properties, $input) = @_;
@@ -413,3 +412,7 @@ sub connector {
     \@datas;
 }
 ```
+
+**Note** : `STDOUT` and `STDIN` are closed.
+**Note** : the `__connector` function is reserved.
+**Note** : the error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.
