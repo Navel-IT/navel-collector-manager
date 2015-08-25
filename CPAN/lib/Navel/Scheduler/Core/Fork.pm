@@ -39,19 +39,14 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $connector, $perl_code_string, $publishers, $logger) = @_;
+    my ($class, $core, $connector, $connector_content) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($connector) eq 'Navel::Definition::Connector' && blessed($logger) eq 'Navel::Logger' && ref $publishers eq 'ARRAY');
-
-    for (@{$publishers}) {
-        croak('one or more publisher objects are invalids.') unless (blessed($_) eq 'Navel::RabbitMQ::Publisher');
-    }
+    croak('one or more objects are invalids.') unless (blessed($core) eq 'Navel::Scheduler::Core' && blessed($connector) eq 'Navel::Definition::Connector');
 
     my $self = bless {
+        core => $core,
         connector => $connector,
-        perl_code_string => $perl_code_string,
-        logger => $logger,
-        publishers => $publishers,
+        connector_content => $connector_content,
         fork => undef,
         rpc => undef
     }, ref $class || $class;
@@ -60,32 +55,40 @@ sub new {
         'strict',
         'warnings'
     )->eval(
-        $self->{perl_code_string}
+        '
+close STDOUT;
+close STDERR;
+    ' . $self->{connector_content} . '
+sub __connector {
+    connector(@_);
+}
+'
     );
 
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
-        'connector',
+        '__connector',
         on_event => sub {
             my $event_type = shift;
 
             if ($event_type eq 'ae_log') {
                 my ($severity, $message) = @_;
 
-                $self->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
+                $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . $message . '.', 'notice');
             }
         },
         on_error => sub {
-            $self->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
+            $self->{core}->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
 
-            $_->push_in_queue(
+            $self->{core}->a_connector_stop(
+                $self->{connector},
                 {
-                    connector => $connector
+                    connector => $self->{connector}
                 },
                 'set_ko_exception'
-            ) for (@{$self->{publishers}});
+            );
         },
         on_destroy => sub {
-            $self->{logger}->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
+            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
         },
         serialiser => SEREAL_SERIALISER
     );
@@ -103,7 +106,7 @@ sub when_done {
             $callback
         );
 
-        $self->{logger}->push_in_queue('Spawned a new process.', 'debug');
+        $self->{core}->{logger}->push_in_queue('Spawned a new process.', 'debug');
 
         undef $self->{rpc};
     }
@@ -136,3 +139,4 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
+
