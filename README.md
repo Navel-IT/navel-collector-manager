@@ -414,5 +414,7 @@ sub connector {
 ```
 
 **Note** : `STDOUT` and `STDIN` are closed.
+
 **Note** : the `__connector` function is reserved.
+
 **Note** : the error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.
