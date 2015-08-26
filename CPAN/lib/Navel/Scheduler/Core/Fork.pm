@@ -64,9 +64,9 @@ BEGIN {
     if ($self->{connector_execution_timeout}) {
         $connector_init_content .= '
 $SIG{ALRM} = sub {
-    AnyEvent::Fork::RPC::event("connector : execution timeout after ' . $self->{connector_execution_timeout} . ' second' . ($self->{connector_execution_timeout} > 1 ? 's' : '') . '.");
+    AnyEvent::Fork::RPC::event("execution timeout after ' . $self->{connector_execution_timeout} . ' second' . ($self->{connector_execution_timeout} > 1 ? 's' : '') . '");
 
-    die;
+    exit;
 };
 
 alarm ' . $self->{connector_execution_timeout} . ';
@@ -81,7 +81,7 @@ sub __connector {
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
         '__connector',
         on_event => sub {
-            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message : ' . shift() . '.', 'notice');
+            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ' : ' . shift() . '.', 'notice');
         },
         on_error => sub {
             $self->{core}->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
