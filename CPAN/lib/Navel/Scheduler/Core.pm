@@ -35,16 +35,14 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $configuration, $connectors, $rabbitmq, $logger) = @_;
-
-    croak('one or more objects are invalids.') unless blessed($configuration) eq 'Navel::Scheduler::Parser' && blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger';
+    my ($class, %options) = @_;
 
     bless {
-        configuration => $configuration,
-        connectors => $connectors,
-        rabbitmq => $rabbitmq,
+        configuration => $options{configuration},
+        connectors => $options{connectors},
+        rabbitmq => $options{rabbitmq},
         publishers => [],
-        logger => $logger,
+        logger => $options{logger},
         cron => AnyEvent::DateTime::Cron->new(
             quartz => 1
         ),
@@ -58,7 +56,7 @@ sub new {
     }, ref $class || $class;
 }
 
-sub register_logger {
+sub register_the_logger {
     my $self = shift;
 
     my $job_name = LOGGER_JOB_PREFIX . '0';
@@ -70,19 +68,19 @@ sub register_logger {
         name => $job_name,
         single => 1,
         sub {
-            $self->{logger}->flush_queue(1) if $self->{jobs}->{enabled}->{$job_name};
+            $self->{logger}->flush_queue(
+                clear_queue => 1
+            ) if $self->{jobs}->{enabled}->{$job_name};
         }
     );
 
     $self;
 }
 
-sub register_connector {
+sub register_connector_by_name {
     my $self = shift;
 
     my $connector = $self->{connectors}->definition_by_name(shift);
-
-    croak('undefined definition') unless defined $connector;
 
     my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
 
@@ -110,23 +108,29 @@ sub register_connector {
                                 if ($fh) {
                                     my $connector_content = '';
 
-                                    $self->{logger}->good('Connector ' . $connector->{name} . ' : successfuly opened file ' . $connector->exec_file_path() . '.', 'debug');
+                                    $self->{logger}->good(
+                                        message => 'Connector ' . $connector->{name} . ' : successfuly opened file ' . $connector->exec_file_path() . '.',
+                                        severity => 'debug'
+                                    );
 
                                     aio_read($fh, 0, -s $fh, $connector_content, 0,
                                         sub {
-                                            close $fh or $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
+                                            close $fh or $self->{logger}->bad(
+                                                message => 'Connector ' . $connector->{name} . ' : ' . $! . '.',
+                                                severity => 'err'
+                                            );
 
                                             if ($connector->is_type_code()) {
                                                 Navel::Scheduler::Core::Fork->new(
-                                                    $self,
-                                                    $self->{configuration}->{definition}->{connectors}->{execution_timeout},
-                                                    $connector,
-                                                    $connector_content
+                                                    core => $self,
+                                                    connector_execution_timeout => $self->{configuration}->{definition}->{connectors}->{execution_timeout},
+                                                    connector => $connector,
+                                                    connector_content => $connector_content
                                                 )->when_done(
-                                                    sub {
+                                                    callback => sub {
                                                         $self->a_connector_stop(
-                                                            $connector,
-                                                            {
+                                                            connector => $connector,
+                                                            event_definition => {
                                                                 connector => $connector,
                                                                 datas => shift
                                                             }
@@ -135,8 +139,8 @@ sub register_connector {
                                                 );
                                             } else {
                                                 $self->a_connector_stop(
-                                                    $connector,
-                                                    {
+                                                    connector => $connector,
+                                                    event_definition => {
                                                         connector => $connector,
                                                         datas => $connector_content
                                                     }
@@ -145,26 +149,38 @@ sub register_connector {
                                         }
                                     );
                                 } else {
-                                    $self->{logger}->bad('Connector ' . $connector->{name} . ' : ' . $! . '.', 'err');
+                                    $self->{logger}->bad(
+                                        message => 'Connector ' . $connector->{name} . ' : ' . $! . '.',
+                                        severity => 'err'
+                                    );
 
                                     $self->a_connector_stop(
-                                        $connector,
-                                        {
+                                        connector => $connector,
+                                        event_definition => {
                                             connector => $connector
                                         },
-                                        'set_ko_no_source'
+                                        status_method => 'set_ko_no_source'
                                     );
                                 }
                             }
                         );
                     } else {
-                        $self->{logger}->push_in_queue('Connector ' . $connector->{name} . ' is already running.', 'debug');
+                        $self->{logger}->push_in_queue(
+                            message => 'Connector ' . $connector->{name} . ' is already running.',
+                            severity => 'debug'
+                        );
                     }
                 } else {
-                    $self->{logger}->push_in_queue('Job ' . $job_name . ' is disabled.', 'debug');
+                    $self->{logger}->push_in_queue(
+                        message => 'Job ' . $job_name . ' is disabled.',
+                        severity => 'debug'
+                    );
                 }
             } else {
-                $self->{logger}->push_in_queue('Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').', 'debug');
+                $self->{logger}->push_in_queue(
+                    message => 'Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').',
+                    severity => 'debug'
+                );
             }
         }
     );
@@ -175,21 +191,24 @@ sub register_connector {
 sub register_connectors {
     my $self = shift;
 
-    $self->register_connector($_->{name}) for @{$self->{connectors}->{definitions}};
+    $self->register_connector_by_name($_->{name}) for @{$self->{connectors}->{definitions}};
 
     $self;
 }
 
-sub init_publisher {
+sub init_publisher_by_name {
     my $self = shift;
 
     my $rabbitmq = $self->{rabbitmq}->definition_by_name(shift);
 
-    croak('undefined definition') unless defined $rabbitmq;
+    $self->{logger}->push_in_queue(
+        message => 'Initialize publisher ' . $rabbitmq->{name} . '.',
+        severity => 'notice'
+    );
 
-    $self->{logger}->push_in_queue('Initialize publisher ' . $rabbitmq->{name} . '.', 'notice');
-
-    push @{$self->{publishers}}, Navel::RabbitMQ::Publisher->new($rabbitmq);
+    push @{$self->{publishers}}, Navel::RabbitMQ::Publisher->new(
+        rabbitmq_definition => $rabbitmq
+    );
 
     $self;
 }
@@ -197,17 +216,15 @@ sub init_publisher {
 sub init_publishers {
     my $self = shift;
 
-    $self->init_publisher($_->{name}) for @{$self->{rabbitmq}->{definitions}};
+    $self->init_publisher_by_name($_->{name}) for @{$self->{rabbitmq}->{definitions}};
 
     $self;
 }
 
-sub connect_publisher {
+sub connect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_definition_name(shift);
-
-    croak('undefined definition') unless defined $publisher;
+    my $publisher = $self->publisher_by_name(shift);
 
     my $publisher_connect_generic_message = 'Connect publisher ' . $publisher->{definition}->{name};
 
@@ -216,49 +233,80 @@ sub connect_publisher {
 
         eval {
             $publisher->connect(
-                {
-                    on_success => sub {
-                        my $amqp_connection = shift;
+                on_success => sub {
+                    my $amqp_connection = shift;
 
-                        $self->{logger}->good($publisher_connect_generic_message . ' successfuly connected.', 'notice');
+                    $self->{logger}->good(
+                        message => $publisher_connect_generic_message . ' successfuly connected.',
+                        severity => 'notice'
+                    );
 
-                        $amqp_connection->open_channel(
-                            on_success => sub {
-                                $self->{logger}->good($publisher_generic_message . ' : channel opened.', 'notice');
-                            },
-                            on_failure => sub {
-                                $self->{logger}->bad($publisher_generic_message . ' : channel failure ... ' . join(' ', @_) . '.', 'notice');
-                            },
-                            on_close => sub {
-                                $self->{logger}->push_in_queue($publisher_generic_message . ' : channel closed.', 'notice');
+                    $amqp_connection->open_channel(
+                        on_success => sub {
+                            $self->{logger}->good(
+                                message => $publisher_generic_message . ' : channel opened.',
+                                severity => 'notice'
+                            );
+                        },
+                        on_failure => sub {
+                            $self->{logger}->bad(
+                                message => $publisher_generic_message . ' : channel failure ... ' . join(' ', @_) . '.',
+                                severity => 'notice'
+                            );
+                        },
+                        on_close => sub {
+                            $self->{logger}->push_in_queue(
+                                message => $publisher_generic_message . ' : channel closed.',
+                                severity => 'notice'
+                            );
 
-                                $publisher->disconnect();
-                            }
-                        );
-                    },
-                    on_failure => sub {
-                        $self->{logger}->bad($publisher_connect_generic_message . ' : failure ... ' . join(' ', @_) . '.', 'warn');
-                    },
-                    on_read_failure => sub {
-                        $self->{logger}->bad($publisher_generic_message . ' : read failure ... ' . join(' ', @_) . '.', 'warn');
-                    },
-                    on_return => sub {
-                        $self->{logger}->bad($publisher_generic_message . ' : unable to deliver frame.', 'warn');
-                    },
-                    on_close => sub {
-                        $self->{logger}->push_in_queue($publisher_generic_message . ' disconnected.', 'notice');
-                    }
+                            $publisher->disconnect();
+                        }
+                    );
+                },
+                on_failure => sub {
+                    $self->{logger}->bad(
+                        message => $publisher_connect_generic_message . ' : failure ... ' . join(' ', @_) . '.',
+                        severity => 'warn'
+                    );
+                },
+                on_read_failure => sub {
+                    $self->{logger}->bad(
+                        message => $publisher_generic_message . ' : read failure ... ' . join(' ', @_) . '.',
+                        severity => 'warn'
+                    );
+                },
+                on_return => sub {
+                    $self->{logger}->bad(
+                        message => $publisher_generic_message . ' : unable to deliver frame.',
+                        severity => 'warn'
+                    );
+                },
+                on_close => sub {
+                    $self->{logger}->push_in_queue(
+                        message => $publisher_generic_message . ' disconnected.',
+                        severity => 'notice'
+                    );
                 }
             );
         };
 
         unless ($@) {
-            $self->{logger}->push_in_queue($publisher_connect_generic_message . ' ...', 'notice');
+            $self->{logger}->push_in_queue(
+                message => $publisher_connect_generic_message . ' ...',
+                severity => 'notice'
+            );
         } else {
-            $self->{logger}->bad($publisher_connect_generic_message . ' : ' . $@ . '.', 'warn');
+            $self->{logger}->bad(
+                message => $publisher_connect_generic_message . ' : ' . $@ . '.',
+                severity => 'warn'
+            );
         }
     } else {
-        $self->{logger}->bad($publisher_connect_generic_message . ' : seem already connected.', 'notice');
+        $self->{logger}->bad(
+            message => $publisher_connect_generic_message . ' : seem already connected.',
+            severity => 'notice'
+        );
     }
 
     $self;
@@ -267,17 +315,15 @@ sub connect_publisher {
 sub connect_publishers {
     my $self = shift;
 
-    $self->connect_publisher($_->{definition}->{name}) for @{$self->{publishers}};
+    $self->connect_publisher_by_name($_->{definition}->{name}) for @{$self->{publishers}};
 
     $self;
 }
 
-sub register_publisher {
+sub register_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_definition_name(shift);
-
-    croak('undefined definition') unless defined $publisher;
+    my $publisher = $self->publisher_by_name(shift);
 
     my $job_name = PUBLISHER_JOB_PREFIX . $publisher->{definition}->{name};
 
@@ -296,7 +342,10 @@ sub register_publisher {
                 if (my @queue = @{$publisher->{queue}}) {
                     if ($publisher->is_connected()) {
                         if (my @channels = values %{$publisher->{net}->channels()}) {
-                            $self->{logger}->push_in_queue('Clear queue for publisher ' . $publisher->{definition}->{name} . '.', 'notice');
+                            $self->{logger}->push_in_queue(
+                                message => 'Clear queue for publisher ' . $publisher->{definition}->{name} . '.',
+                                severity => 'notice'
+                            );
 
                             $publisher->clear_queue();
 
@@ -309,11 +358,17 @@ sub register_publisher {
                                     };
 
                                     unless ($@) {
-                                        $self->{logger}->good($serialize_generic_message . '.', 'debug');
+                                        $self->{logger}->good(
+                                            message => $serialize_generic_message . '.',
+                                            severity => 'debug'
+                                        );
 
                                         my $routing_key = $event->routing_key();
 
-                                        $self->{logger}->push_in_queue($publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.', 'debug');
+                                        $self->{logger}->push_in_queue(
+                                            message => $publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.',
+                                            severity => 'debug'
+                                        );
 
                                         $channels[0]->publish(
                                             exchange => $publisher->{definition}->{exchange},
@@ -324,27 +379,48 @@ sub register_publisher {
                                             body => $serialized
                                         );
                                     } else {
-                                        $self->{logger}->bad($serialize_generic_message . ' failed : ' . $@ . '.' , 'warn');
+                                        $self->{logger}->bad(
+                                            message => $serialize_generic_message . ' failed : ' . $@ . '.' ,
+                                            severity => 'warn'
+                                        );
                                     }
                                 }
                             };
 
                             if ($@) {
-                                $self->{logger}->bad($publish_generic_message . ' : ' . $@ . '.', 'warn');
+                                $self->{logger}->bad(
+                                    message => $publish_generic_message . ' : ' . $@ . '.',
+                                    severity => 'warn'
+                                );
                             } else {
-                                $self->{logger}->good($publish_generic_message . '.', 'notice');
+                                $self->{logger}->good(
+                                    message => $publish_generic_message . '.',
+                                    severity => 'notice'
+                                );
                             }
                         } else {
-                            $self->{logger}->bad($publish_generic_message . ' : publisher has no channel opened.', 'warn');
+                            $self->{logger}->bad(
+                                message => $publish_generic_message . ' : publisher has no channel opened.',
+                                severity => 'warn'
+                            );
                         }
                     } else {
-                        $self->{logger}->push_in_queue($publish_generic_message . ' : publisher is not connected.', 'notice');
+                        $self->{logger}->push_in_queue(
+                            message => $publish_generic_message . ' : publisher is not connected.',
+                            severity => 'notice'
+                        );
                     }
                 } else {
-                    $self->{logger}->push_in_queue('Buffer for publisher ' . $publisher->{definition}->{name} . ' is empty.', 'info');
+                    $self->{logger}->push_in_queue(
+                        message => 'Buffer for publisher ' . $publisher->{definition}->{name} . ' is empty.',
+                        severity => 'info'
+                    );
                 }
             } else {
-                $self->{logger}->push_in_queue('Job ' . $job_name . ' is disabled.', 'debug');
+                $self->{logger}->push_in_queue(
+                    message => 'Job ' . $job_name . ' is disabled.',
+                    severity => 'debug'
+                );
             }
         }
     );
@@ -355,17 +431,15 @@ sub register_publisher {
 sub register_publishers {
     my $self = shift;
 
-    $self->register_publisher($_->{definition}->{name}) for @{$self->{publishers}};
+    $self->register_publisher_by_name($_->{definition}->{name}) for @{$self->{publishers}};
 
     $self;
 }
 
-sub disconnect_publisher {
+sub disconnect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_definition_name(shift);
-
-    croak('undefined definition') unless defined $publisher;
+    my $publisher = $self->publisher_by_name(shift);
 
     my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->{definition}->{name};
 
@@ -375,12 +449,21 @@ sub disconnect_publisher {
         };
 
         unless ($@) {
-            $self->{logger}->good($disconnect_generic_message . '.', 'notice');
+            $self->{logger}->good(
+                message => $disconnect_generic_message . '.',
+                severity => 'notice'
+            );
         } else {
-            $self->{logger}->bad($disconnect_generic_message . ' : ' . $@ . '.', 'warn');
+            $self->{logger}->bad(
+                message => $disconnect_generic_message . ' : ' . $@ . '.',
+                severity => 'warn'
+            );
         }
     } else {
-        $self->{logger}->bad($disconnect_generic_message . ' : seem already disconnected.', 'notice');
+        $self->{logger}->bad(
+            message => $disconnect_generic_message . ' : seem already disconnected.',
+            severity => 'notice'
+        );
     }
 
     $self;
@@ -389,33 +472,31 @@ sub disconnect_publisher {
 sub disconnect_publishers {
     my $self = shift;
 
-    $self->disconnect_publisher($_->{name}) for @{$self->{publishers}};
+    $self->disconnect_publisher_by_name($_->{name}) for @{$self->{publishers}};
 
     $self;
 }
 
-sub publisher_by_definition_name {
-    my ($self, $definition_name) = @_;
+sub publisher_by_name {
+    my ($self, $name) = @_;
 
     for (@{$self->{publishers}}) {
-        return $_ if $_->{definition}->{name} eq $definition_name;
+        return $_ if $_->{definition}->{name} eq $name;
     }
 
     undef;
 }
 
-sub delete_publisher_by_definition_name {
-    my ($self, $definition_name) = @_;
-
-    croak('definition_name must be defined') unless defined $definition_name;
+sub delete_publisher_by_name {
+    my ($self, $name) = @_;
 
     my $definition_to_delete_index = 0;
 
     my $finded;
 
-    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name;
+    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
-    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless $finded;
+    croak($self->{definition_class} . ' : definition ' . $name . ' does not exists') unless $finded;
 
     eval {
         $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
@@ -423,7 +504,7 @@ sub delete_publisher_by_definition_name {
 
     splice @{$self->{publishers}}, $definition_to_delete_index, 1;
 
-    $self->{rabbitmq}->delete_definition($definition_name);
+    $self->{rabbitmq}->delete_definition($name);
 }
 
 sub job_types {
@@ -439,44 +520,41 @@ sub job_types {
 }
 
 sub job_names_by_type {
-    my ($self, $job_type) = @_;
-
-    croak('job_type must be defined') unless defined $job_type;
+    my ($self, $type) = @_;
 
     my @jobs;
 
     for (values %{$self->{cron}->jobs()}) {
-        push @jobs, $2 if $_->{name} =~ /^($job_type)_(.*)/;
+        push @jobs, $2 if $_->{name} =~ /^($type)_(.*)/;
     }
 
     \@jobs;
 }
 
 sub unregister_job_by_name {
-    my ($self, $job_name) = @_;
-
-    croak('job_name must be defined') unless defined $job_name;
+    my ($self, $name) = @_;
 
     my $jobs = $self->{cron}->jobs();
 
-    for my $job_id (keys %{$jobs}) {
-        return $self->{cron}->delete($job_id) if $jobs->{$job_id}->{name} eq $job_name;
+    for (keys %{$jobs}) {
+        return $self->{cron}->delete($_) if $jobs->{$_}->{name} eq $name;
     }
 }
 
 sub a_connector_stop {
-    my ($self, $connector, $to_push_in_queue, $push_in_queue_status_method) = @_;
+    my ($self, %options) = @_;
 
-    croak('connector definition is invalid') unless blessed($connector) eq 'Navel::Definition::Connector';
-
-    $self->{logger}->push_in_queue('Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.', 'info');
+    $self->{logger}->push_in_queue(
+        message => 'Add an event from connector ' . $options{connector}->{name} . ' in the queue of existing publishers.',
+        severity => 'info'
+    );
 
     $_->push_in_queue(
-        $to_push_in_queue,
-        $push_in_queue_status_method
+        event_definition => $options{event_definition},
+        status_method => $options{status_method}
     ) for (@{$self->{publishers}});
 
-    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
+    $self->{jobs}->{connectors}->{locks}->{$options{connector}->{name}} = 0;
 
     $self->{jobs}->{connectors}->{running}--;
 

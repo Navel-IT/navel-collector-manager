@@ -36,38 +36,44 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $configuration_path) = @_;
+    my ($class, %options) = @_;
 
-    croak('general configuration file path is missing') unless defined $configuration_path;
+    croak('general configuration file path is missing') unless defined $options{general_configuration_path};
 
     bless {
         core => undef,
-        configuration => Navel::Scheduler::Parser->new()->read($configuration_path)->make()
+        configuration => Navel::Scheduler::Parser->new()->read(
+            file_path => $options{general_configuration_path}
+        )->make()
     }, ref $class || $class;
 }
 
 sub run {
-    my ($self, $logger) = @_;
+    my ($self, %options) = @_;
 
-    my $connectors = Navel::Definition::Connector::Parser->new($self->{configuration}->{definition}->{connectors}->{maximum})->read($self->{configuration}->{definition}->{connectors}->{definitions_from_file})->make(
-        {
+    my $connectors = Navel::Definition::Connector::Parser->new($self->{configuration}->{definition}->{connectors}->{maximum})->read(
+        file_path => $self->{configuration}->{definition}->{connectors}->{definitions_from_file}
+    )->make(
+        extra_parameters => {
             exec_directory_path => $self->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
         }
     );
 
-    my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new($self->{configuration}->{definition}->{rabbitmq}->{maximum})->read($self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file})->make();
+    my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new($self->{configuration}->{definition}->{rabbitmq}->{maximum})->read(
+        file_path => $self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file}
+    )->make();
 
     $self->{core} = Navel::Scheduler::Core->new(
-        $self->{configuration},
-        $connectors,
-        $rabbitmq,
-        $logger
+        configuration => $self->{configuration},
+        connectors => $connectors,
+        rabbitmq => $rabbitmq,
+        logger => $options{logger}
     );
 
-    my $run = $self->{core}->register_logger()->register_connectors()->init_publishers();
+    my $run = $self->{core}->register_the_logger()->register_connectors()->init_publishers();
 
     for (@{$self->{core}->{publishers}}) {
-        $self->{core}->connect_publisher($_->{definition}->{name}) if $_->{definition}->{auto_connect};
+        $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};
     }
 
     $run->register_publishers()->start();

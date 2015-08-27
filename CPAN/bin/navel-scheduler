@@ -54,11 +54,17 @@ sub ok_ko($$$) {
     my ($logger, $ok, $ko) = @_;
 
     for (@{$ok}) {
-        $logger->good($_ . '.', 'notice') if defined $_;
+        $logger->good(
+            message => $_ . '.',
+            severity => 'notice'
+        ) if defined $_;
     }
 
     for (@{$ko}) {
-        $logger->bad($_ . '.', 'notice') if defined $_;
+        $logger->bad(
+            message => $_ . '.',
+            severity =>'notice'
+        ) if defined $_;
     }
 
     {
@@ -91,13 +97,18 @@ $getopts->getoptions(
 
 if (defined $general_configuration_file_path) {
     my $logger = Navel::Logger->new(
-        'notice',
-        $log_severity,
-        $log_file_path
+        default_severity => 'notice',
+        severity => $log_severity,
+        file_path => $log_file_path
     );
 
     if ($daemonize) {
-        $logger->push_in_queue('Daemonizing ...', 'info')->flush_queue(1);
+        $logger->push_in_queue(
+            message => 'Daemonizing ...',
+            severity => 'info'
+        )->flush_queue(
+            clear_queue => 1
+        );
 
         Proc::Daemon->new(
             working_directory => getcwd(),
@@ -110,8 +121,10 @@ if (defined $general_configuration_file_path) {
         IO::AIO::reinit(); # IO::AIO loaded by Navel::Scheduler
     }
 
-    my $scheduler = eval {
-        Navel::Scheduler->new($general_configuration_file_path);
+    my $options{logger} = eval {
+        Navel::Scheduler->new(
+            general_configuration_path => $general_configuration_file_path
+        );
     };
 
     unless ($@) {
@@ -156,13 +169,21 @@ if (defined $general_configuration_file_path) {
                             my (@ok, @ko);
 
                             eval {
-                                $web_services_listeners->write($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file});
+                                $web_services_listeners->write(
+                                    file_path => $scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file}
+                                );
 
-                                $scheduler->{core}->{connectors}->write($scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file});
+                                $scheduler->{core}->{connectors}->write(
+                                    file_path => $scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file}
+                                );
 
-                                $scheduler->{core}->{rabbitmq}->write($scheduler->{configuration}->{definition}->{rabbitmq}->{definitions_from_file});
+                                $scheduler->{core}->{rabbitmq}->write(
+                                    file_path => $scheduler->{configuration}->{definition}->{rabbitmq}->{definitions_from_file}
+                                );
 
-                                $scheduler->{configuration}->write($general_configuration_file_path);
+                                $scheduler->{configuration}->write(
+                                    file_path => $general_configuration_file_path
+                                );
                             };
 
                             unless ($@) {
@@ -304,7 +325,7 @@ if (defined $general_configuration_file_path) {
                                     };
 
                                     unless ($@) {
-                                        $scheduler->{core}->register_connector($definition->{name});
+                                        $scheduler->{core}->register_connector_by_name($definition->{name});
 
                                         push @ok, 'Connector ' . $definition->{name} . ' added and registered';
                                     } else {
@@ -412,11 +433,11 @@ if (defined $general_configuration_file_path) {
                                     };
 
                                     unless ($@) {
-                                        $scheduler->{core}->init_publisher($definition->{name})->register_publisher($definition->{name});
+                                        $scheduler->{core}->init_publisher_by_name($definition->{name})->register_publisher_by_name($definition->{name});
 
                                         push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered';
 
-                                        $scheduler->{core}->connect_publisher($definition->{name}) if $definition->{auto_connect};
+                                        $scheduler->{core}->connect_publisher_by_name($definition->{name}) if $definition->{auto_connect};
                                     } else {
                                         push @ko, $@;
                                     }
@@ -453,7 +474,7 @@ if (defined $general_configuration_file_path) {
 
                             unless ($@) {
                                 if (ref $body eq 'HASH') {
-                                    my $publisher = $scheduler->{core}->publisher_by_definition_name($rabbitmq_name);
+                                    my $publisher = $scheduler->{core}->publisher_by_name($rabbitmq_name);
 
                                     if (defined $publisher) {
                                         if ($publisher->{definition}->merge($body)) {
@@ -481,7 +502,7 @@ if (defined $general_configuration_file_path) {
                                 push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
 
                                 eval {
-                                    $scheduler->{core}->delete_publisher_by_definition_name($rabbitmq_name);
+                                    $scheduler->{core}->delete_publisher_by_name($rabbitmq_name);
                                 };
 
                                 unless ($@) {
@@ -516,7 +537,7 @@ if (defined $general_configuration_file_path) {
 
                         my $publisher_name = $controller->param('publisher');
 
-                        my $publisher = $scheduler->{core}->publisher_by_definition_name($publisher_name);
+                        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
 
                         if ($http_method eq 'PUT') {
                             my (@ok, @ko);
@@ -528,7 +549,9 @@ if (defined $general_configuration_file_path) {
 
                                 unless ($@) {
                                     eval {
-                                        $publisher->push_in_queue($body);
+                                        $publisher->push_in_queue(
+                                            event_definition => %{$body}
+                                        );
                                     };
 
                                     unless ($@) {
@@ -545,7 +568,7 @@ if (defined $general_configuration_file_path) {
 
                             $controller->render(
                                 json => ok_ko($logger, \@ok, \@ko)
-                            ); 
+                            );
                         } else {
                             if (defined $publisher) {
                                 my (@ok, @ko);
@@ -601,7 +624,12 @@ if (defined $general_configuration_file_path) {
                         listen => $web_services_listeners->url()
                     );
 
-                    $logger->push_in_queue('Starting the webservices ...', 'notice')->flush_queue(1);
+                    $logger->push_in_queue(
+                        message => 'Starting the webservices ...',
+                        severity => 'notice'
+                    )->flush_queue(
+                        clear_queue => 1
+                    );
 
                     eval {
                         while (my ($method, $value) = each %{$scheduler->{configuration}->{definition}->{webservices}->{mojo_server}}) {
@@ -612,30 +640,58 @@ if (defined $general_configuration_file_path) {
                     };
 
                     if ($@) {
-                        $logger->bad($@ . '.', 'err')->flush_queue(1);
+                        $logger->bad(
+                            message => $@ . '.',
+                            severity => 'err'
+                        )->flush_queue(
+                            clear_queue => 1
+                        );
                     } else {
-                        $logger->good('Webservices started.', 'notice')->flush_queue(1);
+                        $logger->good(
+                            message => 'Webservices started.',
+                            severity => 'notice'
+                        )->flush_queue(
+                            clear_queue => 1
+                        );
                     }
                 }
             } else {
-                $logger->bad($@ . '.', 'err')->flush_queue(1);
+                $logger->bad(
+                    message => $@ . '.',
+                    severity => 'err'
+                )->flush_queue(
+                    clear_queue => 1
+                );
             }
 
         }
 
-        $logger->push_in_queue('Starting the scheduler ...', 'notice')->flush_queue(1);
+        $logger->push_in_queue(
+            message => 'Starting the scheduler ...',
+            severity => 'notice'
+        )->flush_queue(
+            clear_queue => 1
+        );
 
         eval {
-            $scheduler->run($logger);
+            $scheduler->run(
+                logger => $logger
+            );
         };
 
         if ($@) {
-            $logger->bad($@ . '.', 'crit')->flush_queue();
+            $logger->bad(
+                message => $@ . '.',
+                severity => 'crit'
+            )->flush_queue();
 
             exit 1;
         }
     } else {
-        $logger->bad($@ . '.', 'crit')->flush_queue();
+        $logger->bad(
+            message => $@ . '.',
+            severity => 'crit'
+        )->flush_queue();
 
         exit 1;
     }

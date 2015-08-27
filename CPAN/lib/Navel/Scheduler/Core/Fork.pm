@@ -27,8 +27,6 @@ use Sereal;
 '
 };
 
-use Carp 'croak';
-
 use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
@@ -39,17 +37,15 @@ our $VERSION = 0.1;
 #-> methods
 
 sub new {
-    my ($class, $core, $connector_execution_timeout, $connector, $connector_content) = @_;
+    my ($class, %options) = @_;
 
-    $connector_execution_timeout = $connector_execution_timeout || 0;
-
-    croak('one or more objects are invalids.') unless blessed($core) eq 'Navel::Scheduler::Core' && blessed($connector) eq 'Navel::Definition::Connector';
+    $options{connector_execution_timeout} = $options{connector_execution_timeout} || 0;
 
     my $self = bless {
-        core => $core,
-        connector_execution_timeout => $connector_execution_timeout,
-        connector => $connector,
-        connector_content => $connector_content,
+        core => $options{core},
+        connector_execution_timeout => $options{connector_execution_timeout},
+        connector => $options{connector},
+        connector_content => $options{connector_content},
         fork => undef,
         rpc => undef
     }, ref $class || $class;
@@ -81,21 +77,30 @@ sub __connector {
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
         '__connector',
         on_event => sub {
-            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ' : ' . shift() . '.', 'notice');
+            $self->{core}->{logger}->push_in_queue(
+                message => 'AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ' : ' . shift() . '.',
+                severity => 'notice'
+            );
         },
         on_error => sub {
-            $self->{core}->{logger}->bad('Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.', 'err');
+            $self->{core}->{logger}->bad(
+                message => 'Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.',
+                severity => 'err'
+            );
 
             $self->{core}->a_connector_stop(
-                $self->{connector},
-                {
+                connector => $self->{connector},
+                event_definition => {
                     connector => $self->{connector}
                 },
-                'set_ko_exception'
+                status_method => 'set_ko_exception'
             );
         },
         on_destroy => sub {
-            $self->{core}->{logger}->push_in_queue('AnyEvent::Fork::RPC : destroy called.', 'debug');
+            $self->{core}->{logger}->push_in_queue(
+                message => 'AnyEvent::Fork::RPC : destroy called.',
+                severity => 'debug'
+            );
         },
         serialiser => SEREAL_SERIALISER
     );
@@ -104,16 +109,19 @@ sub __connector {
 }
 
 sub when_done {
-    my ($self, $callback) = @_;
+    my ($self, %options) = @_;
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
             $self->{connector}->properties(),
             $self->{connector}->{input},
-            $callback
+            $options{callback}
         );
 
-        $self->{core}->{logger}->push_in_queue('Spawned a new process.', 'debug');
+        $self->{core}->{logger}->push_in_queue(
+            message => 'Spawned a new process.',
+            severity => 'debug'
+        );
 
         undef $self->{rpc};
     }

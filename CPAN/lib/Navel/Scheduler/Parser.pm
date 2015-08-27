@@ -125,7 +125,7 @@ sub new {
 sub read {
     my $self = shift;
 
-    $self->set_definition($self->SUPER::read(shift));
+    $self->set_definition($self->SUPER::read(@_));
 
     $self;
 }
@@ -133,7 +133,10 @@ sub read {
 sub write {
     my $self = shift;
 
-    $self->SUPER::write(shift, $self->{definition});
+    $self->SUPER::write(
+        definitions => $self->{definition},
+        @_
+    );
 
     $self;
 }
