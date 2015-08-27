@@ -101,7 +101,7 @@ sub scheduler_definition_validator($) {
                 };
 
                 while (my ($property, $type) = each %{$properties_type}) {
-                    $customs_options_ok = 0 if (exists $value->{$property} && ! $type->($value->{$property}));
+                    $customs_options_ok = 0 if exists $value->{$property} && ! $type->($value->{$property});
                 }
             }
 
@@ -141,7 +141,7 @@ sub write {
 sub make {
     my $self = shift;
 
-    croak('general definition is invalid') unless (scheduler_definition_validator($self->{definition}));
+    croak('general definition is invalid') unless scheduler_definition_validator($self->{definition});
 
     $self;
 }

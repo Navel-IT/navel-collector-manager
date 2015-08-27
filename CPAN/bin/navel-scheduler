@@ -54,11 +54,11 @@ sub ok_ko($$$) {
     my ($logger, $ok, $ko) = @_;
 
     for (@{$ok}) {
-        $logger->good($_ . '.', 'notice') if (defined $_);
+        $logger->good($_ . '.', 'notice') if defined $_;
     }
 
     for (@{$ko}) {
-        $logger->bad($_ . '.', 'notice') if (defined $_);
+        $logger->bad($_ . '.', 'notice') if defined $_;
     }
 
     {
@@ -416,7 +416,7 @@ if (defined $general_configuration_file_path) {
 
                                         push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered';
 
-                                        $scheduler->{core}->connect_publisher($definition->{name}) if ($definition->{auto_connect});
+                                        $scheduler->{core}->connect_publisher($definition->{name}) if $definition->{auto_connect};
                                     } else {
                                         push @ko, $@;
                                     }

@@ -37,7 +37,7 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $configuration, $connectors, $rabbitmq, $logger) = @_;
 
-    croak('one or more objects are invalids.') unless (blessed($configuration) eq 'Navel::Scheduler::Parser' && blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger');
+    croak('one or more objects are invalids.') unless blessed($configuration) eq 'Navel::Scheduler::Parser' && blessed($connectors) eq 'Navel::Definition::Connector::Parser' && blessed($rabbitmq) eq 'Navel::Definition::RabbitMQ::Parser' && blessed($logger) eq 'Navel::Logger';
 
     bless {
         configuration => $configuration,
@@ -70,7 +70,7 @@ sub register_logger {
         name => $job_name,
         single => 1,
         sub {
-            $self->{logger}->flush_queue(1) if ($self->{jobs}->{enabled}->{$job_name});
+            $self->{logger}->flush_queue(1) if $self->{jobs}->{enabled}->{$job_name};
         }
     );
 
@@ -82,7 +82,7 @@ sub register_connector {
 
     my $connector = $self->{connectors}->definition_by_name(shift);
 
-    croak('undefined definition') unless (defined $connector);
+    croak('undefined definition') unless defined $connector;
 
     my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
 
@@ -175,7 +175,7 @@ sub register_connector {
 sub register_connectors {
     my $self = shift;
 
-    $self->register_connector($_->{name}) for (@{$self->{connectors}->{definitions}});
+    $self->register_connector($_->{name}) for @{$self->{connectors}->{definitions}};
 
     $self;
 }
@@ -185,7 +185,7 @@ sub init_publisher {
 
     my $rabbitmq = $self->{rabbitmq}->definition_by_name(shift);
 
-    croak('undefined definition') unless (defined $rabbitmq);
+    croak('undefined definition') unless defined $rabbitmq;
 
     $self->{logger}->push_in_queue('Initialize publisher ' . $rabbitmq->{name} . '.', 'notice');
 
@@ -197,7 +197,7 @@ sub init_publisher {
 sub init_publishers {
     my $self = shift;
 
-    $self->init_publisher($_->{name}) for (@{$self->{rabbitmq}->{definitions}});
+    $self->init_publisher($_->{name}) for @{$self->{rabbitmq}->{definitions}};
 
     $self;
 }
@@ -207,7 +207,7 @@ sub connect_publisher {
 
     my $publisher = $self->publisher_by_definition_name(shift);
 
-    croak('undefined definition') unless (defined $publisher);
+    croak('undefined definition') unless defined $publisher;
 
     my $publisher_connect_generic_message = 'Connect publisher ' . $publisher->{definition}->{name};
 
@@ -267,7 +267,7 @@ sub connect_publisher {
 sub connect_publishers {
     my $self = shift;
 
-    $self->connect_publisher($_->{definition}->{name}) for (@{$self->{publishers}});
+    $self->connect_publisher($_->{definition}->{name}) for @{$self->{publishers}};
 
     $self;
 }
@@ -277,7 +277,7 @@ sub register_publisher {
 
     my $publisher = $self->publisher_by_definition_name(shift);
 
-    croak('undefined definition') unless (defined $publisher);
+    croak('undefined definition') unless defined $publisher;
 
     my $job_name = PUBLISHER_JOB_PREFIX . $publisher->{definition}->{name};
 
@@ -355,7 +355,7 @@ sub register_publisher {
 sub register_publishers {
     my $self = shift;
 
-    $self->register_publisher($_->{definition}->{name}) for (@{$self->{publishers}});
+    $self->register_publisher($_->{definition}->{name}) for @{$self->{publishers}};
 
     $self;
 }
@@ -365,7 +365,7 @@ sub disconnect_publisher {
 
     my $publisher = $self->publisher_by_definition_name(shift);
 
-    croak('undefined definition') unless (defined $publisher);
+    croak('undefined definition') unless defined $publisher;
 
     my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->{definition}->{name};
 
@@ -389,7 +389,7 @@ sub disconnect_publisher {
 sub disconnect_publishers {
     my $self = shift;
 
-    $self->disconnect_publisher($_->{name}) for (@{$self->{publishers}});
+    $self->disconnect_publisher($_->{name}) for @{$self->{publishers}};
 
     $self;
 }
@@ -398,7 +398,7 @@ sub publisher_by_definition_name {
     my ($self, $definition_name) = @_;
 
     for (@{$self->{publishers}}) {
-        return $_ if ($_->{definition}->{name} eq $definition_name);
+        return $_ if $_->{definition}->{name} eq $definition_name;
     }
 
     undef;
@@ -407,15 +407,15 @@ sub publisher_by_definition_name {
 sub delete_publisher_by_definition_name {
     my ($self, $definition_name) = @_;
 
-    croak('definition_name must be defined') unless (defined $definition_name);
+    croak('definition_name must be defined') unless defined $definition_name;
 
     my $definition_to_delete_index = 0;
 
     my $finded;
 
-    $definition_to_delete_index++ until ($finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name);
+    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $definition_name;
 
-    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless ($finded);
+    croak($self->{definition_package} . ' : definition ' . $definition_name . ' does not exists') unless $finded;
 
     eval {
         $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
@@ -432,7 +432,7 @@ sub job_types {
     my %types;
 
     for (values %{$self->{cron}->jobs()}) {
-        $types{$1} = undef if ($_->{name} =~ /^(.*)_/);
+        $types{$1} = undef if $_->{name} =~ /^(.*)_/;
     }
 
     [keys %types];
@@ -441,12 +441,12 @@ sub job_types {
 sub job_names_by_type {
     my ($self, $job_type) = @_;
 
-    croak('job_type must be defined') unless (defined $job_type);
+    croak('job_type must be defined') unless defined $job_type;
 
     my @jobs;
 
     for (values %{$self->{cron}->jobs()}) {
-        push @jobs, $2 if ($_->{name} =~ /^($job_type)_(.*)/);
+        push @jobs, $2 if $_->{name} =~ /^($job_type)_(.*)/;
     }
 
     \@jobs;
@@ -455,19 +455,19 @@ sub job_names_by_type {
 sub unregister_job_by_name {
     my ($self, $job_name) = @_;
 
-    croak('job_name must be defined') unless (defined $job_name);
+    croak('job_name must be defined') unless defined $job_name;
 
     my $jobs = $self->{cron}->jobs();
 
     for my $job_id (keys %{$jobs}) {
-        return $self->{cron}->delete($job_id) if ($jobs->{$job_id}->{name} eq $job_name);
+        return $self->{cron}->delete($job_id) if $jobs->{$job_id}->{name} eq $job_name;
     }
 }
 
 sub a_connector_stop {
     my ($self, $connector, $to_push_in_queue, $push_in_queue_status_method) = @_;
 
-    croak('connector definition is invalid') unless (blessed($connector) eq 'Navel::Definition::Connector');
+    croak('connector definition is invalid') unless blessed($connector) eq 'Navel::Definition::Connector';
 
     $self->{logger}->push_in_queue('Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.', 'info');
 

@@ -43,7 +43,7 @@ sub new {
 
     $connector_execution_timeout = $connector_execution_timeout || 0;
 
-    croak('one or more objects are invalids.') unless (blessed($core) eq 'Navel::Scheduler::Core' && blessed($connector) eq 'Navel::Definition::Connector');
+    croak('one or more objects are invalids.') unless blessed($core) eq 'Navel::Scheduler::Core' && blessed($connector) eq 'Navel::Definition::Connector';
 
     my $self = bless {
         core => $core,

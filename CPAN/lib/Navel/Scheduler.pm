@@ -38,7 +38,7 @@ our $VERSION = 0.1;
 sub new {
     my ($class, $configuration_path) = @_;
 
-    croak('general configuration file path is missing') unless (defined $configuration_path);
+    croak('general configuration file path is missing') unless defined $configuration_path;
 
     bless {
         core => undef,
@@ -67,7 +67,7 @@ sub run {
     my $run = $self->{core}->register_logger()->register_connectors()->init_publishers();
 
     for (@{$self->{core}->{publishers}}) {
-        $self->{core}->connect_publisher($_->{definition}->{name}) if ($_->{definition}->{auto_connect});
+        $self->{core}->connect_publisher($_->{definition}->{name}) if $_->{definition}->{auto_connect};
     }
 
     $run->register_publishers()->start();
