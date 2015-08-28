@@ -219,7 +219,7 @@ sub connect_publisher_by_name {
                     my $amqp_connection = shift;
 
                     $self->{logger}->good(
-                        message => $publisher_connect_generic_message . ' successfuly connected.',
+                        message => $publisher_connect_generic_message . ' successfully connected.',
                         severity => 'notice'
                     );
 
