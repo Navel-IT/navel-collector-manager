@@ -21,9 +21,7 @@ use constant {
 use Carp 'croak';
 
 use AnyEvent::DateTime::Cron;
-use AnyEvent::AIO;
-
-use IO::AIO;
+use AnyEvent::IO;
 
 use Navel::Scheduler::Core::Fork;
 use Navel::RabbitMQ::Publisher;
@@ -101,53 +99,37 @@ sub register_connector_by_name {
 
                         $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = $connector->{singleton};
 
-                        aio_open($connector->exec_file_path(), IO::AIO::O_RDONLY, 0,
+                        aio_load($connector->exec_file_path(),
                             sub {
-                                my $fh = shift;
+                                my ($connector_content) = @_;
 
-                                if ($fh) {
-                                    my $connector_content = '';
-
-                                    $self->{logger}->good(
-                                        message => 'Connector ' . $connector->{name} . ': successfuly opened file ' . $connector->exec_file_path() . '.',
-                                        severity => 'debug'
-                                    );
-
-                                    aio_read($fh, 0, -s $fh, $connector_content, 0,
-                                        sub {
-                                            close $fh or $self->{logger}->bad(
-                                                message => 'Connector ' . $connector->{name} . ': ' . $! . '.',
-                                                severity => 'err'
-                                            );
-
-                                            if ($connector->is_type_code()) {
-                                                Navel::Scheduler::Core::Fork->new(
-                                                    core => $self,
-                                                    connector_execution_timeout => $self->{configuration}->{definition}->{connectors}->{execution_timeout},
-                                                    connector => $connector,
-                                                    connector_content => $connector_content
-                                                )->when_done(
-                                                    callback => sub {
-                                                        $self->a_connector_stop(
-                                                            connector => $connector,
-                                                            event_definition => {
-                                                                connector => $connector,
-                                                                datas => shift
-                                                            }
-                                                        );
-                                                    }
-                                                );
-                                            } else {
+                                if ($connector_content) {
+                                    if ($connector->is_type_code()) {
+                                        Navel::Scheduler::Core::Fork->new(
+                                            core => $self,
+                                            connector_execution_timeout => $self->{configuration}->{definition}->{connectors}->{execution_timeout},
+                                            connector => $connector,
+                                            connector_content => $connector_content
+                                        )->when_done(
+                                            callback => sub {
                                                 $self->a_connector_stop(
                                                     connector => $connector,
                                                     event_definition => {
                                                         connector => $connector,
-                                                        datas => $connector_content
+                                                        datas => shift
                                                     }
                                                 );
                                             }
-                                        }
-                                    );
+                                        );
+                                    } else {
+                                        $self->a_connector_stop(
+                                            connector => $connector,
+                                            event_definition => {
+                                                connector => $connector,
+                                                datas => $connector_content
+                                            }
+                                        );
+                                    }
                                 } else {
                                     $self->{logger}->bad(
                                         message => 'Connector ' . $connector->{name} . ': ' . $! . '.',
@@ -163,6 +145,7 @@ sub register_connector_by_name {
                                     );
                                 }
                             }
+
                         );
                     } else {
                         $self->{logger}->push_in_queue(
