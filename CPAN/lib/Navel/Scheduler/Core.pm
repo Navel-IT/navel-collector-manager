@@ -145,7 +145,6 @@ sub register_connector_by_name {
                                     );
                                 }
                             }
-
                         );
                     } else {
                         $self->{logger}->push_in_queue(
