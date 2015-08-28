@@ -544,17 +544,16 @@ sub unregister_job_by_name {
 sub a_connector_stop {
     my ($self, %options) = @_;
 
+    my $connector = delete $options{connector};
+
     $self->{logger}->push_in_queue(
-        message => 'Add an event from connector ' . $options{connector}->{name} . ' in the queue of existing publishers.',
+        message => 'Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.',
         severity => 'info'
     );
 
-    $_->push_in_queue(
-        event_definition => $options{event_definition},
-        status_method => $options{status_method}
-    ) for (@{$self->{publishers}});
+    $_->push_in_queue(%options) for @{$self->{publishers}};
 
-    $self->{jobs}->{connectors}->{locks}->{$options{connector}->{name}} = 0;
+    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
 
     $self->{jobs}->{connectors}->{running}--;
 
