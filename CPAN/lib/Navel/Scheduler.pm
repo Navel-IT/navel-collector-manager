@@ -51,7 +51,9 @@ sub new {
 sub run {
     my ($self, %options) = @_;
 
-    my $connectors = Navel::Definition::Connector::Parser->new($self->{configuration}->{definition}->{connectors}->{maximum})->read(
+    my $connectors = Navel::Definition::Connector::Parser->new(
+        maximum => $self->{configuration}->{definition}->{connectors}->{maximum}
+    )->read(
         file_path => $self->{configuration}->{definition}->{connectors}->{definitions_from_file}
     )->make(
         extra_parameters => {
@@ -59,7 +61,9 @@ sub run {
         }
     );
 
-    my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new($self->{configuration}->{definition}->{rabbitmq}->{maximum})->read(
+    my $rabbitmq = Navel::Definition::RabbitMQ::Parser->new(
+        maximum => $self->{configuration}->{definition}->{rabbitmq}->{maximum}
+    )->read(
         file_path => $self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file}
     )->make();
 
