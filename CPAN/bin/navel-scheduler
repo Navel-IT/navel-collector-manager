@@ -106,9 +106,7 @@ if (defined $general_configuration_file_path) {
         $logger->push_in_queue(
             message => 'Daemonizing ....',
             severity => 'info'
-        )->flush_queue(
-            clear_queue => 1
-        );
+        )->flush_queue();
 
         Proc::Daemon->new(
             working_directory => getcwd(),
@@ -629,9 +627,7 @@ if (defined $general_configuration_file_path) {
                     $logger->push_in_queue(
                         message => 'Starting the webservices ....',
                         severity => 'notice'
-                    )->flush_queue(
-                        clear_queue => 1
-                    );
+                    )->flush_queue();
 
                     eval {
                         while (my ($method, $value) = each %{$scheduler->{configuration}->{definition}->{webservices}->{mojo_server}}) {
@@ -645,25 +641,19 @@ if (defined $general_configuration_file_path) {
                         $logger->bad(
                             message => $@ . '.',
                             severity => 'err'
-                        )->flush_queue(
-                            clear_queue => 1
-                        );
+                        )->flush_queue();
                     } else {
                         $logger->good(
                             message => 'Webservices started.',
                             severity => 'notice'
-                        )->flush_queue(
-                            clear_queue => 1
-                        );
+                        )->flush_queue();
                     }
                 }
             } else {
                 $logger->bad(
                     message => $@ . '.',
                     severity => 'err'
-                )->flush_queue(
-                    clear_queue => 1
-                );
+                )->flush_queue();
             }
 
         }
@@ -671,9 +661,7 @@ if (defined $general_configuration_file_path) {
         $logger->push_in_queue(
             message => 'Starting the scheduler ....',
             severity => 'notice'
-        )->flush_queue(
-            clear_queue => 1
-        );
+        )->flush_queue();
 
         eval {
             $scheduler->run(
