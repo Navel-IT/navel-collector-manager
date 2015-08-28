@@ -24,7 +24,7 @@ If you use Perlbrew :
 bash install.sh -n 'BRANCH' -v 'VERSION' -c -b 'NAVEL-SCHEDULER_BINARY' # NAVEL-SCHEDULER_BINARY (/root/perl5/perlbrew/perls/perl-5.22.0/bin for exemple) is in one of paths of the variable $PERLBREW_PATH
 ```
 
-**Note** : if it is necessary, fix the execute permissions on the path of NAVEL-SCHEDULER_BINARY.
+**Note**: if it is necessary, fix the execute permissions on the path of NAVEL-SCHEDULER_BINARY.
 
 Prepare configuration
 ---------------------
@@ -33,24 +33,24 @@ Prepare configuration
 
 ```javascript
 {
-    "connectors" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
-        "maximum" : 0,
-        "maximum_simultaneous_exec" : 0,
-        "execution_timeout" : 0
+    "connectors": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory": "/usr/local/etc/navel-scheduler/connectors",
+        "maximum": 0,
+        "maximum_simultaneous_exec": 0,
+        "execution_timeout": 0
     },
-    "rabbitmq" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json",
-        "maximum" : 0
+    "rabbitmq": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json",
+        "maximum": 0
     },
-    "webservices" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/webservices.json",
-        "credentials" : { // changeable at runtime
-            "login" : "admin",
-            "password" : "password"
+    "webservices": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/webservices.json",
+        "credentials": { // changeable at runtime
+            "login": "admin",
+            "password": "password"
         },
-        "mojo_server" : {
+        "mojo_server": {
         }
     }
 }
@@ -78,26 +78,26 @@ workers | int
 ```javascript
 [
     {
-        "name" : "webservice-1",
-        "interface_mask" : "*",
-        "port" : 22080,
-        "tls" : 0,
-        "ca" : null,
-        "cert" : null,
-        "ciphers" : null,
-        "key" : null,
-        "verify" : null
+        "name": "webservice-1",
+        "interface_mask": "*",
+        "port": 22080,
+        "tls": 0,
+        "ca": null,
+        "cert": null,
+        "ciphers": null,
+        "key": null,
+        "verify": null
     },
     {
-        "name" : "webservice-2",
-        "interface_mask" : "*",
-        "port" : 22443,
-        "tls" : 1,
-        "ca" : null,
-        "cert" : null,
-        "ciphers" : null,
-        "key" : null,
-        "verify" : null
+        "name": "webservice-2",
+        "interface_mask": "*",
+        "port": 22443,
+        "tls": 1,
+        "ca": null,
+        "cert": null,
+        "ciphers": null,
+        "key": null,
+        "verify": null
     }
 ]
 ```
@@ -113,51 +113,51 @@ Service
 
 If you want to change the service options, edit */etc/sysconfig/navel-scheduler* in accordance with the options returned by `navel-scheduler --help`.
 
-**Note** : the service will run under *navel-scheduler:navel-scheduler*.
+**Note**: the service will run under *navel-scheduler:navel-scheduler*.
 
 REST API
 --------
 
 The following endpoints are currently availables for informations and runtime modifications.
 
-**Note** : JSON below URI are exemples of what HTTP message body you should get (**GET**, **DEL**) or send (**POST**, **PUT**).
+**Note**: JSON below URI are exemples of what HTTP message body you should get (**GET**, **DEL**) or send (**POST**, **PUT**).
 
 - **GET** - read
   - /scheduler/api
 ```json
 {
-    "version" : 0.1
+    "version": 0.1
 }
 ```
   - /scheduler/api?action=save_configuration
 ```json
 {
-    "ok" : [
+    "ok": [
         "Runtime configuration saved"
     ],
-    "ko" : []
+    "ko": []
 }
 ```
   - /scheduler/api/general
 ```json
 {
-    "connectors" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory" : "/usr/local/etc/navel-scheduler/connectors",
-        "maximum" : 0,
-        "maximum_simultaneous_exec" : 0,
-        "execution_timeout" : 0
+    "connectors": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/connectors.json",
+        "connectors_exec_directory": "/usr/local/etc/navel-scheduler/connectors",
+        "maximum": 0,
+        "maximum_simultaneous_exec": 0,
+        "execution_timeout": 0
     },
-    "rabbitmq" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/rabbitmq.json"
+    "rabbitmq": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json"
     },
-    "webservices" : {
-        "definitions_from_file" : "/usr/local/etc/navel-scheduler/webservices.json",
-        "credentials" : {
-            "login" : "admin",
-            "password" : "password"
+    "webservices": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/webservices.json",
+        "credentials": {
+            "login": "admin",
+            "password": "password"
         },
-        "mojo_server" : {
+        "mojo_server": {
         }
     }
 }
@@ -165,7 +165,7 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/jobs
 ```json
 {
-    "types" : [
+    "types": [
         "connector",
         "publisher",
         "logger"
@@ -181,19 +181,19 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/jobs/(:job_type)/(:job_name)
 ```json
 {
-    "enabled" : 1
+    "enabled": 1
 }
 ```
   - /scheduler/api/jobs/(:job_type)/(:job_name)?action=disable
 ```json
 {
-    "enabled" : 0
+    "enabled": 0
 }
 ```
   - /scheduler/api/jobs/(:job_type)/(:job_name)?action=enable
 ```json
 {
-    "enabled" : 1
+    "enabled": 1
 }
 ```
   - /scheduler/api/connectors
@@ -206,16 +206,16 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/connectors/(:connector)
 ```json
 {
-    "name" : "glpi-1",
-    "collection" : "glpi",
-    "type" : "code",
-    "singleton" : 1,
-    "scheduling" : "15 * * * * ?",
-    "source" : "glpi",
-    "input" : {
-        "url" : "http://login:password@glpi.home.fr:8080"
+    "name": "glpi-1",
+    "collection": "glpi",
+    "type": "code",
+    "singleton": 1,
+    "scheduling": "15 * * * * ?",
+    "source": "glpi",
+    "input": {
+        "url": "http://login:password@glpi.home.fr:8080"
     },
-    "exec_directory_path" : "/usr/local/etc/navel-scheduler/connectors"
+    "exec_directory_path": "/usr/local/etc/navel-scheduler/connectors"
 }
 ```
   - /scheduler/api/rabbitmq
@@ -228,19 +228,19 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/rabbitmq/(:rabbitmq)
 ```json
 {
-    "name" : "rabbitmq-1",
-    "host" : "172.16.1.1",
-    "port" : 5672,
-    "user" : "guest",
-    "password" : "guest",
-    "timeout" : 0,
-    "vhost" : "/",
-    "tls" : 0,
-    "heartbeat" : 30,
-    "exchange" : "amq.topic",
-    "delivery_mode" : 2,
-    "scheduling" : "*/15 * * * * ?",
-    "auto_connect" : 1
+    "name": "rabbitmq-1",
+    "host": "172.16.1.1",
+    "port": 5672,
+    "user": "guest",
+    "password": "guest",
+    "timeout": 0,
+    "vhost": "/",
+    "tls": 0,
+    "heartbeat": 30,
+    "exchange": "amq.topic",
+    "delivery_mode": 2,
+    "scheduling": "*/15 * * * * ?",
+    "auto_connect": 1
 }
 ```
   - /scheduler/api/publishers
@@ -253,39 +253,39 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)
 ```json
 {
-    "name" : "rabbitmq-1",
-    "connected" : 0,
-    "messages_in_queue" : 500
+    "name": "rabbitmq-1",
+    "connected": 0,
+    "messages_in_queue": 500
 }
 ```
   - /scheduler/api/publishers/(:publisher)?action=clear_queue
 ```json
 {
-    "ok" : ["Clear queue for publisher rabbitmq-1"],
-    "ko" : [],
-    "name" : "rabbitmq-1",
-    "connected" : 0,
-    "messages_in_queue" : 0
+    "ok": ["Clear queue for publisher rabbitmq-1"],
+    "ko": [],
+    "name": "rabbitmq-1",
+    "connected": 0,
+    "messages_in_queue": 0
 }
 ```
   - /scheduler/api/publishers/(:publisher)?action=connect
 ```json
 {
-    "ok" : [],
-    "ko" : [],
-    "name" : "rabbitmq-1",
-    "connected" : 1,
-    "messages_in_queue" : 5
+    "ok": [],
+    "ko": [],
+    "name": "rabbitmq-1",
+    "connected": 1,
+    "messages_in_queue": 5
 }
 ```
   - /scheduler/api/publishers/(:publisher)?action=disconnect
 ```json
 {
-    "ok" : [],
-    "ko" : [],
-    "name" : "rabbitmq-1",
-    "connected" : 0,
-    "messages_in_queue" : 0
+    "ok": [],
+    "ko": [],
+    "name": "rabbitmq-1",
+    "connected": 0,
+    "messages_in_queue": 0
 }
 ```
   - /scheduler/api/webservices
@@ -299,15 +299,15 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 [
     {
-        "name" : "webservice-1",
-        "interface_mask" : "*",
-        "port" : 22080,
-        "tls" : 0,
-        "ca" : null,
-        "cert" : null,
-        "ciphers" : null,
-        "key" : null,
-        "verify" : null
+        "name": "webservice-1",
+        "interface_mask": "*",
+        "port": 22080,
+        "tls": 0,
+        "ca": null,
+        "cert": null,
+        "ciphers": null,
+        "key": null,
+        "verify": null
     }
 ]
 ```
@@ -315,82 +315,82 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/connectors
 ```json
 {
-    "name" : "glpi-2",
-    "collection" : "glpi",
-    "type" : "code",
-    "singleton" : 1,
-    "scheduling" : "15 * * * * ?",
-    "source" : "glpi",
-    "input" : {
-        "url" : "http://login:password@glpi2.home.fr:8080"
+    "name": "glpi-2",
+    "collection": "glpi",
+    "type": "code",
+    "singleton": 1,
+    "scheduling": "15 * * * * ?",
+    "source": "glpi",
+    "input": {
+        "url": "http://login:password@glpi2.home.fr:8080"
     }
 }
 ```
   - /scheduler/api/rabbitmq
 ```json
 {
-    "name" : "rabbitmq-3",
-    "host" : "172.16.1.3",
-    "port" : 5672,
-    "user" : "guest",
-    "password" : "guest",
-    "timeout" : 0,
-    "vhost" : "/",
-    "tls" : 0,
-    "heartbeat" : 30,
-    "exchange" : "amq.topic",
-    "delivery_mode" : 2,
-    "scheduling" : "*/15 * * * * ?",
-    "auto_connect" : 1
+    "name": "rabbitmq-3",
+    "host": "172.16.1.3",
+    "port": 5672,
+    "user": "guest",
+    "password": "guest",
+    "timeout": 0,
+    "vhost": "/",
+    "tls": 0,
+    "heartbeat": 30,
+    "exchange": "amq.topic",
+    "delivery_mode": 2,
+    "scheduling": "*/15 * * * * ?",
+    "auto_connect": 1
 }
 ```
   - /scheduler/api/publishers/(:publisher)
 ```json
 {
-    "datas" : [
+    "datas": [
         "foo",
         "bar"
     ],
-    "collection" : "puppet-reports"
+    "collection": "puppet-reports"
 }
 ```
 - **PUT** - modify
   - /scheduler/api/general/webservices/credentials
 ```json
 {
-    "password" : "new_password"
+    "password": "new_password"
 }
 ```
   - /scheduler/api/connectors/(:connector)
 ```json
 {
-    "scheduling" : "*/30 * * * * ?"
+    "scheduling": "*/30 * * * * ?"
 }
 ```
   - /scheduler/api/rabbitmq/(:rabbitmq)
 ```json
 {
-    "timeout" : 5
+    "timeout": 5
 }
 ```
 - **DEL** - delete
   - /scheduler/api/connectors/(:connector)
 ```json
 {
-    "ok" : [
+    "ok": [
         "Connector glpi-2 unregistered and deleted"
     ],
-    "ko" : []
+    "ko": []
 }
 ```
   - /scheduler/api/rabbitmq/(:rabbitmq)
 ```json
 {
-    "ok" : [
+    "ok": [
         "Publisher rabbitmq-3 disconnected, unregistered and deleted",
         "RabbitMQ rabbitmq-3 deleted"
     ],
-    "ko" : []
+    "ko": []
 }
 ```
 
@@ -410,14 +410,14 @@ sub connector {
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ...
 
-    AnyEvent::Fork::RPC::event("It's done father !") # send a log message to navel-scheduler
+    AnyEvent::Fork::RPC::event("It's done father!") # send a log message to navel-scheduler
 
     \@datas;
 }
 ```
 
-**Note** : `STDOUT` and `STDERR` are closed.
+**Note**: `STDOUT` and `STDERR` are closed.
 
-**Note** : the `__connector` function is reserved.
+**Note**: the `__connector` function is reserved.
 
-**Note** : the error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.
+**Note**: the error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.

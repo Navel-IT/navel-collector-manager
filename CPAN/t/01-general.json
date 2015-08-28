@@ -1,22 +1,22 @@
 {
-    "connectors" : {
-        "definitions_from_file" : "t/01-connectors.json",
-        "connectors_exec_directory" : "t/connectors",
-        "maximum" : 0,
-        "maximum_simultaneous_exec" : 0,
-        "execution_timeout" : 0
+    "connectors": {
+        "definitions_from_file": "t/01-connectors.json",
+        "connectors_exec_directory": "t/connectors",
+        "maximum": 0,
+        "maximum_simultaneous_exec": 0,
+        "execution_timeout": 0
     },
-    "rabbitmq" : {
-        "definitions_from_file" : "t/01-rabbitmq.json",
-        "maximum" : 0
+    "rabbitmq": {
+        "definitions_from_file": "t/01-rabbitmq.json",
+        "maximum": 0
     },
-    "webservices" : {
-        "definitions_from_file" : "t/webservices.json",
-        "credentials" : {
-            "login" : "admin",
-            "password" : "password"
+    "webservices": {
+        "definitions_from_file": "t/webservices.json",
+        "credentials": {
+            "login": "admin",
+            "password": "password"
         },
-        "mojo_server" : {
+        "mojo_server": {
         }
     }
 }

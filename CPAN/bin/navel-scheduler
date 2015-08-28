@@ -154,7 +154,7 @@ if (defined $general_configuration_file_path) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(
-                                json => ok_ko($logger, [], ['Unauthorized : access is denied due to invalid credentials']),
+                                json => ok_ko($logger, [], ['Unauthorized: access is denied due to invalid credentials']),
                                 status => 401
                             );
 
@@ -191,7 +191,7 @@ if (defined $general_configuration_file_path) {
                             unless ($@) {
                                 push @ok, 'Runtime configuration saved';
                             } else {
-                                push @ko, 'Cannot save the runtime configuration : ' . $@;
+                                push @ko, 'Cannot save the runtime configuration: ' . $@;
                             }
 
                             return $controller->render(
@@ -559,7 +559,7 @@ if (defined $general_configuration_file_path) {
                                     unless ($@) {
                                         push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
                                     } else {
-                                        push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->{definition}->{name} . ' : ' . $@;
+                                        push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
                                     }
                                 } else {
                                     push @ko, $@;
@@ -791,7 +791,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAA==
 
 @@ not_found.html.ep
-<!doctype html>
+<!DOCTYPE html>
 <html lang='en'>
     <head>
         <title>Not found</title>
@@ -803,7 +803,7 @@ AAAAAAAAAAAAAA==
 
 @@ exception.html.ep
 % my $exception = delete $self->stash()->{exception};
-<!doctype html>
+<!DOCTYPE html>
 <html lang='en'>
     % my $error = 'Unexpected error';
     <head>

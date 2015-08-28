@@ -1,17 +1,17 @@
 [
     {
-        "name" : "rabbitmq-1",
-        "host" : "localhost",
-        "port" : 5672,
-        "user" : "guest",
-        "password" : "guest",
-        "timeout" : 0,
-        "vhost" : "/",
-        "tls" : 0,
-        "heartbeat" : 30,
-        "exchange" : "amq.topic",
-        "delivery_mode" : 2,
-        "scheduling" : "*/15 * * * * ?",
-        "auto_connect" : 1
+        "name": "rabbitmq-1",
+        "host": "localhost",
+        "port": 5672,
+        "user": "guest",
+        "password": "guest",
+        "timeout": 0,
+        "vhost": "/",
+        "tls": 0,
+        "heartbeat": 30,
+        "exchange": "amq.topic",
+        "delivery_mode": 2,
+        "scheduling": "*/15 * * * * ?",
+        "auto_connect": 1
     }
 ]

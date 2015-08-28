@@ -1,20 +1,20 @@
 [
     {
-        "name" : "test-1",
-        "collection" : "test",
-        "type" : "code",
-        "singleton" : 1,
-        "scheduling" : "15 * * * * ?",
-        "source" : null,
-        "input" : null
+        "name": "test-1",
+        "collection": "test",
+        "type": "code",
+        "singleton": 1,
+        "scheduling": "15 * * * * ?",
+        "source": null,
+        "input": null
     },
     {
-        "name" : "test-2",
-        "collection" : "test",
-        "type" : "json",
-        "singleton" : 1,
-        "scheduling" : "45 * * * * ?",
-        "source" : null,
-        "input" : null
+        "name": "test-2",
+        "collection": "test",
+        "type": "json",
+        "singleton": 1,
+        "scheduling": "45 * * * * ?",
+        "source": null,
+        "input": null
     }
 ]

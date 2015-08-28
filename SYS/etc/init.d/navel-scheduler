@@ -28,7 +28,7 @@ sysconfig="/etc/sysconfig/${prog}"
 #-> functions
 
 f_start() {
-    ${ECHO} -n "Starting ${prog} : "
+    ${ECHO} -n "Starting ${prog}: "
 
     daemon --user="${prog_user}" --pidfile="${pidfile}" "${prog_full_path}" ${OPTS}
 
@@ -36,7 +36,7 @@ f_start() {
 }
 
 f_stop() {
-    ${ECHO} -n "Stopping ${prog} : "
+    ${ECHO} -n "Stopping ${prog}: "
 
     killproc -p "${pidfile}" "${prog_full_path}"
 
@@ -59,7 +59,7 @@ case ${1} in
 
         ;;
     *)
-        ${ECHO} "Usage : ${0} {start|stop|restart|status}"
+        ${ECHO} "Usage: ${0} {start|stop|restart|status}"
 
         exit 1
 

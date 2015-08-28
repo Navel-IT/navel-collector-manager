@@ -109,14 +109,14 @@ sub register_connector_by_name {
                                     my $connector_content = '';
 
                                     $self->{logger}->good(
-                                        message => 'Connector ' . $connector->{name} . ' : successfuly opened file ' . $connector->exec_file_path() . '.',
+                                        message => 'Connector ' . $connector->{name} . ': successfuly opened file ' . $connector->exec_file_path() . '.',
                                         severity => 'debug'
                                     );
 
                                     aio_read($fh, 0, -s $fh, $connector_content, 0,
                                         sub {
                                             close $fh or $self->{logger}->bad(
-                                                message => 'Connector ' . $connector->{name} . ' : ' . $! . '.',
+                                                message => 'Connector ' . $connector->{name} . ': ' . $! . '.',
                                                 severity => 'err'
                                             );
 
@@ -150,7 +150,7 @@ sub register_connector_by_name {
                                     );
                                 } else {
                                     $self->{logger}->bad(
-                                        message => 'Connector ' . $connector->{name} . ' : ' . $! . '.',
+                                        message => 'Connector ' . $connector->{name} . ': ' . $! . '.',
                                         severity => 'err'
                                     );
 
@@ -244,19 +244,19 @@ sub connect_publisher_by_name {
                     $amqp_connection->open_channel(
                         on_success => sub {
                             $self->{logger}->good(
-                                message => $publisher_generic_message . ' : channel opened.',
+                                message => $publisher_generic_message . ': channel opened.',
                                 severity => 'notice'
                             );
                         },
                         on_failure => sub {
                             $self->{logger}->bad(
-                                message => $publisher_generic_message . ' : channel failure ... ' . join(' ', @_) . '.',
+                                message => $publisher_generic_message . ': channel failure ... ' . join(' ', @_) . '.',
                                 severity => 'notice'
                             );
                         },
                         on_close => sub {
                             $self->{logger}->push_in_queue(
-                                message => $publisher_generic_message . ' : channel closed.',
+                                message => $publisher_generic_message . ': channel closed.',
                                 severity => 'notice'
                             );
 
@@ -266,19 +266,19 @@ sub connect_publisher_by_name {
                 },
                 on_failure => sub {
                     $self->{logger}->bad(
-                        message => $publisher_connect_generic_message . ' : failure ... ' . join(' ', @_) . '.',
+                        message => $publisher_connect_generic_message . ': failure ... ' . join(' ', @_) . '.',
                         severity => 'warn'
                     );
                 },
                 on_read_failure => sub {
                     $self->{logger}->bad(
-                        message => $publisher_generic_message . ' : read failure ... ' . join(' ', @_) . '.',
+                        message => $publisher_generic_message . ': read failure ... ' . join(' ', @_) . '.',
                         severity => 'warn'
                     );
                 },
                 on_return => sub {
                     $self->{logger}->bad(
-                        message => $publisher_generic_message . ' : unable to deliver frame.',
+                        message => $publisher_generic_message . ': unable to deliver frame.',
                         severity => 'warn'
                     );
                 },
@@ -298,13 +298,13 @@ sub connect_publisher_by_name {
             );
         } else {
             $self->{logger}->bad(
-                message => $publisher_connect_generic_message . ' : ' . $@ . '.',
+                message => $publisher_connect_generic_message . ': ' . $@ . '.',
                 severity => 'warn'
             );
         }
     } else {
         $self->{logger}->bad(
-            message => $publisher_connect_generic_message . ' : seem already connected.',
+            message => $publisher_connect_generic_message . ': seem already connected.',
             severity => 'notice'
         );
     }
@@ -366,7 +366,7 @@ sub register_publisher_by_name {
                                         my $routing_key = $event->routing_key();
 
                                         $self->{logger}->push_in_queue(
-                                            message => $publish_generic_message . ' : sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.',
+                                            message => $publish_generic_message . ': sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.',
                                             severity => 'debug'
                                         );
 
@@ -380,7 +380,7 @@ sub register_publisher_by_name {
                                         );
                                     } else {
                                         $self->{logger}->bad(
-                                            message => $serialize_generic_message . ' failed : ' . $@ . '.' ,
+                                            message => $serialize_generic_message . ' failed: ' . $@ . '.' ,
                                             severity => 'warn'
                                         );
                                     }
@@ -389,7 +389,7 @@ sub register_publisher_by_name {
 
                             if ($@) {
                                 $self->{logger}->bad(
-                                    message => $publish_generic_message . ' : ' . $@ . '.',
+                                    message => $publish_generic_message . ': ' . $@ . '.',
                                     severity => 'warn'
                                 );
                             } else {
@@ -400,13 +400,13 @@ sub register_publisher_by_name {
                             }
                         } else {
                             $self->{logger}->bad(
-                                message => $publish_generic_message . ' : publisher has no channel opened.',
+                                message => $publish_generic_message . ': publisher has no channel opened.',
                                 severity => 'warn'
                             );
                         }
                     } else {
                         $self->{logger}->push_in_queue(
-                            message => $publish_generic_message . ' : publisher is not connected.',
+                            message => $publish_generic_message . ': publisher is not connected.',
                             severity => 'notice'
                         );
                     }
@@ -455,13 +455,13 @@ sub disconnect_publisher_by_name {
             );
         } else {
             $self->{logger}->bad(
-                message => $disconnect_generic_message . ' : ' . $@ . '.',
+                message => $disconnect_generic_message . ': ' . $@ . '.',
                 severity => 'warn'
             );
         }
     } else {
         $self->{logger}->bad(
-            message => $disconnect_generic_message . ' : seem already disconnected.',
+            message => $disconnect_generic_message . ': seem already disconnected.',
             severity => 'notice'
         );
     }
@@ -496,7 +496,7 @@ sub delete_publisher_by_name {
 
     $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
-    croak($self->{definition_class} . ' : definition ' . $name . ' does not exists') unless $finded;
+    croak($self->{definition_class} . ': definition ' . $name . ' does not exists') unless $finded;
 
     eval {
         $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work

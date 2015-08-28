@@ -78,13 +78,13 @@ sub __connector {
         '__connector',
         on_event => sub {
             $self->{core}->{logger}->push_in_queue(
-                message => 'AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ' : ' . shift() . '.',
+                message => 'AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ': ' . shift() . '.',
                 severity => 'notice'
             );
         },
         on_error => sub {
             $self->{core}->{logger}->bad(
-                message => 'Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error) : ' . shift() . '.',
+                message => 'Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error): ' . shift() . '.',
                 severity => 'err'
             );
 
@@ -98,7 +98,7 @@ sub __connector {
         },
         on_destroy => sub {
             $self->{core}->{logger}->push_in_queue(
-                message => 'AnyEvent::Fork::RPC : destroy called.',
+                message => 'AnyEvent::Fork::RPC DESTROY() called.',
                 severity => 'debug'
             );
         },
