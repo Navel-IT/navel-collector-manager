@@ -62,12 +62,12 @@ sub register_the_logger {
     $self->{jobs}->{enabled}->{$job_name} = 1;
 
     $self->{cron}->add(
-        '*/2 * * * * ?',
+        '*/1 * * * * ?',
         name => $job_name,
         single => 1,
         sub {
             $self->{logger}->flush_queue(
-                clear_queue => 1
+                async => 1
             ) if $self->{jobs}->{enabled}->{$job_name};
         }
     );
