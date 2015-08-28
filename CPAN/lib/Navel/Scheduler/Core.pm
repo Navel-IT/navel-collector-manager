@@ -293,7 +293,7 @@ sub connect_publisher_by_name {
 
         unless ($@) {
             $self->{logger}->push_in_queue(
-                message => $publisher_connect_generic_message . ' ...',
+                message => $publisher_connect_generic_message . ' ....',
                 severity => 'notice'
             );
         } else {

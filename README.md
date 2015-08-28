@@ -8,7 +8,7 @@ It is build on top of Mojolicious + AnyEvent and must work on all Linux platform
 Build and install
 -----------------
 
-Assuming you start the installation from scratch with `git`, `bash` and `perl` (>= 5.10.1) with core modules installed ...
+Assuming you start the installation from scratch with `git`, `bash` and `perl` (>= 5.10.1) with core modules installed ....
 
 ```shell
 git clone -b 'BRANCH' https://github.com/Navel-IT/navel-scheduler.git
@@ -18,7 +18,7 @@ cd navel-scheduler/
 bash install.sh -n 'BRANCH' -v 'VERSION' -c
 ```
 
-If you use Perlbrew :
+If you use Perlbrew:
 
 ```shell
 bash install.sh -n 'BRANCH' -v 'VERSION' -c -b 'NAVEL-SCHEDULER_BINARY' # NAVEL-SCHEDULER_BINARY (/root/perl5/perlbrew/perls/perl-5.22.0/bin for exemple) is in one of paths of the variable $PERLBREW_PATH
@@ -29,7 +29,7 @@ bash install.sh -n 'BRANCH' -v 'VERSION' -c -b 'NAVEL-SCHEDULER_BINARY' # NAVEL-
 Prepare configuration
 ---------------------
 
-*general.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this :
+*general.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this:
 
 ```javascript
 {
@@ -56,7 +56,7 @@ Prepare configuration
 }
 ```
 
-List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Prefork#ATTRIBUTES)) :
+List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Prefork#ATTRIBUTES)):
 
 Property name  | Property type
 ------------- | -------------
@@ -73,7 +73,7 @@ heartbeat_timeout | float
 multi_accept | int
 workers | int
 
-*webservices.json* contains the definitions of navel-scheduler's web services and cannot be changed at runtime. It must look like this :
+*webservices.json* contains the definitions of navel-scheduler's web services and cannot be changed at runtime. It must look like this:
 
 ```javascript
 [
@@ -399,7 +399,7 @@ Connectors
 
 Connectors are plain JSON files or Perl scripts which must contain a method named `connector`.
 
-An exemple of Perl connector :
+An exemple of Perl connector:
 
 ```perl
 use strict;
@@ -408,7 +408,7 @@ use warnings;
 sub connector {
     my ($connector_properties, $input) = @_;
 
-    my @datas; # or retrieve datas from databases, message brokers, web services, ...
+    my @datas; # or retrieve datas from databases, message brokers, web services, ....
 
     AnyEvent::Fork::RPC::event("It's done father!") # send a log message to navel-scheduler
 

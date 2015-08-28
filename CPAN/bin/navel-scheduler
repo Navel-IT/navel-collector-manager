@@ -104,7 +104,7 @@ if (defined $general_configuration_file_path) {
 
     if ($daemonize) {
         $logger->push_in_queue(
-            message => 'Daemonizing ...',
+            message => 'Daemonizing ....',
             severity => 'info'
         )->flush_queue(
             clear_queue => 1
@@ -627,7 +627,7 @@ if (defined $general_configuration_file_path) {
                     );
 
                     $logger->push_in_queue(
-                        message => 'Starting the webservices ...',
+                        message => 'Starting the webservices ....',
                         severity => 'notice'
                     )->flush_queue(
                         clear_queue => 1
@@ -669,7 +669,7 @@ if (defined $general_configuration_file_path) {
         }
 
         $logger->push_in_queue(
-            message => 'Starting the scheduler ...',
+            message => 'Starting the scheduler ....',
             severity => 'notice'
         )->flush_queue(
             clear_queue => 1
