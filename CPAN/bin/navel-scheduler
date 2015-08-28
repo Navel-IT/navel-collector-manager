@@ -791,17 +791,26 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAA==
 
 @@ not_found.html.ep
-<!DOCTYPE html>
-<html>
-    % my $error = 'Page not found';
-    <head><title><%= $error %></title></head>
-    <body><%= $error %></body>
+<!doctype html>
+<html lang='en'>
+    <head>
+        <title>Not found</title>
+    </head>
+    <body>
+        <p style='font-weight:bold'>The page you were requesting could not be found.</p>
+    </body>
 </html>
 
 @@ exception.html.ep
-<!DOCTYPE html>
-<html>
+% my $exception = delete $self->stash()->{exception};
+<!doctype html>
+<html lang='en'>
     % my $error = 'Unexpected error';
-    <head><title><%= $error %></title><head>
-    <body><%= $error %> : please report bugs !</body>
+    <head>
+        <title><%= $error %></title>
+    <head>
+    <body>
+        <p style='font-weight:bold; color:red'><%= $error %>, please report the message below.</p>
+        <p style='font-style:italic'><%= $exception->message() %></p>
+    </body>
 </html>
