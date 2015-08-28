@@ -119,7 +119,7 @@ sub when_done {
         );
 
         $self->{core}->{logger}->push_in_queue(
-            message => 'Spawned a new process.',
+            message => 'Spawned a new process for connector ' . $self->{connector}->{name} . '.',
             severity => 'debug'
         );
 
