@@ -121,7 +121,7 @@ if (defined $general_configuration_file_path) {
         IO::AIO::reinit(); # IO::AIO loaded by Navel::Scheduler
     }
 
-    my $options{logger} = eval {
+    my $scheduler = eval {
         Navel::Scheduler->new(
             general_configuration_path => $general_configuration_file_path
         );
@@ -130,7 +130,9 @@ if (defined $general_configuration_file_path) {
     unless ($@) {
         unless ($disable_web_services) {
             my $web_services_listeners = eval {
-                Navel::Definition::WebService::Parser->new()->read($scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file})->make();
+                Navel::Definition::WebService::Parser->new()->read(
+                    file_path => $scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file}
+                )->make();
             };
 
             unless ($@) {
