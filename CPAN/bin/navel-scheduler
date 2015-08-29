@@ -43,6 +43,7 @@ my (
     $log_severity,
     $disable_web_services,
     $daemonize,
+    $logger,
     $prefork_server
 );
 
@@ -50,8 +51,8 @@ my $pid_dir = '/var/run/navel-scheduler';
 
 #-> functions
 
-sub ok_ko($$$) {
-    my ($logger, $ok, $ko) = @_;
+sub ok_ko($$) {
+    my ($ok, $ko) = @_;
 
     for (@{$ok}) {
         $logger->good(
@@ -71,6 +72,20 @@ sub ok_ko($$$) {
         ok => $ok,
         ko => $ko
     };
+}
+
+sub save_configuration_on_success {
+    $logger->good(
+        message => shift() . ': runtime configuration successfully saved.',
+        severity => 'notice'
+    );
+}
+
+sub save_configuration_on_error($) {
+    $logger->bad(
+        message => 'An error occurred while saving the runtime configuration: ' . shift() . '.',
+        severity => 'err'
+    );
 }
 
 #-> main
@@ -96,7 +111,7 @@ $getopts->getoptions(
 ) || pod2usage(1);
 
 if (defined $general_configuration_file_path) {
-    my $logger = Navel::Logger->new(
+    $logger = Navel::Logger->new(
         default_severity => 'notice',
         severity => $log_severity,
         file_path => $log_file_path
@@ -116,7 +131,7 @@ if (defined $general_configuration_file_path) {
             ]
         )->Init();
 
-        IO::AIO::reinit(); # IO::AIO loaded by Navel::Scheduler
+        IO::AIO::reinit();
     }
 
     my $scheduler = eval {
@@ -152,7 +167,7 @@ if (defined $general_configuration_file_path) {
                             $controller->res()->headers()->www_authenticate('Basic');
 
                             $controller->render(
-                                json => ok_ko($logger, [], ['Unauthorized: access is denied due to invalid credentials']),
+                                json => ok_ko([], ['Unauthorized: access is denied due to invalid credentials']),
                                 status => 401
                             );
 
@@ -168,32 +183,31 @@ if (defined $general_configuration_file_path) {
                         if ($action eq 'save_configuration') {
                             my (@ok, @ko);
 
-                            eval {
-                                $web_services_listeners->write(
-                                    file_path => $scheduler->{configuration}->{definition}->{webservices}->{definitions_from_file}
-                                );
+                            $scheduler->{core}->{connectors}->write(
+                                file_path => $scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file},
+                                async => 1,
+                                on_success => \&save_configuration_on_success,
+                                on_error => \&save_configuration_on_error
+                            );
 
-                                $scheduler->{core}->{connectors}->write(
-                                    file_path => $scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file}
-                                );
+                            $scheduler->{core}->{rabbitmq}->write(
+                                file_path => $scheduler->{configuration}->{definition}->{rabbitmq}->{definitions_from_file},
+                                async => 1,
+                                on_success => \&save_configuration_on_success,
+                                on_error => \&save_configuration_on_error
+                            );
 
-                                $scheduler->{core}->{rabbitmq}->write(
-                                    file_path => $scheduler->{configuration}->{definition}->{rabbitmq}->{definitions_from_file}
-                                );
+                            $scheduler->{configuration}->write(
+                                file_path => $general_configuration_file_path,
+                                async => 1,
+                                on_success => \&save_configuration_on_success,
+                                on_error => \&save_configuration_on_error
+                            );
 
-                                $scheduler->{configuration}->write(
-                                    file_path => $general_configuration_file_path
-                                );
-                            };
-
-                            unless ($@) {
-                                push @ok, 'Runtime configuration saved';
-                            } else {
-                                push @ko, 'Cannot save the runtime configuration: ' . $@;
-                            }
+                            push @ok, 'Saving the runtime configuration ....';
 
                             return $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         }
 
@@ -251,7 +265,7 @@ if (defined $general_configuration_file_path) {
                         }
 
                         $controller->render(
-                            json => ok_ko($logger, \@ok, \@ko)
+                            json => ok_ko(\@ok, \@ko)
                         );
                     };
 
@@ -339,7 +353,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } else {
                             $controller->render(
@@ -385,7 +399,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } elsif ($http_method eq 'DEL') {
                             my (@ok, @ko);
@@ -405,7 +419,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } else {
                             $controller->render(
@@ -449,7 +463,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } else {
                             $controller->render(
@@ -493,7 +507,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } elsif ($http_method eq 'DEL') {
                             my (@ok, @ko);
@@ -515,7 +529,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } else {
                             $controller->render(
@@ -567,7 +581,7 @@ if (defined $general_configuration_file_path) {
                             }
 
                             $controller->render(
-                                json => ok_ko($logger, \@ok, \@ko)
+                                json => ok_ko(\@ok, \@ko)
                             );
                         } else {
                             if (defined $publisher) {
@@ -588,7 +602,7 @@ if (defined $general_configuration_file_path) {
                                 return $controller->render(
                                     json => {
                                         %{
-                                            ok_ko($logger, \@ok, \@ko)
+                                            ok_ko(\@ok, \@ko)
                                         },
                                         %{
                                             {
