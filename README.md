@@ -133,7 +133,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {
     "ok": [
-        "Runtime configuration saved"
+        "Saving the runtime configuration ...."
     ],
     "ko": []
 }
