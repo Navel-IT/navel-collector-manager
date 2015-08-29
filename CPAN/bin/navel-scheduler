@@ -74,7 +74,7 @@ sub ok_ko($$) {
     };
 }
 
-sub save_configuration_on_success {
+sub save_configuration_on_success($) {
     $logger->good(
         message => shift() . ': runtime configuration successfully saved.',
         severity => 'notice'
