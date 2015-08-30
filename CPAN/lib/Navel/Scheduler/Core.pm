@@ -127,7 +127,7 @@ sub register_connector_by_name {
                                                 connector => $connector,
                                                 event_definition => {
                                                     connector => $connector,
-                                                    starting_time => $connector_starting_timestarting_time
+                                                    starting_time => $connector_starting_time
                                                 },
                                                 status_method => 'set_ko_exception'
                                             );
