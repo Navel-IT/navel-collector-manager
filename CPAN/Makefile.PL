@@ -37,7 +37,6 @@ WriteMakefile(
         'Navel::Base' => 0,
         'Exporter::Easy' => 0,
         'Carp' => 0,
-        'Scalar::Util::Numeric' => 0,
         'EV' => 0,
         'AnyEvent::DateTime::Cron' => 0,
         'AnyEvent::IO' => 0,
