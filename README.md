@@ -75,7 +75,7 @@ workers | int
 
 *webservices.json* contains the definitions of navel-scheduler's web services and cannot be changed at runtime. It must look like this:
 
-```javascript
+```json
 [
     {
         "name": "webservice-1",
@@ -345,13 +345,15 @@ The following endpoints are currently availables for informations and runtime mo
 }
 ```
   - /scheduler/api/publishers/(:publisher)
-```json
+```javascript
 {
     "datas": [
         "foo",
         "bar"
     ],
-    "collection": "puppet-reports"
+    "collection": "puppet-reports",
+    "starting_time" : 1440959939, // optional
+    "ending_time" : 1440959951, // optional
 }
 ```
 - **PUT** - modify

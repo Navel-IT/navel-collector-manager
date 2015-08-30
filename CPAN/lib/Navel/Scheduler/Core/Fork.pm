@@ -76,32 +76,9 @@ sub __connector {
 
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
         '__connector',
-        on_event => sub {
-            $self->{core}->{logger}->push_in_queue(
-                message => 'AnyEvent::Fork::RPC event message for connector ' . $self->{connector}->{name} . ': ' . shift() . '.',
-                severity => 'notice'
-            );
-        },
-        on_error => sub {
-            $self->{core}->{logger}->bad(
-                message => 'Execution of connector ' . $self->{connector}->{name} . ' failed (fatal error): ' . shift() . '.',
-                severity => 'err'
-            );
-
-            $self->{core}->a_connector_stop(
-                connector => $self->{connector},
-                event_definition => {
-                    connector => $self->{connector}
-                },
-                status_method => 'set_ko_exception'
-            );
-        },
-        on_destroy => sub {
-            $self->{core}->{logger}->push_in_queue(
-                message => 'AnyEvent::Fork::RPC DESTROY() called.',
-                severity => 'debug'
-            );
-        },
+        on_event => $options{on_event},
+        on_error => $options{on_error},
+        on_destroy => $options{on_destroy},
         serialiser => SEREAL_SERIALISER
     );
 

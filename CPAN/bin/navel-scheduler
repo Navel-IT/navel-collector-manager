@@ -560,9 +560,7 @@ if (defined $general_configuration_file_path) {
 
                                 unless ($@) {
                                     eval {
-                                        $publisher->push_in_queue(
-                                            event_definition => %{$body}
-                                        );
+                                        $publisher->push_in_queue(%{$body});
                                     };
 
                                     unless ($@) {

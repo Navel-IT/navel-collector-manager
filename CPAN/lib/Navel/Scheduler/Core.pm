@@ -99,6 +99,8 @@ sub register_connector_by_name {
 
                         $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = $connector->{singleton};
 
+                        my $connector_starting_time = time;
+
                         aio_load($connector->exec_file_path(), sub {
                             my ($connector_content) = @_;
 
@@ -108,13 +110,41 @@ sub register_connector_by_name {
                                         core => $self,
                                         connector_execution_timeout => $self->{configuration}->{definition}->{connectors}->{execution_timeout},
                                         connector => $connector,
-                                        connector_content => $connector_content
+                                        connector_content => $connector_content,
+                                        on_event => sub {
+                                            $self->{logger}->push_in_queue(
+                                                message => 'AnyEvent::Fork::RPC event message for connector ' . $connector->{name} . ': ' . shift() . '.',
+                                                severity => 'notice'
+                                            );
+                                        },
+                                        on_error => sub {
+                                            $self->{logger}->bad(
+                                                message => 'Execution of connector ' . $connector->{name} . ' failed (fatal error): ' . shift() . '.',
+                                                severity => 'err'
+                                            );
+
+                                            $self->a_connector_stop(
+                                                connector => $connector,
+                                                event_definition => {
+                                                    connector => $connector,
+                                                    starting_time => $connector_starting_timestarting_time
+                                                },
+                                                status_method => 'set_ko_exception'
+                                            );
+                                        },
+                                        on_destroy => sub {
+                                            $self->{logger}->push_in_queue(
+                                                message => 'AnyEvent::Fork::RPC DESTROY() called for connector ' . $connector->{name} . '.',
+                                                severity => 'debug'
+                                            );
+                                        }
                                     )->when_done(
                                         callback => sub {
                                             $self->a_connector_stop(
                                                 connector => $connector,
                                                 event_definition => {
                                                     connector => $connector,
+                                                    starting_time => $connector_starting_time,
                                                     datas => shift
                                                 }
                                             );
@@ -125,6 +155,7 @@ sub register_connector_by_name {
                                         connector => $connector,
                                         event_definition => {
                                             connector => $connector,
+                                            starting_time => $connector_starting_time,
                                             datas => $connector_content
                                         }
                                     );
@@ -138,7 +169,8 @@ sub register_connector_by_name {
                                 $self->a_connector_stop(
                                     connector => $connector,
                                     event_definition => {
-                                        connector => $connector
+                                        connector => $connector,
+                                        starting_time => $connector_starting_time
                                     },
                                     status_method => 'set_ko_no_source'
                                 );
