@@ -30,10 +30,7 @@ use Exporter::Easy (
 
 use Carp 'croak';
 
-use Scalar::Util::Numeric qw/
-    isint
-    isfloat
-/;
+use Navel::Utils ':numeric';
 
 use Data::Validate::Struct;
 

@@ -30,10 +30,7 @@ use Cwd;
 use Navel::Logger;
 use Navel::Scheduler '$VERSION';
 use Navel::Definition::WebService::Parser;
-use Navel::Utils qw/
-    encode_json
-    decode_json
-/;
+use Navel::Utils ':json';
 
 #-> defaults
 
