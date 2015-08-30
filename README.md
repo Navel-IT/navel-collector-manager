@@ -397,7 +397,7 @@ The following endpoints are currently availables for informations and runtime mo
 Connectors
 ----------
 
-Connectors are plain JSON files or Perl scripts which must contain a method named `connector`.
+Connectors are plain JSON files or Perl scripts which must contain a function named `connector`.
 
 An exemple of Perl connector:
 
