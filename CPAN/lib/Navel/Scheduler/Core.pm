@@ -503,7 +503,7 @@ sub delete_publisher_by_name {
 
     my ($finded, $definition_to_delete_index);
 
-    state $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
+    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
     croak($self->{definition_class} . ': definition ' . $name . ' does not exists') unless $finded;
 
