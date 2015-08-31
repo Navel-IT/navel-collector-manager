@@ -501,7 +501,7 @@ sub publisher_by_name {
 sub delete_publisher_by_name {
     my ($self, $name) = @_;
 
-    my $finded;
+    my ($finded, $definition_to_delete_index);
 
     state $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
