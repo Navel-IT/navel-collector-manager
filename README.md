@@ -129,15 +129,6 @@ The following endpoints are currently availables for informations and runtime mo
     "version": 0.1
 }
 ```
-  - /scheduler/api?action=save_configuration
-```json
-{
-    "ok": [
-        "Saving the runtime configuration ...."
-    ],
-    "ko": []
-}
-```
   - /scheduler/api/general
 ```json
 {
@@ -179,18 +170,6 @@ The following endpoints are currently availables for informations and runtime mo
 ]
 ```
   - /scheduler/api/jobs/(:job_type)/(:job_name)
-```json
-{
-    "enabled": 1
-}
-```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)?action=disable
-```json
-{
-    "enabled": 0
-}
-```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)?action=enable
 ```json
 {
     "enabled": 1
@@ -256,36 +235,6 @@ The following endpoints are currently availables for informations and runtime mo
     "name": "rabbitmq-1",
     "connected": 0,
     "messages_in_queue": 500
-}
-```
-  - /scheduler/api/publishers/(:publisher)?action=clear_queue
-```json
-{
-    "ok": [],
-    "ko": [],
-    "name": "rabbitmq-1",
-    "connected": 0,
-    "messages_in_queue": 0
-}
-```
-  - /scheduler/api/publishers/(:publisher)?action=connect
-```json
-{
-    "ok": ["Connecting ..."],
-    "ko": [],
-    "name": "rabbitmq-1",
-    "connected": 1,
-    "messages_in_queue": 5
-}
-```
-  - /scheduler/api/publishers/(:publisher)?action=disconnect
-```json
-{
-    "ok": ["Disconnecting ..."],
-    "ko": [],
-    "name": "rabbitmq-1",
-    "connected": 0,
-    "messages_in_queue": 0
 }
 ```
   - /scheduler/api/webservices
@@ -357,11 +306,23 @@ The following endpoints are currently availables for informations and runtime mo
 }
 ```
 - **PUT** - modify
+  - /scheduler/api/save_configuration
+```json
+{}
+```
   - /scheduler/api/general/webservices/credentials
 ```json
 {
     "password": "new_password"
 }
+```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)/enable
+```json
+{}
+```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)/disable
+```json
+{}
 ```
   - /scheduler/api/connectors/(:connector)
 ```json
@@ -374,6 +335,18 @@ The following endpoints are currently availables for informations and runtime mo
 {
     "timeout": 5
 }
+```
+  - /scheduler/api/publishers/(:publisher)/connect
+```json
+{}
+```
+  - /scheduler/api/publishers/(:publisher)/disconnect
+```json
+{}
+```
+  - /scheduler/api/publishers/(:publisher)/clear_queue
+```json
+{}
 ```
 - **DEL** - delete
   - /scheduler/api/connectors/(:connector)

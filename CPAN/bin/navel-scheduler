@@ -187,12 +187,19 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    get '/scheduler/api' => sub {
-                        my $controller = shift;
+                    get '/scheduler/api' => {
+                        json => {
+                            version => $VERSION
+                        }
+                    };
 
-                        my $action = $controller->req()->query_params()->param('action') || '';
+                    get '/scheduler/api/general' => sub {
+                        shift->render(
+                            json => $scheduler->{configuration}->{definition}
+                        );
+                    };
 
-                        if ($action eq 'save_configuration') {
+                    put '/scheduler/api/save_configuration' => sub {
                             my (@ok, @ko);
 
                             $scheduler->{core}->{connectors}->write(
@@ -218,22 +225,9 @@ if (defined $general_configuration_file_path) {
 
                             push @ok, 'Saving the runtime configuration ....';
 
-                            return $controller->render(
+                            shift->render(
                                 json => ok_ko(\@ok, \@ko)
                             );
-                        }
-
-                        $controller->render(
-                            json => {
-                                version => $VERSION
-                            }
-                        );
-                    };
-
-                    get '/scheduler/api/general' => sub {
-                        shift->render(
-                            json => $scheduler->{configuration}->{definition}
-                        );
                     };
 
                     put '/scheduler/api/general/webservices/credentials' => sub {
@@ -303,23 +297,43 @@ if (defined $general_configuration_file_path) {
                         my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
 
                         if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
-                            my $action = $controller->req()->query_params()->param('action') || '';
-
-                            if ($action eq 'enable') {
-                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
-                            } elsif ($action eq 'disable') {
-                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
-                            }
-
-                            return $controller->render(
+                            $controller->render(
                                 json => {
                                     enabled => $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}
                                 }
                             );
+                        } else {
+                            $controller->render(
+                                json => {}
+                            );
+                        }
+                    };
+
+                    put '/scheduler/api/jobs/(:job_type)/(:job_name)/(:job_action)' => [job_action => qr/(enable|disable)/] => sub {
+                        my $controller = shift;
+
+                        my (@ok, @ko);
+
+                        my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
+
+                        my $job_action = $controller->param('job_action');
+
+                        if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
+                            if ($job_action eq 'enable') {
+                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
+
+                                push @ok, 'Job ' . $job_full_name . " enabled";
+                            } elsif ($job_action eq 'disable') {
+                                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
+
+                                push @ok, 'Job ' . $job_full_name . " disabled";
+                            }
+                        } else {
+                            push @ko, 'Job ' . $job_full_name . " don't exists";
                         }
 
                         $controller->render(
-                            json => {}
+                            json => ok_ko(\@ok, \@ko)
                         );
                     };
 
@@ -595,40 +609,51 @@ if (defined $general_configuration_file_path) {
                             );
                         } else {
                             if (defined $publisher) {
-                                my (@ok, @ko);
-
-                                my $action = $controller->req()->query_params()->param('action') || '';
-
-                                if ($action =~ /^(connect|disconnect)$/) {
-                                    my $method = $1 . '_publisher_by_name';
-
-                                    $scheduler->{core}->$method($publisher->{definition}->{name});
-
-                                    push @ok, ucfirst($1) . 'ing of publisher .... ';
-                                } elsif ($action eq 'clear_queue') {
-                                    $publisher->$action();
-                                }
-
-                                return $controller->render(
+                                $controller->render(
                                     json => {
-                                        %{
-                                            ok_ko(\@ok, \@ko)
-                                        },
-                                        %{
-                                            {
-                                                name => $publisher->{definition}->{name},
-                                                connected => $publisher->is_connected() || 0,
-                                                messages_in_queue => scalar @{$publisher->{queue}}
-                                            }
-                                        }
+                                        name => $publisher->{definition}->{name},
+                                        connected => $publisher->is_connected() || 0,
+                                        messages_in_queue => scalar @{$publisher->{queue}}
                                     }
                                 );
+                            } else {
+                                $controller->render(
+                                    json => {}
+                                );
                             }
-
-                            $controller->render(
-                                json => {}
-                            );
                         }
+                    };
+
+                    put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect|clear_queue)/] => sub {
+                        my $controller = shift;
+
+                        my (@ok, @ko);
+
+                        my $publisher_name = $controller->param('publisher');
+
+                        my $publisher_action = $controller->param('publisher_action');
+
+                        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
+
+                        if (defined $publisher) {
+                            if ($publisher_action eq 'connect' || $publisher_action eq 'disconnect') {
+                                my $method = $publisher_action . '_publisher_by_name';
+
+                                push @ok, ucfirst($publisher_action) . 'ing publisher ' . $publisher->{definition}->{name} . ' .... ';
+
+                                $scheduler->{core}->$method($publisher->{definition}->{name});
+                            } elsif ($publisher_action eq 'clear_queue') {
+                                $publisher->$publisher_action();
+
+                                push @ok, 'Queue cleared for publisher ' . $publisher->{definition}->{name};
+                            }
+                        } else {
+                            push @ko, 'Publisher ' . $publisher_name . " don't exists"
+                        }
+
+                        $controller->render(
+                            json => ok_ko(\@ok, \@ko)
+                        );
                     };
 
                     get '/scheduler/api/webservices' => {
