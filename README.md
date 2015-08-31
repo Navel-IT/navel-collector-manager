@@ -261,7 +261,7 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=clear_queue
 ```json
 {
-    "ok": ["Clear queue for publisher rabbitmq-1"],
+    "ok": [],
     "ko": [],
     "name": "rabbitmq-1",
     "connected": 0,
@@ -271,7 +271,7 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=connect
 ```json
 {
-    "ok": [],
+    "ok": ["Connecting ..."],
     "ko": [],
     "name": "rabbitmq-1",
     "connected": 1,
@@ -281,7 +281,7 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)?action=disconnect
 ```json
 {
-    "ok": [],
+    "ok": ["Disconnecting ..."],
     "ko": [],
     "name": "rabbitmq-1",
     "connected": 0,

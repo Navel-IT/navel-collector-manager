@@ -600,12 +600,12 @@ if (defined $general_configuration_file_path) {
                                 my $action = $controller->req()->query_params()->param('action') || '';
 
                                 if ($action =~ /^(connect|disconnect)$/) {
-                                    my $method = $1 . '_publisher';
+                                    my $method = $1 . '_publisher_by_name';
 
                                     $scheduler->{core}->$method($publisher->{definition}->{name});
-                                } elsif ($action eq 'clear_queue') {
-                                    push @ok, 'Clear queue for publisher ' . $publisher->{definition}->{name} . '.';
 
+                                    push @ok, ucfirst($1) . 'ing of publisher .... ';
+                                } elsif ($action eq 'clear_queue') {
                                     $publisher->$action();
                                 }
 
