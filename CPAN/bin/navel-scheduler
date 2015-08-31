@@ -570,58 +570,62 @@ if (defined $general_configuration_file_path) {
                         );
                     };
 
-                    any [qw/GET PUT/] => '/scheduler/api/publishers/(:publisher)' => sub {
+                    get '/scheduler/api/publishers/(:publisher)' => sub {
                         my $controller = shift;
-
-                        my $http_method = $controller->req()->method();
 
                         my $publisher_name = $controller->param('publisher');
 
                         my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
 
-                        if ($http_method eq 'PUT') {
-                            my (@ok, @ko);
+                        if (defined $publisher) {
+                            $controller->render(
+                                json => {
+                                    name => $publisher->{definition}->{name},
+                                    connected => $publisher->is_connected() || 0,
+                                    messages_in_queue => scalar @{$publisher->{queue}}
+                                }
+                            );
+                        } else {
+                            $controller->render(
+                                json => {}
+                            );
+                        }
+                    };
 
-                            if (defined $publisher) {
-                                my $body = eval {
-                                    decode_json($controller->req()->body());
+                    post '/scheduler/api/publishers/(:publisher)/event' => sub {
+                        my $controller = shift;
+
+                        my (@ok, @ko);
+
+                        my $publisher_name = $controller->param('publisher');
+
+                        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
+
+                        if (defined $publisher) {
+                            my $body = eval {
+                                decode_json($controller->req()->body());
+                            };
+
+                            unless ($@) {
+                                eval {
+                                    $publisher->push_in_queue(%{$body});
                                 };
 
                                 unless ($@) {
-                                    eval {
-                                        $publisher->push_in_queue(%{$body});
-                                    };
-
-                                    unless ($@) {
-                                        push @ok, 'Datas manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
-                                    } else {
-                                        push @ko, 'An error occurred while manually pushing datas to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
-                                    }
+                                    push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
                                 } else {
-                                    push @ko, $@;
+                                    push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
                                 }
                             } else {
-                                push @ko, 'Publisher ' . $publisher_name . " don't exists";
+                                push @ko, $@;
                             }
-
-                            $controller->render(
-                                json => ok_ko(\@ok, \@ko)
-                            );
                         } else {
-                            if (defined $publisher) {
-                                $controller->render(
-                                    json => {
-                                        name => $publisher->{definition}->{name},
-                                        connected => $publisher->is_connected() || 0,
-                                        messages_in_queue => scalar @{$publisher->{queue}}
-                                    }
-                                );
-                            } else {
-                                $controller->render(
-                                    json => {}
-                                );
-                            }
+                            push @ko, 'Publisher ' . $publisher_name . " don't exists";
                         }
+
+                        $controller->render(
+                            json => ok_ko(\@ok, \@ko)
+                        );
                     };
 
                     put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect|clear_queue)/] => sub {

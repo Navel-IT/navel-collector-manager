@@ -293,7 +293,7 @@ The following endpoints are currently availables for informations and runtime mo
     "auto_connect": 1
 }
 ```
-  - /scheduler/api/publishers/(:publisher)
+  - /scheduler/api/publishers/(:publisher)/event
 ```javascript
 {
     "datas": [
