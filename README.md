@@ -351,7 +351,7 @@ The following endpoints are currently availables for informations and runtime mo
         "foo",
         "bar"
     ],
-    "collection": "puppet-reports",
+    "collection": "my-app",
     "starting_time" : 1440959939, // optional
     "ending_time" : 1440959951 // optional
 }
