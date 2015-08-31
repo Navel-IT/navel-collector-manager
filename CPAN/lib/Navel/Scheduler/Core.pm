@@ -10,6 +10,8 @@ package Navel::Scheduler::Core;
 use strict;
 use warnings;
 
+use feature 'state';
+
 use parent 'Navel::Base';
 
 use constant {
@@ -47,8 +49,7 @@ sub new {
         jobs => {
             enabled => {},
             connectors => {
-                locks => {},
-                running => 0
+                running => {}
             }
         }
     }, ref $class || $class;
@@ -83,7 +84,7 @@ sub register_connector_by_name {
     my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
-    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
+    $self->{jobs}->{connectors}->{running}->{$connector->{name}} = 0;
 
     $self->{cron}->add(
         $connector->{scheduling},
@@ -92,12 +93,10 @@ sub register_connector_by_name {
         sub {
             local ($@, $!);
 
-            if ( ! $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} || $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} > $self->{jobs}->{connectors}->{running}) {
-                if ($self->{jobs}->{enabled}->{$job_name}) {
-                    unless ($self->{jobs}->{connectors}->{locks}->{$connector->{name}}) {
-                        $self->{jobs}->{connectors}->{running}++;
-
-                        $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = $connector->{singleton};
+            if ($self->{jobs}->{enabled}->{$job_name}) {
+                unless ($self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} && $self->count_connectors_running() >= $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec}) {
+                    unless ($connector->{singleton} && $self->{jobs}->{connectors}->{running}->{$connector->{name}}) {
+                        $self->{jobs}->{connectors}->{running}->{$connector->{name}}++;
 
                         my $connector_starting_time = time;
 
@@ -184,13 +183,13 @@ sub register_connector_by_name {
                     }
                 } else {
                     $self->{logger}->push_in_queue(
-                        message => 'Job ' . $job_name . ' is disabled.',
+                        message => 'Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').',
                         severity => 'debug'
                     );
                 }
             } else {
                 $self->{logger}->push_in_queue(
-                    message => 'Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').',
+                    message => 'Job ' . $job_name . ' is disabled.',
                     severity => 'debug'
                 );
             }
@@ -502,11 +501,9 @@ sub publisher_by_name {
 sub delete_publisher_by_name {
     my ($self, $name) = @_;
 
-    my $definition_to_delete_index = 0;
-
     my $finded;
 
-    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
+    state $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
     croak($self->{definition_class} . ': definition ' . $name . ' does not exists') unless $finded;
 
@@ -565,11 +562,15 @@ sub a_connector_stop {
 
     $_->push_in_queue(%options) for @{$self->{publishers}};
 
-    $self->{jobs}->{connectors}->{locks}->{$connector->{name}} = 0;
-
-    $self->{jobs}->{connectors}->{running}--;
+    $self->{jobs}->{connectors}->{running}->{$connector->{name}}--;
 
     1;
+}
+
+sub count_connectors_running {
+    state $sum += $_ for values %{shift->{jobs}->{connectors}->{running}};
+
+    $sum;
 }
 
 sub start {
