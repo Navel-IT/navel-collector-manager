@@ -388,7 +388,7 @@ if (defined $general_configuration_file_path) {
                         }
                     };
 
-                    any [qw/GET PUT DEL/] => '/scheduler/api/connectors/(:connector)' => sub {
+                    any [qw/GET PUT DELETE/] => '/scheduler/api/connectors/(:connector)' => sub {
                         my $controller = shift;
 
                         my $http_method = $controller->req()->method();
@@ -427,7 +427,7 @@ if (defined $general_configuration_file_path) {
                             $controller->render(
                                 json => ok_ko(\@ok, \@ko)
                             );
-                        } elsif ($http_method eq 'DEL') {
+                        } elsif ($http_method eq 'DELETE') {
                             my (@ok, @ko);
 
                             if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
@@ -498,7 +498,7 @@ if (defined $general_configuration_file_path) {
                         }
                     };
 
-                    any [qw/GET PUT DEL/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+                    any [qw/GET PUT DELETE/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
                         my $controller = shift;
 
                         my $http_method = $controller->req()->method();
@@ -535,7 +535,7 @@ if (defined $general_configuration_file_path) {
                             $controller->render(
                                 json => ok_ko(\@ok, \@ko)
                             );
-                        } elsif ($http_method eq 'DEL') {
+                        } elsif ($http_method eq 'DELETE') {
                             my (@ok, @ko);
 
                             if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
@@ -581,8 +581,7 @@ if (defined $general_configuration_file_path) {
                             $controller->render(
                                 json => {
                                     name => $publisher->{definition}->{name},
-                                    connected => $publisher->is_connected() || 0,
-                                    messages_in_queue => scalar @{$publisher->{queue}}
+                                    connected => $publisher->is_connected() || 0
                                 }
                             );
                         } else {
@@ -592,43 +591,7 @@ if (defined $general_configuration_file_path) {
                         }
                     };
 
-                    post '/scheduler/api/publishers/(:publisher)/event' => sub {
-                        my $controller = shift;
-
-                        my (@ok, @ko);
-
-                        my $publisher_name = $controller->param('publisher');
-
-                        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
-
-                        if (defined $publisher) {
-                            my $body = eval {
-                                decode_json($controller->req()->body());
-                            };
-
-                            unless ($@) {
-                                eval {
-                                    $publisher->push_in_queue(%{$body});
-                                };
-
-                                unless ($@) {
-                                    push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
-                                } else {
-                                    push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
-                                }
-                            } else {
-                                push @ko, $@;
-                            }
-                        } else {
-                            push @ko, 'Publisher ' . $publisher_name . " don't exists";
-                        }
-
-                        $controller->render(
-                            json => ok_ko(\@ok, \@ko)
-                        );
-                    };
-
-                    put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect|clear_queue)/] => sub {
+                    put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect)/] => sub {
                         my $controller = shift;
 
                         my (@ok, @ko);
@@ -646,18 +609,72 @@ if (defined $general_configuration_file_path) {
                                 push @ok, ucfirst($publisher_action) . 'ing publisher ' . $publisher->{definition}->{name} . ' .... ';
 
                                 $scheduler->{core}->$method($publisher->{definition}->{name});
-                            } elsif ($publisher_action eq 'clear_queue') {
-                                $publisher->$publisher_action();
-
-                                push @ok, 'Queue cleared for publisher ' . $publisher->{definition}->{name};
                             }
                         } else {
-                            push @ko, 'Publisher ' . $publisher_name . " don't exists"
+                            push @ko, 'Publisher ' . $publisher_name . " don't exists";
                         }
 
                         $controller->render(
                             json => ok_ko(\@ok, \@ko)
                         );
+                    };
+
+                    any [qw/GET POST DELETE/] => '/scheduler/api/publishers/(:publisher)/events' => sub {
+                        my $controller = shift;
+
+                        my $http_method = $controller->req()->method();
+
+                        my $publisher_name = $controller->param('publisher');
+
+                        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
+
+                        if ($http_method eq 'POST') {
+                            my (@ok, @ko);
+
+                            if (defined $publisher) {
+                                my $body = eval {
+                                    decode_json($controller->req()->body());
+                                };
+
+                                unless ($@) {
+                                    eval {
+                                        $publisher->push_in_queue(%{$body});
+                                    };
+
+                                    unless ($@) {
+                                        push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
+                                    } else {
+                                        push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
+                                    }
+                                } else {
+                                    push @ko, $@;
+                                }
+                            } else {
+                                push @ko, 'Publisher ' . $publisher_name . " don't exists";
+                            }
+
+                            $controller->render(
+                                json => ok_ko(\@ok, \@ko)
+                            );
+                        } elsif ($http_method eq 'DELETE') {
+                            my (@ok, @ko);
+
+                            if (defined $publisher) {
+                                $publisher->clear_queue();
+
+                                push @ok, 'Queue cleared for publisher ' . $publisher->{definition}->{name};
+                            } else {
+                                push @ko, 'Publisher ' . $publisher_name . " don't exists";
+                            }
+
+                            $controller->render(
+                                json => ok_ko(\@ok, \@ko)
+                            );
+                        } else {
+                            $controller->render(
+                                json => defined $publisher ? [ map { $_->serialized_datas() } @{$publisher->{queue}} ] : []
+                            );
+                        }
                     };
 
                     get '/scheduler/api/webservices' => {

@@ -237,6 +237,12 @@ The following endpoints are currently availables for informations and runtime mo
     "messages_in_queue": 500
 }
 ```
+  - /scheduler/api/publishers/(:publisher)/events
+```json
+[
+    "*/1 * * * * ?einput(*gsecondsdnamegsleep-1/esleepsexec_directory_path&)/usr/local/etc/n"
+]
+```
   - /scheduler/api/webservices
 ```json
 [
@@ -293,7 +299,7 @@ The following endpoints are currently availables for informations and runtime mo
     "auto_connect": 1
 }
 ```
-  - /scheduler/api/publishers/(:publisher)/event
+  - /scheduler/api/publishers/(:publisher)/events
 ```javascript
 {
     "datas": [
@@ -344,10 +350,6 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {}
 ```
-  - /scheduler/api/publishers/(:publisher)/clear_queue
-```json
-{}
-```
 - **DEL** - delete
   - /scheduler/api/connectors/(:connector)
 ```json
@@ -367,6 +369,10 @@ The following endpoints are currently availables for informations and runtime mo
     ],
     "ko": []
 }
+```
+  - /scheduler/api/publishers/(:publisher)/events
+```json
+{}
 ```
 
 Connectors
