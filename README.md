@@ -302,13 +302,16 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/publishers/(:publisher)/events
 ```javascript
 {
-    "datas": [
-        "foo",
-        "bar"
-    ],
-    "collection": "my-app",
-    "starting_time" : 1440959939, // optional
-    "ending_time" : 1440959951 // optional
+    "event_definition": {
+        "datas": [
+            "foo",
+            "bar"
+        ],
+        "collection": "my-app",
+        "starting_time" : 1440959939, // default value : current POSIX timestamp
+        "ending_time" : 1440959951 // default value : current POSIX timestamp
+    },
+    "status": "ko_exception" // "ok", "ko_no_source" and "ko_exception" are available. Default value : "ok"
 }
 ```
 - **PUT** - modify

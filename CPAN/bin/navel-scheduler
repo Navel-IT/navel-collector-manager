@@ -264,7 +264,7 @@ if (defined $general_configuration_file_path) {
                                     push @ko, 'An error occurred while modifying the credentials of webservices';
                                 }
                             } else {
-                                push @ko, 'Body need to be a hashtable';
+                                push @ko, 'Body need to represent a hashtable';
                             }
                         } else {
                             push @ko, $@;
@@ -372,7 +372,7 @@ if (defined $general_configuration_file_path) {
                                         push @ko, $@;
                                     }
                                 } else {
-                                    push @ko, 'Body need to be a hashtable';
+                                    push @ko, 'Body need to represent a hashtable';
                                 }
                             } else {
                                 push @ko, $@;
@@ -418,7 +418,7 @@ if (defined $general_configuration_file_path) {
                                         push @ko, 'Connector ' . $connector_name . " don't exists";
                                     }
                                 } else {
-                                    push @ko, 'Body need to be a hashtable';
+                                    push @ko, 'Body need to represent a hashtable';
                                 }
                             } else {
                                 push @ko, $@;
@@ -482,7 +482,7 @@ if (defined $general_configuration_file_path) {
                                         push @ko, $@;
                                     }
                                 } else {
-                                    push @ko, 'Body need to be a hashtable';
+                                    push @ko, 'Body need to represent a hashtable';
                                 }
                             } else {
                                 push @ko, $@;
@@ -526,7 +526,7 @@ if (defined $general_configuration_file_path) {
                                         push @ko, 'RabbitMQ ' . $publisher->{definition}->{name} . " and his publisher don't exists";
                                     }
                                 } else {
-                                    push @ko, 'Body need to be a hashtable';
+                                    push @ko, 'Body need to represent a hashtable';
                                 }
                             } else {
                                 push @ko, $@;
@@ -637,14 +637,32 @@ if (defined $general_configuration_file_path) {
                                 };
 
                                 unless ($@) {
-                                    eval {
-                                        $publisher->push_in_queue(%{$body});
-                                    };
+                                    if (ref $body eq 'HASH') {
+                                        delete $body->{status_method};
 
-                                    unless ($@) {
-                                        push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
+                                        if (defined $body->{status}) {
+                                            my $status = delete $body->{status};
+
+                                            if ($status eq 'ok' || $status eq 'ko_no_source' || $status eq 'ko_exception') {
+                                                $body->{status_method} = 'set_' . $status;
+                                            } else {
+                                                 push @ko, 'Event status is incorrect';
+                                            }
+                                        }
+
+                                        unless (@ko) {
+                                            eval {
+                                                    $publisher->push_in_queue(%{$body});
+                                            };
+
+                                            unless ($@) {
+                                                push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name};
+                                            } else {
+                                                push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
+                                            }
+                                        }
                                     } else {
-                                        push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@;
+                                        push @ko, 'Body need to represent a hashtable';
                                     }
                                 } else {
                                     push @ko, $@;
