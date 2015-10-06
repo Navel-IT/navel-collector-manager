@@ -30,7 +30,7 @@ sysconfig="/etc/sysconfig/${prog}"
 f_start() {
     ${ECHO} -n "Starting ${prog}: "
 
-    daemon --user="${prog_user}" --pidfile="${pidfile}" "${prog_full_path}" ${OPTS}
+    daemon --user="${prog_user}" --pidfile="${pidfile}" "${prog_full_path}" --daemonize ${OPTS}
 
     ${ECHO}
 }
