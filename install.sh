@@ -5,6 +5,7 @@
 
 #-> set
 
+ECHO='echo'
 GREP='grep'
 
 #-> set (avoid changing these variables)
@@ -59,16 +60,6 @@ f_die() {
     exit ${2}
 }
 
-f_check_binaries() {
-    local binary
-
-    for binary in ${@} ; do
-        which "${binary}" &>/dev/null || return 1
-    done
-
-    return 0
-}
-
 # OS
 
 _f_define_for_rhel() {
@@ -76,7 +67,6 @@ _f_define_for_rhel() {
 
     DIRNAME='dirname'
     READLINK='readlink'
-    ECHO='echo'
     YUM='yum'
     CURL='curl'
     PERL='perl'
