@@ -321,7 +321,7 @@ f_chmod() {
 f_enable_service() {
     if f_os_is_rhel6 ; then
         ${CHKCONFIG} "${1}" on
-    else
+    elif f_os_is_rhel7 ; then
         ${SYSTEMCTL} enable "${1}"
     fi
 }
