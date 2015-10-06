@@ -3,7 +3,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
-It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only tested on RHEL/CentOS 6.6**.
+It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only supported on RHEL (and derivatives) 6/7**.
 
 Build and install
 -----------------
@@ -109,11 +109,18 @@ For RabbitMQ installation and configuration, see [here](http://www.rabbitmq.com/
 Service
 -------
 
-`service navel-scheduler <action>`
+By default, the service will run under *navel-scheduler:navel-scheduler*.
 
 If you want to change the service options, edit */etc/sysconfig/navel-scheduler* in accordance with the options returned by `navel-scheduler --help`.
 
-**Note**: the service will run under *navel-scheduler:navel-scheduler*.
+- systemd
+
+`systemctl <action> navel-scheduler`
+
+- SysV
+
+`service navel-scheduler <action>`
+
 
 REST API
 --------

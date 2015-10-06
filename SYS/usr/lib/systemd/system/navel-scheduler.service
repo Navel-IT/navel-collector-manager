@@ -1,0 +1,14 @@
+[Unit]
+Description=navel-scheduler
+After=network.target
+
+[Service]
+Type=forking
+User=navel-scheduler
+Group=navel-scheduler
+EnvironmentFile=/etc/sysconfig/navel-scheduler
+ExecStart=/usr/local/bin/navel-scheduler --daemonize $OPTS
+PIDFile=/var/run/navel-scheduler/navel-scheduler.pid
+
+[Install]
+WantedBy=multi-user.target
