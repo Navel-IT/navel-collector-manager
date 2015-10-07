@@ -423,7 +423,7 @@ sub register_publisher_by_name {
                     }
                 } else {
                     $self->{logger}->push_in_queue(
-                        message => 'Buffer for publisher ' . $publisher->{definition}->{name} . ' is empty.',
+                        message => 'Queue for publisher ' . $publisher->{definition}->{name} . ' is empty.',
                         severity => 'info'
                     );
                 }
