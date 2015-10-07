@@ -432,7 +432,9 @@ if (defined $general_configuration_file_path) {
 
                             if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
                                 eval {
-                                    $scheduler->{core}->{connectors}->delete_definition($connector_name);
+                                    $scheduler->{core}->{connectors}->delete_definition(
+                                        definition_name => $connector_name
+                                    );
                                 };
 
                                 unless ($@) {
@@ -539,14 +541,14 @@ if (defined $general_configuration_file_path) {
                             my (@ok, @ko);
 
                             if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
-                                push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
+                                push @ok, 'Publisher ' . $rabbitmq_name . ' unregistered';
 
                                 eval {
                                     $scheduler->{core}->delete_publisher_by_name($rabbitmq_name);
                                 };
 
                                 unless ($@) {
-                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher deleted';
+                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher are deleted';
                                 } else {
                                     push @ko, $@;
                                 }
