@@ -37,12 +37,13 @@ use Navel::Utils ':json';
 my (
     $general_configuration_file_path,
     $log_file_path,
-    $log_severity,
     $disable_web_services,
     $daemonize,
     $logger,
     $prefork_server
 );
+
+my $log_severity = 'notice';
 
 my $pid_dir = '/var/run/navel-scheduler';
 
@@ -107,13 +108,14 @@ $getopts->getoptions(
     }
 ) || pod2usage(1);
 
-if (defined $general_configuration_file_path) {
+eval {
     $logger = Navel::Logger->new(
-        default_severity => 'notice',
         severity => $log_severity,
         file_path => $log_file_path
     );
+};
 
+if (defined $general_configuration_file_path && defined $logger) {
     if ($daemonize) {
         $logger->push_in_queue(
             message => 'Daemonizing ....',
@@ -432,9 +434,7 @@ if (defined $general_configuration_file_path) {
 
                             if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
                                 eval {
-                                    $scheduler->{core}->{connectors}->delete_definition(
-                                        definition_name => $connector_name
-                                    );
+                                    $scheduler->{core}->{connectors}->delete_definition($connector_name);
                                 };
 
                                 unless ($@) {
@@ -541,14 +541,14 @@ if (defined $general_configuration_file_path) {
                             my (@ok, @ko);
 
                             if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
-                                push @ok, 'Publisher ' . $rabbitmq_name . ' unregistered';
+                                push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered';
 
                                 eval {
                                     $scheduler->{core}->delete_publisher_by_name($rabbitmq_name);
                                 };
 
                                 unless ($@) {
-                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher are deleted';
+                                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher deleted';
                                 } else {
                                     push @ko, $@;
                                 }
@@ -778,8 +778,6 @@ if (defined $general_configuration_file_path) {
 } else {
     pod2usage(1);
 }
-
-exit 0;
 
 #-> POD
 
