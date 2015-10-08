@@ -35,7 +35,6 @@ use Navel::Utils ':json';
 #-> defaults
 
 my (
-    $general_configuration_file_path,
     $log_file_path,
     $disable_web_services,
     $daemonize,
@@ -93,7 +92,6 @@ my $getopts = Getopt::Long::Parser->new();
 $getopts->configure('bundling');
 
 $getopts->getoptions(
-    'c|general-configuration-file-path=s' => \$general_configuration_file_path,
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
     'no-web-services' => \$disable_web_services,
@@ -115,7 +113,7 @@ eval {
     );
 };
 
-if (defined $general_configuration_file_path && defined $logger) {
+if (defined (my $general_configuration_file_path = shift @ARGV) && defined $logger) {
     if ($daemonize) {
         $logger->push_in_queue(
             message => 'Daemonizing ....',
@@ -789,37 +787,33 @@ navel-scheduler - Control and run Navel::Scheduler
 
 =head1 SYNOPSIS
 
-navel-scheduler [options]
+navel-scheduler [<options>] <general-configuration-file-path>
 
 =head1 OPTIONS
 
 =over 4
 
-=item B<-c FILE, --general-configuration-file-path=FILE>
-
-Load general configuration from FILE.
-
-=item B<[--log-file-path=FILE]>
+=item B<--log-file-path=<FILE>>
 
 Log output to FILE.
 
-=item B<[--log-severity=SEVERITY]>
+=item B<--log-severity=<SEVERITY>>
 
 Set severity (syslog format) to SEVERITY.
 
-=item B<[--no-web-services]>
+=item B<--no-web-services>
 
 Disable the web services.
 
-=item B<[--daemonize]>
+=item B<--daemonize>
 
 Run as a standalone daemon.
 
-=item B<[--help]>
+=item B<--help>
 
 Print help.
 
-=item B<[--version]>
+=item B<--version>
 
 Print version.
 
