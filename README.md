@@ -15,7 +15,7 @@ git clone -b 'BRANCH' https://github.com/Navel-IT/navel-scheduler.git
 
 cd navel-scheduler/
 
-bash install.sh -n 'BRANCH' -v 'VERSION' -c
+bash install.sh -n 'BRANCH' -v 'VERSION' -c # -b 'NAVEL-SCHEDULER_BINARY' (in the case where it will not be in /usr/local/bin (default))
 ```
 
 If you use Perlbrew:
