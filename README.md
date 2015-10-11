@@ -200,8 +200,7 @@ The following endpoints are currently availables for informations and runtime mo
     "source": "glpi",
     "input": {
         "url": "http://login:password@glpi.home.fr:8080"
-    },
-    "exec_directory_path": "/usr/local/etc/navel-scheduler/connectors"
+    }
 }
 ```
   - /scheduler/api/rabbitmq

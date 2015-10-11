@@ -354,12 +354,7 @@ if (defined (my $general_configuration_file_path = shift @ARGV) && defined $logg
                                     my $definition = eval {
                                         $scheduler->{core}->{connectors}->add_definition(
                                             {
-                                                %{$body},
-                                                %{
-                                                    {
-                                                        exec_directory_path => $scheduler->{configuration}->{definition}->{connectors}->{connectors_exec_directory}
-                                                    }
-                                                }
+                                                %{$body}
                                             }
                                         );
                                     };

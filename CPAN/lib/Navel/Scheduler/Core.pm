@@ -100,7 +100,7 @@ sub register_connector_by_name {
 
                         my $connector_starting_time = time;
 
-                        aio_load($connector->exec_file_path(), sub {
+                        aio_load($self->{configuration}->{definition}->{connectors}->{connectors_exec_directory} . '/' . $connector->resolve_basename(), sub {
                             my ($connector_content) = @_;
 
                             if ($connector_content) {
