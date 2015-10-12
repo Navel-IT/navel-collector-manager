@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # navel-scheduler is developed by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
 
 #-> BEGIN
