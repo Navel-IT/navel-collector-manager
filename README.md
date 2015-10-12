@@ -1,6 +1,8 @@
 navel-scheduler
 ===============
 
+[![Build Status](https://travis-ci.org/Navel-IT/navel-scheduler.svg)](https://travis-ci.org/Navel-IT/navel-scheduler)
+
 navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
 It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only supported on RHEL (and derivatives) 6.x and 7.x**.
