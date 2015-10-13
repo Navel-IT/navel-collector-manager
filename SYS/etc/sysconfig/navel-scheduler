@@ -1,1 +1,0 @@
-OPTS='--log-file-path=/var/log/navel-scheduler/navel-scheduler.log /usr/local/etc/navel-scheduler/general.json'
