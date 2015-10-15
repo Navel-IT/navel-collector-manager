@@ -1,6 +1,6 @@
 language: perl
-install:
-    - cpanm --quiet --installdeps --notest "https://github.com/navel-it/navel-base.git@${TRAVIS_BRANCH}" .
+before_install:
+    - cpanm --quiet --notest "https://github.com/navel-it/navel-base.git@${TRAVIS_BRANCH}"
 perl:
     - "5.20"
     - "5.18"
