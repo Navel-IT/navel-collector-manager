@@ -7,10 +7,10 @@ navel-scheduler's purpose is to get back datas from connectors at scheduled (Qua
 
 It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms but, **at this time, it is only supported on RHEL (and derivatives) 6.x and 7.x**.
 
-Build and install
------------------
+Install
+-------
 
-**TODO**
+Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 
 Prepare configuration
 ---------------------
