@@ -11,7 +11,7 @@
     {
         "name": "test-2",
         "collection": "test",
-        "type": "file_code",
+        "type": "source",
         "singleton": 1,
         "scheduling": "15 * * * * ?",
         "source": null,
