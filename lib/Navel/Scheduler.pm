@@ -30,6 +30,7 @@ use Navel::Scheduler::Parser;
 use Navel::Scheduler::Core;
 use Navel::Definition::Connector::Parser;
 use Navel::Definition::RabbitMQ::Parser;
+use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 
@@ -48,7 +49,7 @@ sub new {
     }, ref $class || $class;
 }
 
-sub run {
+sub prepare {
     my ($self, %options) = @_;
 
     $self->{core} = Navel::Scheduler::Core->new(
@@ -65,6 +66,14 @@ sub run {
         )->make(),
         logger => $options{logger}
     );
+
+    $self;
+}
+
+sub run {
+    my $self = shift;
+
+    croak("scheduler isn't prepared") unless blessed($self->{core}) eq 'Navel::Scheduler::Core';
 
     my $run = $self->{core}->register_the_logger()->register_connectors()->init_publishers();
 
