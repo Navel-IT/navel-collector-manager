@@ -144,15 +144,15 @@ $scheduler = eval {
 };
 
 if ($@) {
-    $logger->good(
+    $logger->bad(
         message => $@ . '.',
-        severity => 'crit'
+        severity => 'emerg'
     )->flush_queue();
 
     exit 1;
 } else {
     if ($validate_configuration) {
-        $logger->bad(
+        $logger->good(
             message => 'Configuration is valid.',
             severity => 'notice'
         )->flush_queue();
