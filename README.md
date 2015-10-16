@@ -171,21 +171,21 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/connectors
 ```json
 [
-    "glpi-1",
-    "collectd-1"
+    "nagios-1",
+    "glpi-1"
 ]
 ```
   - /scheduler/api/connectors/(:connector)
 ```json
 {
-    "name": "glpi-1",
-    "collection": "glpi",
-    "type": "code",
+    "name": "nagios-1",
+    "collection": "nagios",
+    "type": "package",
     "singleton": 1,
     "scheduling": "15 * * * * ?",
-    "source": "glpi",
+    "source": "Navel::Connector::Nagios",
     "input": {
-        "url": "http://login:password@glpi.home.fr:8080"
+        "url": "http://login:password@my.home.com"
     }
 }
 ```
@@ -264,12 +264,12 @@ The following endpoints are currently availables for informations and runtime mo
 {
     "name": "glpi-2",
     "collection": "glpi",
-    "type": "code",
+    "type": "file_code",
     "singleton": 1,
     "scheduling": "15 * * * * ?",
     "source": "glpi",
     "input": {
-        "url": "http://login:password@glpi2.home.fr:8080"
+        "url": "http://login:password@my.home.com:8080"
     }
 }
 ```
@@ -373,11 +373,23 @@ The following endpoints are currently availables for informations and runtime mo
 Connectors
 ----------
 
-Connectors are plain JSON files or Perl scripts which must contain a function named `connector`.
+There are two types of connectors:
 
-An exemple of Perl connector:
+- Perl source.
+- Perl packages.
+
+**Note for Perl based connectors**:
+
+- They must always contain a function named `connector`.
+- `STDOUT` and `STDERR` are closed.
+- The `__connector` function is reserved.
+- The error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.
+
+An exemple of Perl package connector:
 
 ```perl
+package Navel::Connectors::Exemple;
+
 use strict;
 use warnings;
 
@@ -391,9 +403,3 @@ sub connector {
     \@datas;
 }
 ```
-
-**Note**: `STDOUT` and `STDERR` are closed.
-
-**Note**: the `__connector` function is reserved.
-
-**Note**: the error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.

@@ -50,6 +50,18 @@ sub new {
         rpc => undef
     }, ref $class || $class;
 
+    $self->initialize();
+}
+
+sub initialize {
+    my $self = shift;
+
+    my $connector_basename = $self->{connector}->resolve_basename();
+
+    $self->{fork} = AnyEvent::Fork->new();
+
+    $self->{fork}->require($connector_basename) if $self->{connector}->is_type_package();
+
     my $connector_init_content = '
 BEGIN {
     close STDOUT;
@@ -69,9 +81,11 @@ alarm ' . $self->{connector_execution_timeout} . ';
 ';
     }
 
-    $self->{fork} = AnyEvent::Fork->new()->eval($connector_init_content . $self->{connector_content} . '
-sub __connector {
-    connector(@_);
+    $connector_init_content .= $self->{connector_content} if $self->{connector}->is_type_package();
+
+    $self->{fork}->eval($connector_init_content . '
+sub __connector
+    ' . ($self->{connector}->is_type_package() ? $connector_basename . '::' : '') . 'connector(@_);
 }');
 
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(

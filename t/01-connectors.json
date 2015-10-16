@@ -2,18 +2,18 @@
     {
         "name": "test-1",
         "collection": "test",
-        "type": "code",
+        "type": "package",
         "singleton": 1,
-        "scheduling": "15 * * * * ?",
-        "source": null,
+        "scheduling": "45 * * * * ?",
+        "source": "Navel::Connector::Test",
         "input": null
     },
     {
         "name": "test-2",
         "collection": "test",
-        "type": "json",
+        "type": "file_code",
         "singleton": 1,
-        "scheduling": "45 * * * * ?",
+        "scheduling": "15 * * * * ?",
         "source": null,
         "input": null
     }
