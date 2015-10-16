@@ -345,7 +345,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {}
 ```
-- **DEL** - delete
+- **DELETE** - delete
   - /scheduler/api/connectors/(:connector)
 ```json
 {
@@ -375,10 +375,10 @@ Connectors
 
 There are two types of connectors:
 
+- Perl package.
 - Perl source.
-- Perl packages.
 
-**Note for Perl based connectors**:
+**Notes for Perl based connectors**:
 
 - They must always contain a function named `connector`.
 - `STDOUT` and `STDERR` are closed.
@@ -404,4 +404,21 @@ sub connector {
 }
 
 1;
+```
+
+An exemple of Perl source connector:
+
+```perl
+use strict;
+use warnings;
+
+sub connector {
+    my ($connector_properties, $input) = @_;
+
+    my @datas; # or retrieve datas from databases, message brokers, web services, ....
+
+    AnyEvent::Fork::RPC::event("It's done father!") # send a log message to navel-scheduler
+
+    \@datas;
+}
 ```
