@@ -28,8 +28,6 @@ use Exporter::Easy (
     ]
 );
 
-use Carp 'croak';
-
 use Navel::Utils ':numeric';
 
 use Data::Validate::Struct;
@@ -141,7 +139,7 @@ sub write {
 sub make {
     my $self = shift;
 
-    croak('general definition is invalid') unless scheduler_definition_validator($self->{definition});
+    die "general definition is invalid\n" unless scheduler_definition_validator($self->{definition});
 
     $self;
 }

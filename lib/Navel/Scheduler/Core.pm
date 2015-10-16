@@ -20,8 +20,6 @@ use constant {
     LOGGER_JOB_PREFIX => 'logger_'
 };
 
-use Carp 'croak';
-
 use AnyEvent::DateTime::Cron;
 use AnyEvent::IO;
 
@@ -506,7 +504,7 @@ sub delete_publisher_by_name {
 
     $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
-    croak($self->{definition_class} . ': definition ' . $name . ' does not exists') unless $finded;
+    die $self->{definition_class} . ': definition ' . $name . " does not exists\n" unless $finded;
 
     eval {
         $self->{publishers}->[$definition_to_delete_index]->disconnect(); # work around, DESTROY with disconnect() inside does not work
