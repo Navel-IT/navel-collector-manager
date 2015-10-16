@@ -75,10 +75,10 @@ alarm ' . $self->{connector_execution_timeout} . ';
 ';
     }
 
-    $connector_init_content .= $self->{connector_content} if $self->{connector}->is_type_package();
+    $connector_init_content .= $self->{connector_content} unless $self->{connector}->is_type_package();
 
     $self->{fork}->eval($connector_init_content . '
-sub __connector
+sub __connector {
     ' . ($self->{connector}->is_type_package() ? $connector_basename . '::' : '') . 'connector(@_);
 }');
 
