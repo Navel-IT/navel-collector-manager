@@ -50,12 +50,6 @@ sub new {
         rpc => undef
     }, ref $class || $class;
 
-    $self->initialize();
-}
-
-sub initialize {
-    my $self = shift;
-
     my $connector_basename = $self->{connector}->resolve_basename();
 
     $self->{fork} = AnyEvent::Fork->new();
