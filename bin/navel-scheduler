@@ -168,7 +168,7 @@ if ($@) {
     $logger->bad(
         message => $@ . '.',
         severity => 'err'
-    )->flush_queue() if ($validate_configuration || ! $disable_web_services);
+    )->flush_queue() if $validate_configuration || ! $disable_web_services;
 
     exit 1 if $validate_configuration;
 } elsif ($validate_configuration) {
