@@ -3,9 +3,9 @@ navel-scheduler
 
 [![Build Status](https://travis-ci.org/Navel-IT/navel-scheduler.svg)](https://travis-ci.org/Navel-IT/navel-scheduler)
 
-navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back datas from collectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
-It is build on top of Mojolicious + AnyEvent and must work on all Linux platforms.
+It is build on top of `Mojolicious::Lite` + `AnyEvent` and must work on all Linux platforms.
 
 Install
 -------
@@ -19,9 +19,9 @@ Prepare configuration
 
 ```javascript
 {
-    "connectors": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory": "/usr/local/etc/navel-scheduler/connectors",
+    "collectors": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/collectors.json",
+        "collectors_exec_directory": "/usr/local/etc/navel-scheduler/collectors",
         "maximum": 0,
         "maximum_simultaneous_exec": 0,
         "execution_timeout": 0
@@ -125,9 +125,9 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/general
 ```json
 {
-    "connectors": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/connectors.json",
-        "connectors_exec_directory": "/usr/local/etc/navel-scheduler/connectors",
+    "collectors": {
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/collectors.json",
+        "collectors_exec_directory": "/usr/local/etc/navel-scheduler/collectors",
         "maximum": 0,
         "maximum_simultaneous_exec": 0,
         "execution_timeout": 0
@@ -150,7 +150,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {
     "types": [
-        "connector",
+        "collector",
         "publisher",
         "logger"
     ]
@@ -168,14 +168,14 @@ The following endpoints are currently availables for informations and runtime mo
     "enabled": 1
 }
 ```
-  - /scheduler/api/connectors
+  - /scheduler/api/collectors
 ```json
 [
     "nagios-1",
     "glpi-1"
 ]
 ```
-  - /scheduler/api/connectors/(:connector)
+  - /scheduler/api/collectors/(:collector)
 ```json
 {
     "name": "nagios-1",
@@ -183,7 +183,7 @@ The following endpoints are currently availables for informations and runtime mo
     "type": "package",
     "singleton": 1,
     "scheduling": "15 * * * * ?",
-    "source": "Navel::Connector::Nagios",
+    "source": "Navel::Collector::Nagios",
     "input": {
         "url": "http://login:password@my.home.com"
     }
@@ -259,7 +259,7 @@ The following endpoints are currently availables for informations and runtime mo
 ]
 ```
 - **POST** - create
-  - /scheduler/api/connectors
+  - /scheduler/api/collectors
 ```json
 {
     "name": "glpi-2",
@@ -325,7 +325,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {}
 ```
-  - /scheduler/api/connectors/(:connector)
+  - /scheduler/api/collectors/(:collector)
 ```json
 {
     "scheduling": "*/30 * * * * ?"
@@ -346,11 +346,11 @@ The following endpoints are currently availables for informations and runtime mo
 {}
 ```
 - **DELETE** - delete
-  - /scheduler/api/connectors/(:connector)
+  - /scheduler/api/collectors/(:collector)
 ```json
 {
     "ok": [
-        "Connector glpi-2 unregistered and deleted"
+        "Collector glpi-2 unregistered and deleted"
     ],
     "ko": []
 }
@@ -370,31 +370,31 @@ The following endpoints are currently availables for informations and runtime mo
 {}
 ```
 
-Connectors
+Collectors
 ----------
 
-There are two types of connectors:
+There are two types of collectors:
 
 - Perl package.
 - Perl source.
 
-**Notes for Perl based connectors**:
+**Notes for Perl based collectors**:
 
-- They must always contain a function named `connector`.
+- They must always contain a function named `collector`.
 - `STDOUT` and `STDERR` are closed.
-- The `__connector` function is reserved.
-- The error messages (syntax error, `die`, ...) are not accurate. First test your connectors manually.
+- The `__collector` function is reserved.
+- The error messages (syntax error, `die`, ...) are not accurate. First test your collectors manually.
 
-An exemple of Perl package connector:
+An exemple of Perl package collector:
 
 ```perl
-package Navel::Connectors::Exemple;
+package Navel::Collectors::Exemple;
 
 use strict;
 use warnings;
 
-sub connector {
-    my ($connector_properties, $input) = @_;
+sub collector {
+    my ($collector_properties, $input) = @_;
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 
@@ -406,14 +406,14 @@ sub connector {
 1;
 ```
 
-An exemple of Perl source connector:
+An exemple of Perl source collector:
 
 ```perl
 use strict;
 use warnings;
 
-sub connector {
-    my ($connector_properties, $input) = @_;
+sub collector {
+    my ($collector_properties, $input) = @_;
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 

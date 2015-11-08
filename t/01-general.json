@@ -1,7 +1,7 @@
 {
-    "connectors": {
-        "definitions_from_file": "t/01-connectors.json",
-        "connectors_exec_directory": "t/connectors",
+    "collectors": {
+        "definitions_from_file": "t/01-collectors.json",
+        "collectors_exec_directory": "t/collectors",
         "maximum": 0,
         "maximum_simultaneous_exec": 0,
         "execution_timeout": 0

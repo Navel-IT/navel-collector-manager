@@ -5,7 +5,7 @@
         "type": "package",
         "singleton": 1,
         "scheduling": "45 * * * * ?",
-        "source": "Navel::Connector::Test",
+        "source": "Navel::Collector::Test",
         "input": null
     },
     {

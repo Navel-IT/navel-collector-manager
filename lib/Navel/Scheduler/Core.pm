@@ -15,7 +15,7 @@ use feature 'state';
 use parent 'Navel::Base';
 
 use constant {
-    CONNECTOR_JOB_PREFIX => 'connector_',
+    COLLECTOR_JOB_PREFIX => 'collector_',
     PUBLISHER_JOB_PREFIX => 'publisher_',
     LOGGER_JOB_PREFIX => 'logger_'
 };
@@ -37,7 +37,7 @@ sub new {
 
     bless {
         configuration => $options{configuration},
-        connectors => $options{connectors},
+        collectors => $options{collectors},
         rabbitmq => $options{rabbitmq},
         publishers => [],
         logger => $options{logger},
@@ -46,7 +46,7 @@ sub new {
         ),
         jobs => {
             enabled => {},
-            connectors => {
+            collectors => {
                 running => {}
             }
         }
@@ -74,72 +74,72 @@ sub register_the_logger {
     $self;
 }
 
-sub register_connector_by_name {
+sub register_collector_by_name {
     my $self = shift;
 
-    my $connector = $self->{connectors}->definition_by_name(shift);
+    my $collector = $self->{collectors}->definition_by_name(shift);
 
-    my $job_name = CONNECTOR_JOB_PREFIX . $connector->{name};
+    my $job_name = COLLECTOR_JOB_PREFIX . $collector->{name};
 
     $self->{jobs}->{enabled}->{$job_name} = 1;
-    $self->{jobs}->{connectors}->{running}->{$connector->{name}} = 0;
+    $self->{jobs}->{collectors}->{running}->{$collector->{name}} = 0;
 
     $self->{cron}->add(
-        $connector->{scheduling},
+        $collector->{scheduling},
         name => $job_name,
         single => 1,
         sub {
             local ($@, $!);
 
             if ($self->{jobs}->{enabled}->{$job_name}) {
-                unless ($self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} && $self->count_connectors_running() >= $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec}) {
-                    unless ($connector->{singleton} && $self->{jobs}->{connectors}->{running}->{$connector->{name}}) {
-                        $self->{jobs}->{connectors}->{running}->{$connector->{name}}++;
+                unless ($self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec} && $self->count_collectors_running() >= $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec}) {
+                    unless ($collector->{singleton} && $self->{jobs}->{collectors}->{running}->{$collector->{name}}) {
+                        $self->{jobs}->{collectors}->{running}->{$collector->{name}}++;
 
-                        my $connector_starting_time = time;
+                        my $collector_starting_time = time;
 
-                        my $fork_connector = sub {
-                            my $connector_content = shift;
+                        my $fork_collector = sub {
+                            my $collector_content = shift;
 
                             Navel::Scheduler::Core::Fork->new(
                                 core => $self,
-                                connector_execution_timeout => $self->{configuration}->{definition}->{connectors}->{execution_timeout},
-                                connector => $connector,
-                                connector_content => $connector_content,
+                                collector_execution_timeout => $self->{configuration}->{definition}->{collectors}->{execution_timeout},
+                                collector => $collector,
+                                collector_content => $collector_content,
                                 on_event => sub {
                                     $self->{logger}->push_in_queue(
-                                        message => 'AnyEvent::Fork::RPC event message for connector ' . $connector->{name} . ': ' . shift() . '.',
+                                        message => 'AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift() . '.',
                                         severity => 'notice'
                                     );
                                 },
                                 on_error => sub {
                                     $self->{logger}->bad(
-                                        message => 'Execution of connector ' . $connector->{name} . ' failed (fatal error): ' . shift() . '.',
+                                        message => 'Execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.',
                                         severity => 'err'
                                     );
 
-                                    $self->a_connector_stop(
-                                        connector => $connector,
+                                    $self->a_collector_stop(
+                                        collector => $collector,
                                         event_definition => {
-                                            connector => $connector,
-                                            starting_time => $connector_starting_time
+                                            collector => $collector,
+                                            starting_time => $collector_starting_time
                                         },
                                         status_method => 'set_ko_exception'
                                     );
                                 },
                                 on_destroy => sub {
                                     $self->{logger}->push_in_queue(
-                                        message => 'AnyEvent::Fork::RPC DESTROY() called for connector ' . $connector->{name} . '.',
+                                        message => 'AnyEvent::Fork::RPC DESTROY() called for collector ' . $collector->{name} . '.',
                                         severity => 'debug'
                                     );
                                 }
                             )->when_done(
                                 callback => sub {
-                                    $self->a_connector_stop(
-                                        connector => $connector,
+                                    $self->a_collector_stop(
+                                        collector => $collector,
                                         event_definition => {
-                                            connector => $connector,
-                                            starting_time => $connector_starting_time,
+                                            collector => $collector,
+                                            starting_time => $collector_starting_time,
                                             datas => shift
                                         }
                                     );
@@ -147,25 +147,25 @@ sub register_connector_by_name {
                             );
                         };
 
-                        if ($connector->is_type_package()) {
-                            $fork_connector->();
+                        if ($collector->is_type_package()) {
+                            $fork_collector->();
                         } else {
-                            aio_load($self->{configuration}->{definition}->{connectors}->{connectors_exec_directory} . '/' . $connector->resolve_basename(), sub {
-                                my ($connector_content) = @_;
+                            aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(), sub {
+                                my ($collector_content) = @_;
 
-                                if ($connector_content) {
-                                    $fork_connector->($connector_content);
+                                if ($collector_content) {
+                                    $fork_collector->($collector_content);
                                 } else {
                                     $self->{logger}->bad(
-                                        message => 'Connector ' . $connector->{name} . ': ' . $! . '.',
+                                        message => 'Collector ' . $collector->{name} . ': ' . $! . '.',
                                         severity => 'err'
                                     );
 
-                                    $self->a_connector_stop(
-                                        connector => $connector,
+                                    $self->a_collector_stop(
+                                        collector => $collector,
                                         event_definition => {
-                                            connector => $connector,
-                                            starting_time => $connector_starting_time
+                                            collector => $collector,
+                                            starting_time => $collector_starting_time
                                         },
                                         status_method => 'set_ko_no_source'
                                     );
@@ -174,13 +174,13 @@ sub register_connector_by_name {
                         }
                     } else {
                         $self->{logger}->push_in_queue(
-                            message => 'Connector ' . $connector->{name} . ' is already running.',
+                            message => 'Collector ' . $collector->{name} . ' is already running.',
                             severity => 'debug'
                         );
                     }
                 } else {
                     $self->{logger}->push_in_queue(
-                        message => 'Too much connectors are running (maximum of ' . $self->{configuration}->{definition}->{connectors}->{maximum_simultaneous_exec} . ').',
+                        message => 'Too much collectors are running (maximum of ' . $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec} . ').',
                         severity => 'debug'
                     );
                 }
@@ -196,10 +196,10 @@ sub register_connector_by_name {
     $self;
 }
 
-sub register_connectors {
+sub register_collectors {
     my $self = shift;
 
-    $self->register_connector_by_name($_->{name}) for @{$self->{connectors}->{definitions}};
+    $self->register_collector_by_name($_->{name}) for @{$self->{collectors}->{definitions}};
 
     $self;
 }
@@ -551,25 +551,25 @@ sub unregister_job_by_name {
     }
 }
 
-sub a_connector_stop {
+sub a_collector_stop {
     my ($self, %options) = @_;
 
-    my $connector = delete $options{connector};
+    my $collector = delete $options{collector};
 
     $self->{logger}->push_in_queue(
-        message => 'Add an event from connector ' . $connector->{name} . ' in the queue of existing publishers.',
+        message => 'Add an event from collector ' . $collector->{name} . ' in the queue of existing publishers.',
         severity => 'info'
     );
 
     $_->push_in_queue(%options) for @{$self->{publishers}};
 
-    $self->{jobs}->{connectors}->{running}->{$connector->{name}}--;
+    $self->{jobs}->{collectors}->{running}->{$collector->{name}}--;
 
     1;
 }
 
-sub count_connectors_running {
-    state $sum += $_ for values %{shift->{jobs}->{connectors}->{running}};
+sub count_collectors_running {
+    state $sum += $_ for values %{shift->{jobs}->{collectors}->{running}};
 
     $sum;
 }

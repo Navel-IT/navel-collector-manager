@@ -39,51 +39,51 @@ our $VERSION = 0.1;
 sub new {
     my ($class, %options) = @_;
 
-    $options{connector_execution_timeout} = $options{connector_execution_timeout} || 0;
+    $options{collector_execution_timeout} = $options{collector_execution_timeout} || 0;
 
     my $self = bless {
         core => $options{core},
-        connector_execution_timeout => $options{connector_execution_timeout},
-        connector => $options{connector},
-        connector_content => $options{connector_content},
+        collector_execution_timeout => $options{collector_execution_timeout},
+        collector => $options{collector},
+        collector_content => $options{collector_content},
         fork => undef,
         rpc => undef
     }, ref $class || $class;
 
-    my $connector_init_content;
+    my $collector_init_content;
 
-    my $connector_basename = $self->{connector}->resolve_basename();
+    my $collector_basename = $self->{collector}->resolve_basename();
 
-    $connector_init_content .= 'require ' . $connector_basename . ';' if $self->{connector}->is_type_package();
+    $collector_init_content .= 'require ' . $collector_basename . ';' if $self->{collector}->is_type_package();
 
-    $connector_init_content .= '
+    $collector_init_content .= '
 BEGIN {
     close STDOUT;
     close STDERR;
 }
 ';
 
-    if ($self->{connector_execution_timeout}) {
-        $connector_init_content .= '
+    if ($self->{collector_execution_timeout}) {
+        $collector_init_content .= '
 $SIG{ALRM} = sub {
-    AnyEvent::Fork::RPC::event("execution timeout after ' . $self->{connector_execution_timeout} . ' second' . ($self->{connector_execution_timeout} > 1 ? 's' : '') . '");
+    AnyEvent::Fork::RPC::event("execution timeout after ' . $self->{collector_execution_timeout} . ' second' . ($self->{collector_execution_timeout} > 1 ? 's' : '') . '");
 
     exit;
 };
 
-alarm ' . $self->{connector_execution_timeout} . ';
+alarm ' . $self->{collector_execution_timeout} . ';
 ';
     }
 
-    $connector_init_content .= $self->{connector_content} unless $self->{connector}->is_type_package();
+    $collector_init_content .= $self->{collector_content} unless $self->{collector}->is_type_package();
 
-    $self->{fork} = AnyEvent::Fork->new()->eval($connector_init_content . '
-sub __connector {
-    ' . ($self->{connector}->is_type_package() ? $connector_basename . '::' : '') . 'connector(@_);
+    $self->{fork} = AnyEvent::Fork->new()->eval($collector_init_content . '
+sub __collector {
+    ' . ($self->{collector}->is_type_package() ? $collector_basename . '::' : '') . 'collector(@_);
 }');
 
     $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
-        '__connector',
+        '__collector',
         on_event => $options{on_event},
         on_error => $options{on_error},
         on_destroy => $options{on_destroy},
@@ -98,13 +98,13 @@ sub when_done {
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
-            $self->{connector}->properties(),
-            $self->{connector}->{input},
+            $self->{collector}->properties(),
+            $self->{collector}->{input},
             $options{callback}
         );
 
         $self->{core}->{logger}->push_in_queue(
-            message => 'Spawned a new process for connector ' . $self->{connector}->{name} . '.',
+            message => 'Spawned a new process for collector ' . $self->{collector}->{name} . '.',
             severity => 'debug'
         );
 

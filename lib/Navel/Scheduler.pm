@@ -28,7 +28,7 @@ use Carp 'croak';
 
 use Navel::Scheduler::Parser;
 use Navel::Scheduler::Core;
-use Navel::Definition::Connector::Parser;
+use Navel::Definition::Collector::Parser;
 use Navel::Definition::RabbitMQ::Parser;
 use Navel::Utils 'blessed';
 
@@ -54,10 +54,10 @@ sub prepare {
 
     $self->{core} = Navel::Scheduler::Core->new(
         configuration => $self->{configuration},
-        connectors => Navel::Definition::Connector::Parser->new(
-            maximum => $self->{configuration}->{definition}->{connectors}->{maximum}
+        collectors => Navel::Definition::Collector::Parser->new(
+            maximum => $self->{configuration}->{definition}->{collectors}->{maximum}
         )->read(
-            file_path => $self->{configuration}->{definition}->{connectors}->{definitions_from_file}
+            file_path => $self->{configuration}->{definition}->{collectors}->{definitions_from_file}
         )->make(),
         rabbitmq => Navel::Definition::RabbitMQ::Parser->new(
             maximum => $self->{configuration}->{definition}->{rabbitmq}->{maximum}
@@ -75,7 +75,7 @@ sub run {
 
     croak("scheduler isn't prepared") unless blessed($self->{core}) eq 'Navel::Scheduler::Core';
 
-    my $run = $self->{core}->register_the_logger()->register_connectors()->init_publishers();
+    my $run = $self->{core}->register_the_logger()->register_collectors()->init_publishers();
 
     for (@{$self->{core}->{publishers}}) {
         $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};

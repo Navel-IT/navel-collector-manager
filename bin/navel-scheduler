@@ -236,8 +236,8 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     put '/scheduler/api/save_configuration' => sub {
             my (@ok, @ko);
 
-            $scheduler->{core}->{connectors}->write(
-                file_path => $scheduler->{configuration}->{definition}->{connectors}->{definitions_from_file},
+            $scheduler->{core}->{collectors}->write(
+                file_path => $scheduler->{configuration}->{definition}->{collectors}->{definitions_from_file},
                 async => 1,
                 on_success => \&save_configuration_on_success,
                 on_error => \&save_configuration_on_error
@@ -371,7 +371,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    any [qw/GET POST/] => '/scheduler/api/connectors' => sub {
+    any [qw/GET POST/] => '/scheduler/api/collectors' => sub {
         my $controller = shift;
 
         my $http_method = $controller->req()->method();
@@ -386,7 +386,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             unless ($@) {
                 if (ref $body eq 'HASH') {
                     my $definition = eval {
-                        $scheduler->{core}->{connectors}->add_definition(
+                        $scheduler->{core}->{collectors}->add_definition(
                             {
                                 %{$body}
                             }
@@ -394,9 +394,9 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     };
 
                     unless ($@) {
-                        $scheduler->{core}->register_connector_by_name($definition->{name});
+                        $scheduler->{core}->register_collector_by_name($definition->{name});
 
-                        push @ok, 'Connector ' . $definition->{name} . ' added and registered';
+                        push @ok, 'Collector ' . $definition->{name} . ' added and registered';
                     } else {
                         push @ko, $@;
                     }
@@ -412,17 +412,17 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             );
         } else {
             $controller->render(
-                json => $scheduler->{core}->{connectors}->name()
+                json => $scheduler->{core}->{collectors}->name()
             );
         }
     };
 
-    any [qw/GET PUT DELETE/] => '/scheduler/api/connectors/(:connector)' => sub {
+    any [qw/GET PUT DELETE/] => '/scheduler/api/collectors/(:collector)' => sub {
         my $controller = shift;
 
         my $http_method = $controller->req()->method();
 
-        my $connector_name = $controller->param('connector');
+        my $collector_name = $controller->param('collector');
 
         if ($http_method eq 'PUT') {
             my (@ok, @ko);
@@ -433,18 +433,18 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
             unless ($@) {
                 if (ref $body eq 'HASH') {
-                    my $connector_definition = $scheduler->{core}->{connectors}->definition_by_name($connector_name);
+                    my $collector_definition = $scheduler->{core}->{collectors}->definition_by_name($collector_name);
 
-                    if (defined $connector_definition) {
+                    if (defined $collector_definition) {
                         delete $body->{name};
 
-                        if ($connector_definition->merge($body)) {
-                            push @ok, 'Connector ' . $connector_name . ' changed';
+                        if ($collector_definition->merge($body)) {
+                            push @ok, 'Collector ' . $collector_name . ' changed';
                         } else {
-                            push @ko, 'An error occurred while modifying connector ' . $connector_name;
+                            push @ko, 'An error occurred while modifying collector ' . $collector_name;
                         }
                     } else {
-                        push @ko, 'Connector ' . $connector_name . " don't exists";
+                        push @ko, 'Collector ' . $collector_name . " don't exists";
                     }
                 } else {
                     push @ko, 'Body need to represent a hashtable';
@@ -459,18 +459,18 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         } elsif ($http_method eq 'DELETE') {
             my (@ok, @ko);
 
-            if ($scheduler->{core}->unregister_job_by_name('connector_' . $connector_name)) {
+            if ($scheduler->{core}->unregister_job_by_name('collector_' . $collector_name)) {
                 eval {
-                    $scheduler->{core}->{connectors}->delete_definition($connector_name);
+                    $scheduler->{core}->{collectors}->delete_definition($collector_name);
                 };
 
                 unless ($@) {
-                    push @ok, 'Connector ' . $connector_name . ' unregistered and deleted';
+                    push @ok, 'Collector ' . $collector_name . ' unregistered and deleted';
                 } else {
                     push @ko, $@;
                 }
             } else {
-                push @ko, 'Connector ' . $connector_name . " don't exists";
+                push @ko, 'Collector ' . $collector_name . " don't exists";
             }
 
             $controller->render(
@@ -478,7 +478,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             );
         } else {
             $controller->render(
-                json => $scheduler->{core}->{connectors}->definition_properties_by_name($connector_name) || {}
+                json => $scheduler->{core}->{collectors}->definition_properties_by_name($collector_name) || {}
             );
         }
     };
@@ -833,7 +833,7 @@ Print version.
 
 =head1 DESCRIPTION
 
-navel-scheduler's purpose is to get back datas from connectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back datas from collectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
 
 =head1 AUTHOR
 
