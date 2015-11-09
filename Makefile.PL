@@ -42,7 +42,6 @@ WriteMakefile(
         'AnyEvent::IO' => 0,
         'AnyEvent::AIO' => 0,
         'IO::AIO' => 0,
-        'Data::Validate::Struct' => 0.8,
         'Sereal' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
