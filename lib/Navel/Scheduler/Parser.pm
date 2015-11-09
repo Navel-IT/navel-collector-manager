@@ -16,31 +16,30 @@ use parent qw/
     Navel::Base::Definition::Parser::Writer
 /;
 
-use Exporter::Easy (
-    OK => [qw/
-        :all
-        scheduler_definition_validator
-    /],
-    TAGS => [
-        all => [qw/
-            scheduler_definition_validator
-        /]
-    ]
-);
+use Navel::Base::Definition;
 
 use Navel::Utils ':numeric';
 
-use Data::Validate::Struct;
-
 our $VERSION = 0.1;
 
-#-> functions
+#-> methods
 
-sub scheduler_definition_validator($) {
-    my $parameters = shift;
+sub new {
+    my $class = shift;
 
-    my $validator = Data::Validate::Struct->new(
-        {
+    bless {
+        definition => {}
+    }, ref $class || $class;
+}
+
+sub validate {
+    my ($class, %options) = @_;
+
+    Navel::Base::Definition->validate(
+        errors_callback => $options{errors_callback},
+        parameters => $options{parameters},
+        definition_class => __PACKAGE__,
+        validator_struct => {
             collectors => {
                 definitions_from_file => 'text',
                 collectors_exec_directory => 'text',
@@ -60,61 +59,48 @@ sub scheduler_definition_validator($) {
                 },
                 mojo_server => 'general_mojo_server'
             }
-        }
-    );
-
-    $validator->type(
-        general_positive_integer => sub {
-            my $value = shift;
-
-            isint($value) && $value >= 0;
         },
-        general_mojo_server => sub {
-            my $value = shift;
+        validator_types => {
+            general_positive_integer => sub {
+                my $value = shift;
 
-            my $customs_options_ok = 0;
+                isint($value) && $value >= 0;
+            },
+            general_mojo_server => sub {
+                my $value = shift;
 
-            if (ref $value eq 'HASH') {
-                $customs_options_ok = 1;
+                my $customs_options_ok = 0;
 
-                my $properties_type = {
-                    # Mojo::Server
-                    reverse_proxy => \&isint,
-                    # Mojo::Server::Daemon
-                    backlog => \&isint,
-                    inactivity_timeout => \&isint,
-                    max_clients => \&isint,
-                    max_requests => \&isint,
-                    # Mojo::Server::Prefork
-                    accepts => \&isint,
-                    accept_interval => \&isfloat,
-                    graceful_timeout => \&isfloat,
-                    heartbeat_interval => \&isfloat,
-                    heartbeat_timeout => \&isfloat,
-                    multi_accept => \&isint,
-                    workers => \&isint
-                };
+                if (ref $value eq 'HASH') {
+                    $customs_options_ok = 1;
 
-                while (my ($property, $type) = each %{$properties_type}) {
-                    $customs_options_ok = 0 if exists $value->{$property} && ! $type->($value->{$property});
+                    my $properties_type = {
+                        # Mojo::Server
+                        reverse_proxy => \&isint,
+                        # Mojo::Server::Daemon
+                        backlog => \&isint,
+                        inactivity_timeout => \&isint,
+                        max_clients => \&isint,
+                        max_requests => \&isint,
+                        # Mojo::Server::Prefork
+                        accepts => \&isint,
+                        accept_interval => \&isfloat,
+                        graceful_timeout => \&isfloat,
+                        heartbeat_interval => \&isfloat,
+                        heartbeat_timeout => \&isfloat,
+                        multi_accept => \&isint,
+                        workers => \&isint
+                    };
+
+                    while (my ($property, $type) = each %{$properties_type}) {
+                        $customs_options_ok = 0 if exists $value->{$property} && ! $type->($value->{$property});
+                    }
                 }
-            }
 
-            $customs_options_ok;
+                $customs_options_ok;
+            }
         }
     );
-
-    $validator->validate($parameters);
-}
-
-#-> methods
-
-sub new {
-    my $class = shift;
-
-    bless {
-        definition => {}
-    }, ref $class || $class;
 }
 
 sub read {
@@ -139,7 +125,9 @@ sub write {
 sub make {
     my $self = shift;
 
-    die "general definition is invalid\n" unless scheduler_definition_validator($self->{definition});
+    die "general definition is invalid\n" unless $self->validate(
+        parameters => $self->{definition}
+    );
 
     $self;
 }
@@ -147,7 +135,9 @@ sub make {
 sub set_definition {
     my ($self, $value) = @_;
 
-    if (scheduler_definition_validator($value)) {
+    if ($self->validate(
+        parameters => $value
+    )) {
         $self->{definition} = $value;
 
         1;
