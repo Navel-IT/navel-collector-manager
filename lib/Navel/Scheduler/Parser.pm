@@ -56,7 +56,7 @@ sub validate {
                     login => 'text',
                     password => 'text'
                 },
-                mojo_server => 'general_mojo_server'
+                mojo_server => 'general_mojo_server_properties'
             }
         },
         validator_types => {
@@ -65,7 +65,7 @@ sub validate {
 
                 isint($value) && $value >= 0;
             },
-            general_mojo_server => sub {
+            general_mojo_server_properties => sub {
                 my $value = shift;
 
                 my $customs_options_ok = 0;
