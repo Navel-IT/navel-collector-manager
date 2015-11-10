@@ -437,7 +437,7 @@ sub register_publisher_by_name {
                                 );
                             } else {
                                 $self->{logger}->push_in_queue(
-                                    message => $publish_generic_message . ' failed.',
+                                    message => $publish_generic_message . '.',
                                     severity => 'notice'
                                 );
                             }
