@@ -422,5 +422,3 @@ sub collector {
     \@datas;
 }
 ```
-
-
