@@ -372,7 +372,7 @@ sub register_publisher_by_name {
                         if (my @channels = values %{$publisher->{net}->channels()}) {
                             $self->{logger}->push_in_queue(
                                 message => 'Clear queue for publisher ' . $publisher->{definition}->{name} . '.',
-                                severity => 'notice'
+                                severity => 'info'
                             );
 
                             $publisher->clear_queue();
