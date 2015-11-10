@@ -58,16 +58,16 @@ sub ok_ko($$) {
     my ($ok, $ko) = @_;
 
     for (@{$ok}) {
-        $logger->good(
-            message => $_,
-            severity => 'notice'
+        $logger->push_in_queue(
+            message => $logger->stepped_log($_),
+            severity => 'info'
         ) if defined $_;
     }
 
     for (@{$ko}) {
-        $logger->good(
-            message => $_,
-            severity => 'notice'
+        $logger->push_in_queue(
+            message => $logger->stepped_log($_),
+            severity => 'info'
         ) if defined $_;
     }
 
@@ -78,7 +78,7 @@ sub ok_ko($$) {
 }
 
 sub save_configuration_on_success($) {
-    $logger->good(
+    $logger->push_in_queue(
         message => shift() . ': runtime configuration successfully saved.',
         severity => 'notice'
     );
@@ -87,7 +87,7 @@ sub save_configuration_on_success($) {
 sub save_configuration_on_error($) {
     $logger->bad(
         message => 'An error occurred while saving the runtime configuration: ' . shift() . '.',
-        severity => 'err'
+        severity => 'error'
     );
 }
 
@@ -150,8 +150,8 @@ $scheduler = eval {
 };
 
 if ($@) {
-    $logger->bad(
-        message => $@,
+    $logger->push_in_queue(
+        message => $logger->stepped_log($@),
         severity => 'emerg'
     )->flush_queue();
 
@@ -165,14 +165,14 @@ $web_services_listeners = eval {
 };
 
 if ($@) {
-    $logger->bad(
-        message => $@,
-        severity => 'err'
+    $logger->push_in_queue(
+        message => $logger->stepped_log($@),
+        severity => 'crit'
     )->flush_queue() if $validate_configuration || ! $disable_web_services;
 
     exit 1 if $validate_configuration;
 } elsif ($validate_configuration) {
-    $logger->good(
+    $logger->push_in_queue(
         message => 'Configuration is valid.',
         severity => 'notice'
     )->flush_queue();
@@ -212,9 +212,14 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                 my $exception = delete $controller->stash()->{exception};
 
                 if (defined $exception) {
-                    $logger->bad(
-                        message => 'An exception has beed raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ' : ' . $exception . '.',
-                        severity => 'err'
+                    $logger->push_in_queue(
+                        message => $logger->stepped_log(
+                            [
+                                'An exception has beed raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
+                                $exception
+                            ]
+                        ),
+                        severity => 'error'
                     );
                 }
             }
@@ -689,7 +694,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
                         unless (@ko) {
                             eval {
-                                    $publisher->push_in_queue(%{$body});
+                                $publisher->push_in_queue(%{$body});
                             };
 
                             unless ($@) {
@@ -763,12 +768,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     };
 
     if ($@) {
-        $logger->bad(
-            message => $@ . '.',
-            severity => 'err'
+        $logger->push_in_queue(
+            message => $logger->stepped_log($@),
+            severity => 'crit'
         )->flush_queue();
     } else {
-        $logger->good(
+        $logger->push_in_queue(
             message => 'Webservices started.',
             severity => 'notice'
         )->flush_queue();
@@ -786,8 +791,8 @@ eval {
 
 if ($@) {
     $logger->bad(
-        message => $@ . '.',
-        severity => 'crit'
+        message => $logger->stepped_log($@),
+        severity => 'emerg'
     )->flush_queue();
 
     exit 1;
