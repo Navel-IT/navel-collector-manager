@@ -258,7 +258,10 @@ sub connect_publisher_by_name {
                         },
                         on_failure => sub {
                             $self->{logger}->bad(
-                                message => $publisher_generic_message . ': channel failure ... ' . join(' ', @_) . '.',
+                                message => [
+                                    $publisher_generic_message . ': channel failure ... ',
+                                    map { $_ . '.' } @_
+                                ],
                                 severity => 'notice'
                             );
                         },
@@ -274,13 +277,19 @@ sub connect_publisher_by_name {
                 },
                 on_failure => sub {
                     $self->{logger}->bad(
-                        message => $publisher_connect_generic_message . ': failure ... ' . join(' ', @_) . '.',
+                        message => [
+                            $publisher_connect_generic_message . ': failure ... ',
+                            map { $_ . '.' } @_
+                        ],
                         severity => 'warn'
                     );
                 },
                 on_read_failure => sub {
                     $self->{logger}->bad(
-                        message => $publisher_generic_message . ': read failure ... ' . join(' ', @_) . '.',
+                        message => [
+                            $publisher_generic_message . ': read failure ... ',
+                            map { $_ . '.' } @_
+                        ],
                         severity => 'warn'
                     );
                 },

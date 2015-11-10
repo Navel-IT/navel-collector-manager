@@ -36,7 +36,6 @@ sub validate {
     my ($class, %options) = @_;
 
     Navel::Base::Definition->validate(
-        errors_callback => $options{errors_callback},
         parameters => $options{parameters},
         definition_class => __PACKAGE__,
         validator_struct => {
@@ -103,6 +102,20 @@ sub validate {
     );
 }
 
+sub set_definition {
+    my ($self, $value) = @_;
+
+    my $errors = $self->validate(
+        parameters => $value
+    );
+
+    die $errors if @{$errors};
+
+    $self->{definition} = $value;
+
+    $self;
+}
+
 sub read {
     my $self = shift;
 
@@ -120,28 +133,6 @@ sub write {
     );
 
     $self;
-}
-
-sub make {
-    my $self = shift;
-
-    die "general definition is invalid\n" unless $self->validate(
-        parameters => $self->{definition}
-    );
-
-    $self;
-}
-
-sub set_definition {
-    my ($self, $value) = @_;
-
-    if ($self->validate(
-        parameters => $value
-    )) {
-        $self->{definition} = $value;
-
-        1;
-    }
 }
 
 # sub AUTOLOAD {}

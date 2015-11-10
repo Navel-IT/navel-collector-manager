@@ -24,8 +24,6 @@ use Exporter::Easy (
     ]
 );
 
-use Carp 'croak';
-
 use Navel::Scheduler::Parser;
 use Navel::Scheduler::Core;
 use Navel::Definition::Collector::Parser;
@@ -39,13 +37,13 @@ our $VERSION = 0.1;
 sub new {
     my ($class, %options) = @_;
 
-    croak('general configuration file path is missing') unless defined $options{general_configuration_path};
+    die "general configuration file path is missing\n" unless defined $options{general_configuration_path};
 
     bless {
         core => undef,
         configuration => Navel::Scheduler::Parser->new()->read(
             file_path => $options{general_configuration_path}
-        )->make()
+        )
     }, ref $class || $class;
 }
 
