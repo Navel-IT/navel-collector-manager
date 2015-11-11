@@ -124,7 +124,7 @@ sub register_collector_by_name {
                                             collector => $collector,
                                             starting_time => $collector_starting_time
                                         },
-                                        status_method => 'set_ko_exception'
+                                        status_method => 'set_status_to_ko_exception'
                                     );
                                 },
                                 on_destroy => sub {
@@ -167,7 +167,7 @@ sub register_collector_by_name {
                                             collector => $collector,
                                             starting_time => $collector_starting_time
                                         },
-                                        status_method => 'set_ko_no_source'
+                                        status_method => 'set_status_to_ko_no_source'
                                     );
                                 }
                             });

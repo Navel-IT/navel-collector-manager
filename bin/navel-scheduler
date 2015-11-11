@@ -680,13 +680,9 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
                 unless ($@) {
                     if (ref $body eq 'HASH') {
-                        delete $body->{status_method};
-
-                        if (defined $body->{status}) {
-                            my $status = delete $body->{status};
-
-                            if ($status eq 'ok' || $status eq 'ko_no_source' || $status eq 'ko_exception') {
-                                $body->{status_method} = 'set_' . $status;
+                        if (defined $body->{status_method} = delete $body->{status}) {
+                            if ($body->{status_method} eq 'ok' || $body->{status_method} eq 'ko_no_source' || $body->{status_method} eq 'ko_exception') {
+                                $body->{status_method} = 'set_status_to_' . $body->{status_method};
                             } else {
                                  push @ko, 'Event status is incorrect.';
                             }
