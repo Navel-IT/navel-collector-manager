@@ -364,14 +364,14 @@ sub register_publisher_by_name {
         sub {
             local $@;
 
+            if ($publisher->{definition}->{auto_connect}) {
+                $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected();
+            }
+
             if ($self->{jobs}->{enabled}->{$job_name}) {
                 my $publish_generic_message = 'Publish events for publisher ' . $publisher->{definition}->{name};
 
                 if (my @queue = @{$publisher->{queue}}) {
-                    if ($publisher->{definition}->{auto_connect}) {
-                        $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected();
-                    }
-
                     if ($publisher->is_connected()) {
                         if (my @channels = values %{$publisher->{net}->channels()}) {
                             $self->{logger}->push_in_queue(
