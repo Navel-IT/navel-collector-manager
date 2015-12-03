@@ -39,6 +39,7 @@ use Navel::Utils qw/
 
 my (
     $log_file_path,
+    $log_no_color,
     $disable_web_services,
     $daemonize,
     $validate_configuration,
@@ -100,6 +101,7 @@ $getopts->configure('bundling');
 $getopts->getoptions(
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
+    'log-no-color' => \$log_no_color,
     'no-web-services' => \$disable_web_services,
     'daemonize' => \$daemonize,
     'validate-configuration' => \$validate_configuration,
@@ -118,7 +120,8 @@ defined (my $general_configuration_file_path = shift @ARGV) or pod2usage(1);
 eval {
     $logger = Navel::Logger->new(
         severity => $log_severity,
-        file_path => $log_file_path
+        file_path => $log_file_path,
+        colored => ! $log_no_color
     );
 };
 
@@ -817,6 +820,10 @@ Log output to FILE.
 =item B<--log-severity=<SEVERITY>>
 
 Set severity (syslog format) to SEVERITY.
+
+=item B<--log-no-color>
+
+Disable colored log output.
 
 =item B<--no-web-services>
 
