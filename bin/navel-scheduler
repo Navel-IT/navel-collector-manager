@@ -649,7 +649,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
         if (defined $publisher) {
             if ($publisher_action eq 'connect' || $publisher_action eq 'disconnect') {
-                my $method = $publisher_action . '_publisher_by_name.';
+                my $method = $publisher_action . '_publisher_by_name';
 
                 push @ok, ucfirst($publisher_action) . 'ing publisher ' . $publisher->{definition}->{name} . ' .... ';
 
