@@ -121,7 +121,8 @@ eval {
     $logger = Navel::Logger->new(
         severity => $log_severity,
         file_path => $log_file_path,
-        colored => ! $log_no_color
+        colored => ! $log_no_color,
+        lcfirst_messages => 1
     );
 };
 
