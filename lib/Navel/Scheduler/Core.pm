@@ -237,102 +237,109 @@ sub connect_publisher_by_name {
     my $publisher_connect_generic_message = 'Connect publisher ' . $publisher->{definition}->{name};
 
     unless ($publisher->is_connected()) {
-        my $publisher_generic_message = 'Publisher ' . $publisher->{definition}->{name};
+        unless ($publisher->is_connecting()) {
+            my $publisher_generic_message = 'Publisher ' . $publisher->{definition}->{name};
 
-        eval {
-            $publisher->connect(
-                on_success => sub {
-                    my $amqp_connection = shift;
+            eval {
+                $publisher->connect(
+                    on_success => sub {
+                        my $amqp_connection = shift;
 
-                    $self->{logger}->push_in_queue(
-                        message => $publisher_connect_generic_message . ' successfully connected.',
-                        severity => 'notice'
-                    );
+                        $self->{logger}->push_in_queue(
+                            message => $publisher_connect_generic_message . ' successfully connected.',
+                            severity => 'notice'
+                        );
 
-                    $amqp_connection->open_channel(
-                        on_success => sub {
-                            $self->{logger}->push_in_queue(
-                                message => $publisher_generic_message . ': channel opened.',
-                                severity => 'notice'
-                            );
-                        },
-                        on_failure => sub {
-                            $self->{logger}->push_in_queue(
-                                message => $self->{logger}->stepped_log(
-                                    [
-                                        $publisher_generic_message . ': channel failure ... ',
-                                        \@_
-                                    ]
-                                ),
-                                severity => 'error'
-                            );
-                        },
-                        on_close => sub {
-                            $self->{logger}->push_in_queue(
-                                message => $publisher_generic_message . ': channel closed.',
-                                severity => 'notice'
-                            );
+                        $amqp_connection->open_channel(
+                            on_success => sub {
+                                $self->{logger}->push_in_queue(
+                                    message => $publisher_generic_message . ': channel opened.',
+                                    severity => 'notice'
+                                );
+                            },
+                            on_failure => sub {
+                                $self->{logger}->push_in_queue(
+                                    message => $self->{logger}->stepped_log(
+                                        [
+                                            $publisher_generic_message . ': channel failure ... ',
+                                            \@_
+                                        ]
+                                    ),
+                                    severity => 'error'
+                                );
+                            },
+                            on_close => sub {
+                                $self->{logger}->push_in_queue(
+                                    message => $publisher_generic_message . ': channel closed.',
+                                    severity => 'notice'
+                                );
 
-                            $publisher->disconnect();
-                        }
-                    );
-                },
-                on_failure => sub {
-                    $self->{logger}->push_in_queue(
-                        message => $self->{logger}->stepped_log(
-                            [
-                                $publisher_connect_generic_message . ': failure ... ',
-                                \@_
-                            ]
-                        ),
-                        severity => 'error'
-                    );
-                },
-                on_read_failure => sub {
-                    $self->{logger}->push_in_queue(
-                        message => $self->{logger}->stepped_log(
-                            [
-                                $publisher_generic_message . ': read failure ... ',
-                                \@_
-                            ]
-                        ),
-                        severity => 'error'
-                    );
-                },
-                on_return => sub {
-                    $self->{logger}->push_in_queue(
-                        message => $publisher_generic_message . ': unable to deliver frame.',
-                        severity => 'error'
-                    );
-                },
-                on_close => sub {
-                    $self->{logger}->push_in_queue(
-                        message => $publisher_generic_message . ' disconnected.',
-                        severity => 'notice'
-                    );
-                }
-            );
-        };
+                                $publisher->disconnect();
+                            }
+                        );
+                    },
+                    on_failure => sub {
+                        $self->{logger}->push_in_queue(
+                            message => $self->{logger}->stepped_log(
+                                [
+                                    $publisher_connect_generic_message . ': failure ... ',
+                                    \@_
+                                ]
+                            ),
+                            severity => 'error'
+                        );
+                    },
+                    on_read_failure => sub {
+                        $self->{logger}->push_in_queue(
+                            message => $self->{logger}->stepped_log(
+                                [
+                                    $publisher_generic_message . ': read failure ... ',
+                                    \@_
+                                ]
+                            ),
+                            severity => 'error'
+                        );
+                    },
+                    on_return => sub {
+                        $self->{logger}->push_in_queue(
+                            message => $publisher_generic_message . ': unable to deliver frame.',
+                            severity => 'error'
+                        );
+                    },
+                    on_close => sub {
+                        $self->{logger}->push_in_queue(
+                            message => $publisher_generic_message . ' disconnected.',
+                            severity => 'notice'
+                        );
+                    }
+                );
+            };
 
-        unless ($@) {
-            $self->{logger}->push_in_queue(
-                message => $publisher_connect_generic_message . ' ....',
-                severity => 'notice'
-            );
+            unless ($@) {
+                $self->{logger}->push_in_queue(
+                    message => $publisher_connect_generic_message . ' ....',
+                    severity => 'notice'
+                );
+            } else {
+                $self->{logger}->push_in_queue(
+                    message => $self->{logger}->stepped_log(
+                        [
+                            $publisher_connect_generic_message . ':',
+                            $@
+                        ]
+                    ),
+                    severity => 'error'
+                );
+            }
         } else {
             $self->{logger}->push_in_queue(
-                message => $self->{logger}->stepped_log(
-                    [
-                        $publisher_connect_generic_message . ':',
-                        $@
-                    ]
-                ),
-                severity => 'error'
+                message => $publisher_connect_generic_message . ': already trying to establish a connection.',
+                severity => 'warning'
             );
         }
     } else {
         $self->{logger}->push_in_queue(
-            message => $publisher_connect_generic_message . ': seem already connected.',
+            message => $publisher_connect_generic_message . ': already connected.',
             severity => 'warning'
         );
     }
@@ -365,7 +372,7 @@ sub register_publisher_by_name {
             local $@;
 
             if ($publisher->{definition}->{auto_connect}) {
-                $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected();
+                $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected() || $publisher->is_connecting();
             }
 
             if ($self->{jobs}->{enabled}->{$job_name}) {
@@ -491,24 +498,31 @@ sub disconnect_publisher_by_name {
     my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->{definition}->{name};
 
     if ($publisher->is_connected()) {
-        eval {
-            $publisher->disconnect();
-        };
+        unless ($publisher->is_disconnecting()) {
+            eval {
+                $publisher->disconnect();
+            };
 
-        unless ($@) {
-            $self->{logger}->push_in_queue(
-                message => $disconnect_generic_message . '.',
-                severity => 'notice'
-            );
+            unless ($@) {
+                $self->{logger}->push_in_queue(
+                    message => $disconnect_generic_message . '.',
+                    severity => 'notice'
+                );
+            } else {
+                $self->{logger}->push_in_queue(
+                    message => $disconnect_generic_message . ': ' . $@ . '.',
+                    severity => 'error'
+                );
+            }
         } else {
             $self->{logger}->push_in_queue(
-                message => $disconnect_generic_message . ': ' . $@ . '.',
-                severity => 'error'
+                message => $disconnect_generic_message . ': already trying to disconnect.',
+                severity => 'warning'
             );
         }
     } else {
         $self->{logger}->push_in_queue(
-            message => $disconnect_generic_message . ': seem already disconnected.',
+            message => $disconnect_generic_message . ': already disconnected.',
             severity => 'warning'
         );
     }
