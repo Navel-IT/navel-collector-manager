@@ -104,7 +104,7 @@ sub when_done {
         );
 
         $self->{core}->{logger}->push_in_queue(
-            message => 'Spawned a new process for collector ' . $self->{collector}->{name} . '.',
+            message => 'spawned a new process for collector ' . $self->{collector}->{name} . '.',
             severity => 'info'
         );
 

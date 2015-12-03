@@ -114,7 +114,7 @@ sub register_collector_by_name {
                                 },
                                 on_error => sub {
                                     $self->{logger}->push_in_queue(
-                                        message => 'Execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.',
+                                        message => 'execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.',
                                         severity => 'error'
                                     );
 
@@ -157,7 +157,7 @@ sub register_collector_by_name {
                                     $fork_collector->($collector_content);
                                 } else {
                                     $self->{logger}->push_in_queue(
-                                        message => 'Collector ' . $collector->{name} . ': ' . $! . '.',
+                                        message => 'collector ' . $collector->{name} . ': ' . $! . '.',
                                         severity => 'error'
                                     );
 
@@ -174,19 +174,19 @@ sub register_collector_by_name {
                         }
                     } else {
                         $self->{logger}->push_in_queue(
-                            message => 'Collector ' . $collector->{name} . ' is already running.',
+                            message => 'collector ' . $collector->{name} . ' is already running.',
                             severity => 'info'
                         );
                     }
                 } else {
                     $self->{logger}->push_in_queue(
-                        message => 'Too much collectors are running (maximum of ' . $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec} . ').',
+                        message => 'too much collectors are running (maximum of ' . $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec} . ').',
                         severity => 'info'
                     );
                 }
             } else {
                 $self->{logger}->push_in_queue(
-                    message => 'Job ' . $job_name . ' is disabled.',
+                    message => 'job ' . $job_name . ' is disabled.',
                     severity => 'info'
                 );
             }
@@ -210,7 +210,7 @@ sub init_publisher_by_name {
     my $rabbitmq = $self->{rabbitmq}->definition_by_name(shift);
 
     $self->{logger}->push_in_queue(
-        message => 'Initialize publisher ' . $rabbitmq->{name} . '.',
+        message => 'initialize publisher ' . $rabbitmq->{name} . '.',
         severity => 'notice'
     );
 
@@ -234,11 +234,11 @@ sub connect_publisher_by_name {
 
     my $publisher = $self->publisher_by_name(shift);
 
-    my $publisher_connect_generic_message = 'Connect publisher ' . $publisher->{definition}->{name};
+    my $publisher_connect_generic_message = 'connect publisher ' . $publisher->{definition}->{name};
 
     unless ($publisher->is_connected()) {
         unless ($publisher->is_connecting()) {
-            my $publisher_generic_message = 'Publisher ' . $publisher->{definition}->{name};
+            my $publisher_generic_message = 'publisher ' . $publisher->{definition}->{name};
 
             eval {
                 $publisher->connect(
@@ -376,13 +376,13 @@ sub register_publisher_by_name {
             }
 
             if ($self->{jobs}->{enabled}->{$job_name}) {
-                my $publish_generic_message = 'Publish events for publisher ' . $publisher->{definition}->{name};
+                my $publish_generic_message = 'publish events for publisher ' . $publisher->{definition}->{name};
 
                 if (my @queue = @{$publisher->{queue}}) {
                     if ($publisher->is_connected()) {
                         if (my @channels = values %{$publisher->{net}->channels()}) {
                             $self->{logger}->push_in_queue(
-                                message => 'Clear queue for publisher ' . $publisher->{definition}->{name} . '.',
+                                message => 'clear queue for publisher ' . $publisher->{definition}->{name} . '.',
                                 severity => 'info'
                             );
 
@@ -390,7 +390,7 @@ sub register_publisher_by_name {
 
                             eval {
                                 for (@queue) {
-                                    my $serialize_generic_message = 'Serialize datas for collection ' . $_->{collection};
+                                    my $serialize_generic_message = 'serialize datas for collection ' . $_->{collection};
 
                                     my $serialized = eval {
                                         $_->serialized_datas();
@@ -466,13 +466,13 @@ sub register_publisher_by_name {
                     }
                 } else {
                     $self->{logger}->push_in_queue(
-                        message => 'Queue for publisher ' . $publisher->{definition}->{name} . ' is empty.',
+                        message => 'queue for publisher ' . $publisher->{definition}->{name} . ' is empty.',
                         severity => 'info'
                     );
                 }
             } else {
                 $self->{logger}->push_in_queue(
-                    message => 'Job ' . $job_name . ' is disabled.',
+                    message => 'job ' . $job_name . ' is disabled.',
                     severity => 'info'
                 );
             }
@@ -495,7 +495,7 @@ sub disconnect_publisher_by_name {
 
     my $publisher = $self->publisher_by_name(shift);
 
-    my $disconnect_generic_message = 'Disconnect publisher ' . $publisher->{definition}->{name};
+    my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
 
     if ($publisher->is_connected()) {
         unless ($publisher->is_disconnecting()) {
@@ -610,7 +610,7 @@ sub a_collector_stop {
     my $collector = delete $options{collector};
 
     $self->{logger}->push_in_queue(
-        message => 'Add an event from collector ' . $collector->{name} . ' in the queue of existing publishers.',
+        message => 'add an event from collector ' . $collector->{name} . ' in the queue of existing publishers.',
         severity => 'info'
     );
 

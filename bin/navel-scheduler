@@ -87,7 +87,7 @@ sub save_configuration_on_success($) {
 
 sub save_configuration_on_error($) {
     $logger->bad(
-        message => 'An error occurred while saving the runtime configuration: ' . shift() . '.',
+        message => 'an error occurred while saving the runtime configuration: ' . shift() . '.',
         severity => 'error'
     );
 }
@@ -121,8 +121,7 @@ eval {
     $logger = Navel::Logger->new(
         severity => $log_severity,
         file_path => $log_file_path,
-        colored => ! $log_no_color,
-        lcfirst_messages => 1
+        colored => ! $log_no_color
     );
 };
 
@@ -130,7 +129,7 @@ pod2usage(1) unless defined $logger;
 
 if ($daemonize && ! $validate_configuration) {
     $logger->push_in_queue(
-        message => 'Daemonizing ....',
+        message => 'daemonizing ....',
         severity => 'info'
     )->flush_queue();
 
@@ -177,7 +176,7 @@ if ($@) {
     exit 1 if $validate_configuration;
 } elsif ($validate_configuration) {
     $logger->push_in_queue(
-        message => 'Configuration is valid.',
+        message => 'configuration is valid.',
         severity => 'notice'
     )->flush_queue();
 
@@ -219,7 +218,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     $logger->push_in_queue(
                         message => $logger->stepped_log(
                             [
-                                'An exception has beed raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
+                                'an exception has beed raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
                                 $exception
                             ]
                         ),
@@ -755,7 +754,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     );
 
     $logger->push_in_queue(
-        message => 'Starting the webservices ....',
+        message => 'starting the webservices ....',
         severity => 'notice'
     )->flush_queue();
 
@@ -774,14 +773,14 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         )->flush_queue();
     } else {
         $logger->push_in_queue(
-            message => 'Webservices started.',
+            message => 'webservices started.',
             severity => 'notice'
         )->flush_queue();
     }
 }
 
 $logger->push_in_queue(
-    message => 'Starting the scheduler ....',
+    message => 'starting the scheduler ....',
     severity => 'notice'
 )->flush_queue();
 
