@@ -12,6 +12,7 @@ use warnings;
 use feature 'say';
 
 use subs qw/
+    plugin
     under
     get
     del
@@ -54,29 +55,6 @@ my $log_severity = 'notice';
 my $pid_dir = '/var/run/navel-scheduler';
 
 #-> functions
-
-sub ok_ko($$) {
-    my ($ok, $ko) = @_;
-
-    for (@{$ok}) {
-        $logger->push_in_queue(
-            message => $logger->stepped_log($_),
-            severity => 'info'
-        ) if defined $_;
-    }
-
-    for (@{$ko}) {
-        $logger->push_in_queue(
-            message => $logger->stepped_log($_),
-            severity => 'info'
-        ) if defined $_;
-    }
-
-    {
-        ok => $ok,
-        ko => $ko
-    };
-}
 
 sub save_configuration_on_success($) {
     $logger->push_in_queue(
@@ -192,6 +170,10 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     app()->mode('production');
     app()->log()->level('fatal');
 
+    plugin 'Navel::Mojolicious::Plugin::Logger', {
+        logger => $logger
+    };
+
     under sub {
         my $controller = shift;
 
@@ -201,7 +183,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             $controller->res()->headers()->www_authenticate('Basic');
 
             $controller->render(
-                json => ok_ko([], ['Unauthorized: access is denied due to invalid credentials.']),
+                json => $controller->ok_ko(
+                    {
+                        ok => [],
+                        ko => ['Unauthorized: access is denied due to invalid credentials.']
+                    }
+                ),
                 status => 401
             );
 
@@ -218,7 +205,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     $logger->push_in_queue(
                         message => $logger->stepped_log(
                             [
-                                'an exception has beed raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
+                                'an exception has been raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
                                 $exception
                             ]
                         ),
@@ -242,6 +229,8 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     };
 
     put '/scheduler/api/save_configuration' => sub {
+            my $controller = shift;
+
             my (@ok, @ko);
 
             $scheduler->{core}->{collectors}->write(
@@ -267,8 +256,13 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
             push @ok, 'Saving the runtime configuration ....';
 
-            shift->render(
-                json => ok_ko(\@ok, \@ko)
+            $controller->render(
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
     };
 
@@ -317,7 +311,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         }
 
         $controller->render(
-            json => ok_ko(\@ok, \@ko)
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
         );
     };
 
@@ -379,7 +378,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         }
 
         $controller->render(
-            json => ok_ko(\@ok, \@ko)
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
         );
     };
 
@@ -420,7 +424,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } else {
             $controller->render(
@@ -468,7 +477,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } elsif ($http_method eq 'DELETE') {
             my (@ok, @ko);
@@ -488,7 +502,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } else {
             $controller->render(
@@ -532,7 +551,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } else {
             $controller->render(
@@ -578,7 +602,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } elsif ($http_method eq 'DELETE') {
             my (@ok, @ko);
@@ -600,7 +629,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } else {
             $controller->render(
@@ -660,7 +694,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         }
 
         $controller->render(
-            json => ok_ko(\@ok, \@ko)
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
         );
     };
 
@@ -713,7 +752,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } elsif ($http_method eq 'DELETE') {
             my (@ok, @ko);
@@ -727,7 +771,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             }
 
             $controller->render(
-                json => ok_ko(\@ok, \@ko)
+                json => $controller->ok_ko(
+                    {
+                        ok => \@ok,
+                        ko => \@ko
+                    }
+                )
             );
         } else {
             $controller->render(
