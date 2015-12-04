@@ -26,7 +26,6 @@ use AnyEvent::IO;
 use Navel::Scheduler::Core::Fork;
 use Navel::RabbitMQ::Publisher;
 use Navel::RabbitMQ::Serialize::Data 'to';
-use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
 
