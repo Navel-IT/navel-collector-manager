@@ -21,6 +21,8 @@ use subs qw/
     any
 /;
 
+use File::Basename;
+
 use Getopt::Long;
 use Pod::Usage;
 
@@ -41,9 +43,9 @@ use Navel::Utils qw/
 my (
     $log_file_path,
     $log_no_color,
-    $disable_web_services,
     $daemonize,
     $validate_configuration,
+    $disable_web_services,
     $logger,
     $scheduler,
     $web_services_listeners,
@@ -52,7 +54,7 @@ my (
 
 my $log_severity = 'notice';
 
-my $pid_dir = '/var/run/navel-scheduler';
+my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
 
 #-> functions
 
@@ -80,9 +82,10 @@ $getopts->getoptions(
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
     'log-no-color' => \$log_no_color,
-    'no-web-services' => \$disable_web_services,
     'daemonize' => \$daemonize,
+    'pid-file=s' => \$pid_file,
     'validate-configuration' => \$validate_configuration,
+    'no-web-services' => \$disable_web_services,
     'help' => sub {
         pod2usage(0);
     },
@@ -111,13 +114,28 @@ if ($daemonize && ! $validate_configuration) {
         severity => 'info'
     )->flush_queue();
 
-    Proc::Daemon->new(
-        working_directory => getcwd(),
-        pid_file => $pid_dir . '/navel-scheduler.pid',
-        dont_close_fh => [
-            __PACKAGE__ . '::DATA'
-        ]
-    )->Init();
+    eval {
+        Proc::Daemon->new(
+            working_directory => getcwd(),
+            pid_file => $pid_file,
+            dont_close_fh => [
+                __PACKAGE__ . '::DATA'
+            ]
+        )->Init();
+    };
+
+    if ($@) {
+        $logger->push_in_queue(
+            message => $logger->stepped_log('error while daemonizing ...',
+                [
+                    $@
+                ]
+            ),
+            severity => 'emerg'
+        )->flush_queue();
+
+        exit 1;
+    }
 
     IO::AIO::reinit();
 }
@@ -874,17 +892,21 @@ Set severity (syslog format) to SEVERITY.
 
 Disable colored log output.
 
-=item B<--no-web-services>
-
-Disable the web services.
-
 =item B<--daemonize>
 
 Run as a standalone daemon.
 
+=item B<--pid-file=<FILE>>
+
+Write pid to FILE.
+
 =item B<--validate-configuration>
 
 Validate the configuration and exit with the proper code.
+
+=item B<--no-web-services>
+
+Disable the web services.
 
 =item B<--help>
 
@@ -960,3 +982,4 @@ AAAAAAAAAAAAAA==
         <p style='font-style:italic'><%= $self->stash()->{exception}->message() %></p>
     </body>
 </html>
+
