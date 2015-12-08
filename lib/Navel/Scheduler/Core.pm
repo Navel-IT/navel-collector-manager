@@ -253,7 +253,7 @@ sub connect_publisher_by_name {
                                 $self->{logger}->push_in_queue(
                                     message => $self->{logger}->stepped_log(
                                         [
-                                            $publisher_generic_message . ': channel failure ... ',
+                                            $publisher_generic_message . ': channel failure.',
                                             \@_
                                         ]
                                     ),
@@ -274,7 +274,7 @@ sub connect_publisher_by_name {
                         $self->{logger}->push_in_queue(
                             message => $self->{logger}->stepped_log(
                                 [
-                                    $publisher_connect_generic_message . ': failure ... ',
+                                    $publisher_connect_generic_message . ': failure.',
                                     \@_
                                 ]
                             ),
@@ -285,7 +285,7 @@ sub connect_publisher_by_name {
                         $self->{logger}->push_in_queue(
                             message => $self->{logger}->stepped_log(
                                 [
-                                    $publisher_generic_message . ': read failure ... ',
+                                    $publisher_generic_message . ': read failure.',
                                     \@_
                                 ]
                             ),
