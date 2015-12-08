@@ -54,6 +54,8 @@ my (
 
 my $log_severity = 'notice';
 
+my $log_datetime_format = '%s';
+
 my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
 
 #-> functions
@@ -82,6 +84,7 @@ $getopts->getoptions(
     'log-file-path=s' => \$log_file_path,
     'log-severity=s' => \$log_severity,
     'log-no-color' => \$log_no_color,
+    'log-datetime-format=s' => \$log_datetime_format,
     'daemonize' => \$daemonize,
     'pid-file=s' => \$pid_file,
     'validate-configuration' => \$validate_configuration,
@@ -102,7 +105,8 @@ eval {
     $logger = Navel::Logger->new(
         severity => $log_severity,
         file_path => $log_file_path,
-        colored => ! $log_no_color
+        colored => ! $log_no_color,
+        datetime_format => $log_datetime_format
     );
 };
 
@@ -915,6 +919,10 @@ Set severity (syslog format) to SEVERITY.
 =item B<--log-no-color>
 
 Disable colored log output.
+
+=item B<--log-datetime-format=<FORMAT>>
+
+Display datetime in the given FORMAT.
 
 =item B<--daemonize>
 
