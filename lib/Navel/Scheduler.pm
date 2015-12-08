@@ -73,7 +73,7 @@ sub run {
 
     croak("scheduler isn't prepared") unless blessed($self->{core}) eq 'Navel::Scheduler::Core';
 
-    my $run = $self->{core}->register_the_logger()->register_collectors()->init_publishers();
+    my $run = $self->{core}->register_the_logger(0)->register_collectors()->init_publishers();
 
     for (@{$self->{core}->{publishers}}) {
         $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};

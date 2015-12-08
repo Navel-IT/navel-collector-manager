@@ -38,7 +38,6 @@ WriteMakefile(
         'Exporter::Easy' => 0,
         'Carp' => 0,
         'EV' => 0,
-        'AnyEvent::DateTime::Cron' => 0,
         'AnyEvent::IO' => 0,
         'AnyEvent::AIO' => 0,
         'IO::AIO' => 0,
@@ -56,7 +55,9 @@ WriteMakefile(
         'Test::More' => 0,
         'Test::Exception' => 0
     },
-    EXE_FILES => ['bin/navel-scheduler'],
+    EXE_FILES => [
+        'bin/navel-scheduler'
+    ],
     test => {
         TESTS => 't/*.t'
     }

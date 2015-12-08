@@ -3,7 +3,7 @@ navel-scheduler
 
 [![Build Status](https://travis-ci.org/Navel-IT/navel-scheduler.svg)](https://travis-ci.org/Navel-IT/navel-scheduler)
 
-navel-scheduler's purpose is to get back datas from collectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
 
 It is build on top of `Mojolicious::Lite` + `AnyEvent` and must work on all Linux platforms.
 
@@ -28,7 +28,8 @@ Prepare configuration
     },
     "rabbitmq": {
         "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json",
-        "maximum": 0
+        "maximum": 0,
+        "maximum_simultaneous_exec": 0
     },
     "webservices": {
         "definitions_from_file": "/usr/local/etc/navel-scheduler/webservices.json",
@@ -133,7 +134,9 @@ The following endpoints are currently availables for informations and runtime mo
         "execution_timeout": 0
     },
     "rabbitmq": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json"
+        "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json",
+        "maximum": 0,
+        "maximum_simultaneous_exec": 0
     },
     "webservices": {
         "definitions_from_file": "/usr/local/etc/navel-scheduler/webservices.json",
@@ -165,7 +168,9 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/jobs/(:job_type)/(:job_name)
 ```json
 {
-    "enabled": 1
+    "enabled": 1,
+    "singleton": 1,
+    "running": 0
 }
 ```
   - /scheduler/api/collectors
@@ -182,7 +187,7 @@ The following endpoints are currently availables for informations and runtime mo
     "collection": "nagios",
     "type": "package",
     "singleton": 1,
-    "scheduling": "15 * * * * ?",
+    "scheduling": 15,
     "source": "Navel::Collector::Nagios",
     "input": {
         "url": "http://login:password@my.home.com"
@@ -210,7 +215,7 @@ The following endpoints are currently availables for informations and runtime mo
     "heartbeat": 30,
     "exchange": "amq.topic",
     "delivery_mode": 2,
-    "scheduling": "*/15 * * * * ?",
+    "scheduling": 15,
     "auto_connect": 1
 }
 ```
@@ -266,7 +271,7 @@ The following endpoints are currently availables for informations and runtime mo
     "collection": "glpi",
     "type": "file_code",
     "singleton": 1,
-    "scheduling": "15 * * * * ?",
+    "scheduling": 15,
     "source": "glpi",
     "input": {
         "url": "http://login:password@my.home.com:8080"
@@ -287,7 +292,7 @@ The following endpoints are currently availables for informations and runtime mo
     "heartbeat": 30,
     "exchange": "amq.topic",
     "delivery_mode": 2,
-    "scheduling": "*/15 * * * * ?",
+    "scheduling": 15,
     "auto_connect": 1
 }
 ```
@@ -314,7 +319,7 @@ The following endpoints are currently availables for informations and runtime mo
   - /scheduler/api/general/webservices/credentials
 ```json
 {
-    "password": "new_password"
+    "password": "3H4uwZqKjXfmbtjH"
 }
 ```
   - /scheduler/api/jobs/(:job_type)/(:job_name)/enable
@@ -325,10 +330,14 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {}
 ```
+  - /scheduler/api/jobs/(:job_type)/(:job_name)/execute
+```json
+{}
+```
   - /scheduler/api/collectors/(:collector)
 ```json
 {
-    "scheduling": "*/30 * * * * ?"
+    "scheduling": 15
 }
 ```
   - /scheduler/api/rabbitmq/(:rabbitmq)

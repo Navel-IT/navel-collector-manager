@@ -66,7 +66,7 @@ sub save_configuration_on_success($) {
 }
 
 sub save_configuration_on_error($) {
-    $logger->bad(
+    $logger->push_in_queue(
         message => 'an error occurred while saving the runtime configuration: ' . shift() . '.',
         severity => 'error'
     );
@@ -204,7 +204,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                 json => $controller->ok_ko(
                     {
                         ok => [],
-                        ko => ['Unauthorized: access is denied due to invalid credentials.']
+                        ko => ['unauthorized: access is denied due to invalid credentials.']
                     }
                 ),
                 status => 401
@@ -272,7 +272,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                 on_error => \&save_configuration_on_error
             );
 
-            push @ok, 'Saving the runtime configuration ....';
+            push @ok, 'saving the runtime configuration.';
 
             $controller->render(
                 json => $controller->ok_ko(
@@ -317,12 +317,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                 };
 
                 unless ($@) {
-                    push @ok, 'Credentials of webservices changed.';
+                    push @ok, 'changing credentials of webservices.';
                 } else {
                     push @ko, $@;
                 }
             } else {
-                push @ko, 'Body need to represent a hashtable.';
+                push @ko, 'body need to represent a hashtable.';
             }
         } else {
             push @ko, $@;
@@ -341,7 +341,9 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     get '/scheduler/api/jobs' => sub {
         shift->render(
             json => {
-                types => $scheduler->{core}->job_types()
+                types => [
+                    keys %{$scheduler->{core}->{job_types}}
+                ]
             }
         );
     };
@@ -349,50 +351,78 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     get '/scheduler/api/jobs/(:job_type)' => sub {
         my $controller = shift;
 
+        my $job_type = $controller->param('job_type');
+
         $controller->render(
-            json => $scheduler->{core}->job_names_by_type($controller->param('job_type'))
+            json => $scheduler->{core}->job_type_exists($job_type) ? [
+                map {
+                    $_->{name}
+                } @{$scheduler->{core}->jobs_by_type($job_type)}
+            ] : []
         );
     };
 
     get '/scheduler/api/jobs/(:job_type)/(:job_name)' => sub {
         my $controller = shift;
 
-        my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
+        my %job_properties = ();
 
-        if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
-            $controller->render(
-                json => {
-                    enabled => $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}
+        my $job_type = $controller->param('job_type');
+
+        if ($scheduler->{core}->job_type_exists($job_type)) {
+            my $job = $scheduler->{core}->job_by_type_and_name($job_type, $controller->param('job_name'));
+
+            if (defined $job) {
+                for (qw/
+                    enabled
+                    singleton
+                    running
+                /) {
+                   $job_properties{$_} = $job->{$_}
                 }
-            );
-        } else {
-            $controller->render(
-                json => {}
-            );
+            }
         }
+
+        $controller->render(
+            json => \%job_properties
+        );
     };
 
-    put '/scheduler/api/jobs/(:job_type)/(:job_name)/(:job_action)' => [job_action => qr/(enable|disable)/] => sub {
+    put '/scheduler/api/jobs/(:job_type)/(:job_name)/(:job_action)' => [job_action => qr/(enable|disable|execute)/] => sub {
         my $controller = shift;
 
         my (@ok, @ko);
 
-        my $job_full_name = $controller->param('job_type') . '_' . $controller->param('job_name');
+        my $job_type = $controller->param('job_type');
 
-        my $job_action = $controller->param('job_action');
+        if ($scheduler->{core}->job_type_exists($job_type)) {
+            my $job_name = $controller->param('job_name');
 
-        if (exists $scheduler->{core}->{jobs}->{enabled}->{$job_full_name}) {
-            if ($job_action eq 'enable') {
-                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 1;
+            my $job = $scheduler->{core}->job_by_type_and_name($job_type, $job_name);
 
-                push @ok, 'Job ' . $job_full_name . " enabled.";
-            } elsif ($job_action eq 'disable') {
-                $scheduler->{core}->{jobs}->{enabled}->{$job_full_name} = 0;
+            if (defined $job) {
+                my $job_action = $controller->param('job_action');
 
-                push @ok, 'Job ' . $job_full_name . " disabled.";
+                my $enable_property = 'enabled';
+
+                if ($job_action eq 'enable') {
+                    $job->{$enable_property} = 1;
+
+                    push @ok, 'enabling job ' . $job->{name} . '.';
+                } elsif ($job_action eq 'disable') {
+                    $job->{$enable_property} = 0;
+
+                    push @ok, 'disabling job ' . $job->{name} . '.';
+                } elsif ($job_action eq 'execute') {
+                    $job->exec();
+
+                    push @ok, 'executing job ' . $job->{name} . '.';
+                }
+            } else {
+                push @ko, 'job ' . $job_name . " don't exists.";
             }
         } else {
-            push @ko, 'Job ' . $job_full_name . " don't exists.";
+            push @ko, 'job ' . $job_type . " don't exists";
         }
 
         $controller->render(
@@ -419,7 +449,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
             unless ($@) {
                 if (ref $body eq 'HASH') {
-                    my $definition = eval {
+                    my $collector = eval {
                         $scheduler->{core}->{collectors}->add_definition(
                             {
                                 %{$body}
@@ -428,14 +458,14 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     };
 
                     unless ($@) {
-                        $scheduler->{core}->register_collector_by_name($definition->{name});
+                        $scheduler->{core}->register_collector_by_name($collector->{name});
 
-                        push @ok, 'Collector ' . $definition->{name} . ' added and registered.';
+                        push @ok, 'adding and registering collector ' . $collector->{name} . '.';
                     } else {
                         push @ko, $@;
                     }
                 } else {
-                    push @ko, 'Body need to represent a hashtable.';
+                    push @ko, 'body need to represent a hashtable.';
                 }
             } else {
                 push @ko, $@;
@@ -459,13 +489,13 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     any [qw/GET PUT DELETE/] => '/scheduler/api/collectors/(:collector)' => sub {
         my $controller = shift;
 
+        my (@ok, @ko);
+
         my $http_method = $controller->req()->method();
 
         my $collector_name = $controller->param('collector');
 
         if ($http_method eq 'PUT') {
-            my (@ok, @ko);
-
             my $body = eval {
                 decode_json($controller->req()->body());
             };
@@ -477,62 +507,65 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     if (defined $collector_definition) {
                         delete $body->{name};
 
+                        my %before_modifications = (
+                            singleton => $collector_definition->{singleton},
+                            interval => $collector_definition->{scheduling}
+                        );
+
                         my $errors = $collector_definition->merge($body);
 
                         unless (@{$errors}) {
-                            push @ok, 'Collector ' . $collector_name . ' changed.';
+                            $scheduler->job_by_type_and_name('collector', $collector_definition->{name})->new(
+                                singleton => $collector_definition->{singleton},
+                                interval => $collector_definition->{scheduling}
+                            ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{scheduling};
+
+                            push @ok, 'modifying collector ' . $collector_definition->{name} . '.';
                         } else {
-                            push @ko, 'Error(s) occurred while modifying collector ' . $collector_name . ':', $errors;
+                            push @ko, 'error(s) occurred while modifying collector ' . $collector_definition->{name} . ':', $errors;
                         }
                     } else {
-                        push @ko, 'Collector ' . $collector_name . " don't exists.";
+                        push @ko, 'collector ' . $collector_name . " don't exists.";
                     }
                 } else {
-                    push @ko, 'Body need to represent a hashtable.';
+                    push @ko, 'body need to represent a hashtable.';
                 }
             } else {
                 push @ko, $@;
             }
-
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
         } elsif ($http_method eq 'DELETE') {
-            my (@ok, @ko);
-
-            if ($scheduler->{core}->unregister_job_by_name('collector_' . $collector_name)) {
+            if ($scheduler->{core}->unregister_job_by_type_and_name('collector', $collector_name)) {
                 eval {
-                    $scheduler->{core}->{collectors}->delete_definition($collector_name);
+                    $scheduler->{core}->{collectors}->delete_definition(
+                        definition_name => $collector_name
+                    );
                 };
 
                 unless ($@) {
-                    push @ok, 'Collector ' . $collector_name . ' unregistered and deleted.';
+                    push @ok, 'unregistering and deleting collector ' . $collector_name . '.';
                 } else {
                     push @ko, $@;
                 }
             } else {
-                push @ko, 'Collector ' . $collector_name . " don't exists.";
+                push @ko, 'collector ' . $collector_name . " don't exists.";
             }
-
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
         } else {
             $controller->render(
                 json => $scheduler->{core}->{collectors}->definition_properties_by_name($collector_name) || {}
             );
+
+            return undef;
         }
-    };
+
+        $controller->render(
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
+        );
+};
 
     any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
         my $controller = shift;
@@ -548,21 +581,21 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
             unless ($@) {
                 if (ref $body eq 'HASH') {
-                    my $definition = eval {
+                    my $rabbitmq = eval {
                         $scheduler->{core}->{rabbitmq}->add_definition($body);
                     };
 
                     unless ($@) {
-                        $scheduler->{core}->init_publisher_by_name($definition->{name})->register_publisher_by_name($definition->{name});
+                        $scheduler->{core}->init_publisher_by_name($rabbitmq->{name})->register_publisher_by_name($rabbitmq->{name});
 
-                        push @ok, 'RabbitMQ ' . $definition->{name} . ' added and publisher associated with registered.';
+                        push @ok, 'adding rabbitmq ' . $rabbitmq->{name} . ' and registering his publisher.';
 
-                        $scheduler->{core}->connect_publisher_by_name($definition->{name}) if $definition->{auto_connect};
+                        $scheduler->{core}->connect_publisher_by_name($rabbitmq->{name}) if $rabbitmq->{auto_connect};
                     } else {
                         push @ko, $@;
                     }
                 } else {
-                    push @ko, 'Body need to represent a hashtable.';
+                    push @ko, 'body need to represent a hashtable.';
                 }
             } else {
                 push @ko, $@;
@@ -586,13 +619,13 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     any [qw/GET PUT DELETE/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
         my $controller = shift;
 
+        my (@ok, @ko);
+
         my $http_method = $controller->req()->method();
 
         my $rabbitmq_name = $controller->param('rabbitmq');
 
         if ($http_method eq 'PUT') {
-            my (@ok, @ko);
-
             my $body = eval {
                 decode_json($controller->req()->body());
             };
@@ -602,63 +635,69 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                     my $publisher = $scheduler->{core}->publisher_by_name($rabbitmq_name);
 
                     if (defined $publisher) {
+                        delete $body->{name};
+
+                        my %before_modifications = (
+                            connected => $publisher->is_connected() || $publisher->is_connecting(),
+                            interval => $publisher->{definition}->{scheduling}
+                        );
+
                         my $errors = $publisher->{definition}->merge($body);
 
                         unless (@{$errors}) {
-                            push @ok, 'RabbitMQ ' . $publisher->{definition}->{name} . ' changed.';
+                            $scheduler->{core}->disconnect_publisher_by_name($publisher->{definition}->{name}) if $before_modifications{connected};
+
+                            $scheduler->{core}->job_by_type_and_name('publisher', $publisher->{definition}->{name})->new(
+                                interval => $publisher->{definition}->{scheduling}
+                            ) unless $publisher->{definition}->{scheduling} == $before_modifications{interval};
+
+                            push @ok, 'modifying rabbitmq ' . $publisher->{definition}->{name} . '.';
                         } else {
-                            push @ko, 'Error(s) occurred while modifying RabbitMQ ' . $publisher->{definition}->{name}, $errors;
+                            push @ko, 'error(s) occurred while modifying rabbitmq ' . $publisher->{definition}->{name}, $errors;
                         }
                     } else {
-                        push @ko, 'RabbitMQ ' . $publisher->{definition}->{name} . " and his publisher don't exists.";
+                        push @ko, 'rabbitmq ' . $rabbitmq_name . " and his publisher don't exists.";
                     }
                 } else {
-                    push @ko, 'Body need to represent a hashtable.';
+                    push @ko, 'body need to represent a hashtable.';
                 }
             } else {
                 push @ko, $@;
             }
-
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
         } elsif ($http_method eq 'DELETE') {
-            my (@ok, @ko);
-
-            if ($scheduler->{core}->unregister_job_by_name('publisher_' . $rabbitmq_name)) {
-                push @ok, 'Publisher ' . $rabbitmq_name . ' is unregistered.';
+            if ($scheduler->{core}->unregister_job_by_type_and_name('publisher', $rabbitmq_name)) {
+                push @ok, 'unregistering publisher ' . $rabbitmq_name . '.';
 
                 eval {
-                    $scheduler->{core}->delete_publisher_by_name($rabbitmq_name);
+                    $scheduler->{core}->delete_publisher_and_definition_associated_by_name($rabbitmq_name);
                 };
 
                 unless ($@) {
-                    push @ok, 'RabbitMQ ' . $rabbitmq_name . ' and his publisher deleted.';
+                    push @ok, 'deleting rabbitmq ' . $rabbitmq_name . ' and his publisher.';
                 } else {
                     push @ko, $@;
                 }
             } else {
-                push @ko, 'RabbitMQ ' . $rabbitmq_name . " and his publisher don't exists.";
+                push @ko, 'rabbitmq ' . $rabbitmq_name . " don't exists.";
             }
 
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
+
         } else {
             $controller->render(
                 json => $scheduler->{core}->{rabbitmq}->definition_properties_by_name($rabbitmq_name) || {}
             );
+
+            return undef;
         }
+
+        $controller->render(
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
+        );
     };
 
     get '/scheduler/api/publishers' => sub {
@@ -674,18 +713,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 
         my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
 
-        if (defined $publisher) {
-            $controller->render(
-                json => {
-                    name => $publisher->{definition}->{name},
-                    connected => $publisher->is_connected() || 0
-                }
-            );
-        } else {
-            $controller->render(
-                json => {}
-            );
-        }
+        $controller->render(
+            json => defined $publisher ? {
+                name => $publisher->{definition}->{name},
+                connected => $publisher->is_connected() || 0
+            } : {}
+        );
     };
 
     put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect)/] => sub {
@@ -703,12 +736,12 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             if ($publisher_action eq 'connect' || $publisher_action eq 'disconnect') {
                 my $method = $publisher_action . '_publisher_by_name';
 
-                push @ok, ucfirst($publisher_action) . 'ing publisher ' . $publisher->{definition}->{name} . ' .... ';
+                push @ok, $publisher_action . 'ing publisher ' . $publisher->{definition}->{name} . '.';
 
                 $scheduler->{core}->$method($publisher->{definition}->{name});
             }
         } else {
-            push @ko, 'Publisher ' . $publisher_name . " don't exists.";
+            push @ko, 'publisher ' . $publisher_name . " don't exists.";
         }
 
         $controller->render(
@@ -724,6 +757,8 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     any [qw/GET POST DELETE/] => '/scheduler/api/publishers/(:publisher)/events' => sub {
         my $controller = shift;
 
+        my (@ok, @ko);
+
         my $http_method = $controller->req()->method();
 
         my $publisher_name = $controller->param('publisher');
@@ -731,8 +766,6 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
 
         if ($http_method eq 'POST') {
-            my (@ok, @ko);
-
             if (defined $publisher) {
                 my $body = eval {
                     decode_json($controller->req()->body());
@@ -744,7 +777,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                             if ($body->{status_method} eq 'ok' || $body->{status_method} eq 'ko_no_source' || $body->{status_method} eq 'ko_exception') {
                                 $body->{status_method} = 'set_status_to_' . $body->{status_method};
                             } else {
-                                 push @ko, 'Event status is incorrect.';
+                                 push @ko, 'event status is incorrect.';
                             }
                         }
 
@@ -754,53 +787,44 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                             };
 
                             unless ($@) {
-                                push @ok, 'An event has been manually pushed to the queue of publisher ' . $publisher->{definition}->{name} . '.';
+                                push @ok, 'pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . '.';
                             } else {
-                                push @ko, 'An error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@ . '.';
+                                push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@ . '.';
                             }
                         }
                     } else {
-                        push @ko, 'Body need to represent a hashtable.';
+                        push @ko, 'body need to represent a hashtable.';
                     }
                 } else {
                     push @ko, $@;
                 }
             } else {
-                push @ko, 'Publisher ' . $publisher_name . " don't exists.";
+                push @ko, 'publisher ' . $publisher_name . " don't exists.";
             }
-
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
         } elsif ($http_method eq 'DELETE') {
-            my (@ok, @ko);
-
             if (defined $publisher) {
                 $publisher->clear_queue();
 
-                push @ok, 'Queue cleared for publisher ' . $publisher->{definition}->{name} . '.';
+                push @ok, 'clearing queue for publisher ' . $publisher->{definition}->{name} . '.';
             } else {
-                push @ko, 'Publisher ' . $publisher_name . " don't exists.";
+                push @ko, 'publisher ' . $publisher_name . " don't exists.";
             }
-
-            $controller->render(
-                json => $controller->ok_ko(
-                    {
-                        ok => \@ok,
-                        ko => \@ko
-                    }
-                )
-            );
         } else {
             $controller->render(
                 json => defined $publisher ? [ map { $_->serialized_datas() } @{$publisher->{queue}} ] : []
             );
+
+            return undef;
         }
+
+        $controller->render(
+            json => $controller->ok_ko(
+                {
+                    ok => \@ok,
+                    ko => \@ko
+                }
+            )
+        );
     };
 
     get '/scheduler/api/webservices' => {
@@ -856,7 +880,7 @@ eval {
 };
 
 if ($@) {
-    $logger->bad(
+    $logger->push_in_queue(
         message => $logger->stepped_log($@),
         severity => 'emerg'
     )->flush_queue();
@@ -920,7 +944,7 @@ Print version.
 
 =head1 DESCRIPTION
 
-navel-scheduler's purpose is to get back datas from collectors at scheduled (Quartz expressions) time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
 
 =head1 AUTHOR
 
