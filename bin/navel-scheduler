@@ -238,7 +238,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/api' => {
+    get '/api/status' => {
         json => {
             version => $VERSION
         }

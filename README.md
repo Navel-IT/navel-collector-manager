@@ -117,7 +117,7 @@ The following endpoints are currently availables for informations and runtime mo
 **Note**: JSON below URI are exemples of what HTTP message body you should get (**GET**, **DEL**) or send (**POST**, **PUT**).
 
 - **GET** - read
-  - /api
+  - /api/status
 ```json
 {
     "version": 0.1
