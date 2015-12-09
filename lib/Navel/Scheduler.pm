@@ -39,12 +39,12 @@ our $VERSION = 0.1;
 sub new {
     my ($class, %options) = @_;
 
-    die "general configuration file path is missing\n" unless defined $options{general_configuration_path};
+    die "main configuration file path is missing\n" unless defined $options{main_configuration_path};
 
     bless {
         core => undef,
         configuration => Navel::Scheduler::Parser->new()->read(
-            file_path => $options{general_configuration_path}
+            file_path => $options{main_configuration_path}
         )
     }, ref $class || $class;
 }

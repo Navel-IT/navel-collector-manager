@@ -15,7 +15,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Prepare configuration
 ---------------------
 
-*general.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this:
+*main.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this:
 
 ```javascript
 {
@@ -123,7 +123,7 @@ The following endpoints are currently availables for informations and runtime mo
     "version": 0.1
 }
 ```
-  - /api/general
+  - /api/main
 ```json
 {
     "collectors": {
@@ -316,7 +316,7 @@ The following endpoints are currently availables for informations and runtime mo
 ```json
 {}
 ```
-  - /api/general/webservices/credentials
+  - /api/main/webservices/credentials
 ```json
 {
     "password": "3H4uwZqKjXfmbtjH"

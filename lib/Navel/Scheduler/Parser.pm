@@ -46,14 +46,14 @@ sub validate {
             collectors => {
                 definitions_from_file => 'text',
                 collectors_exec_directory => 'text',
-                maximum => 'general_positive_integer',
-                maximum_simultaneous_exec => 'general_positive_integer',
-                execution_timeout => 'general_positive_integer'
+                maximum => 'main_positive_integer',
+                maximum_simultaneous_exec => 'main_positive_integer',
+                execution_timeout => 'main_positive_integer'
             },
             rabbitmq => {
                 definitions_from_file => 'text',
-                maximum => 'general_positive_integer',
-                maximum_simultaneous_exec => 'general_positive_integer'
+                maximum => 'main_positive_integer',
+                maximum_simultaneous_exec => 'main_positive_integer'
             },
             webservices => {
                 definitions_from_file => 'text',
@@ -61,16 +61,16 @@ sub validate {
                     login => 'text',
                     password => 'text'
                 },
-                mojo_server => 'general_mojo_server_properties'
+                mojo_server => 'main_mojo_server_properties'
             }
         },
         validator_types => {
-            general_positive_integer => sub {
+            main_positive_integer => sub {
                 my $value = shift;
 
                 isint($value) && $value >= 0;
             },
-            general_mojo_server_properties => sub {
+            main_mojo_server_properties => sub {
                 my $value = shift;
 
                 my $customs_options_ok = 0;
