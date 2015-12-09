@@ -358,7 +358,7 @@ sub disconnect_publisher_by_name {
 
     my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
 
-    if ($publisher->is_connected()) {
+    if ($publisher->is_connected() || $publisher->is_connecting()) {
         unless ($publisher->is_disconnecting()) {
             eval {
                 $publisher->disconnect();

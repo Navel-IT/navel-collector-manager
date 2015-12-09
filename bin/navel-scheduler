@@ -711,15 +711,27 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     get '/api/publishers/(:publisher)' => sub {
         my $controller = shift;
 
+        my %status;
+
         my $publisher_name = $controller->param('publisher');
 
-        my $publisher = $scheduler->{core}->publisher_by_name($publisher_name);
+        if (defined (my $publisher = $scheduler->{core}->publisher_by_name($publisher_name))) {
+            $status{name} = $publisher->{definition}->{name};
+
+            for (qw/
+                connecting
+                connected
+                disconnecting
+                disconnected
+            /) {
+                my $method = 'is_' . $_;
+
+                $status{$_} = $publisher->$method() || 0;
+            };
+        }
 
         $controller->render(
-            json => defined $publisher ? {
-                name => $publisher->{definition}->{name},
-                connected => $publisher->is_connected() || 0
-            } : {}
+            json => \%status
         );
     };
 
