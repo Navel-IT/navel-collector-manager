@@ -21,6 +21,8 @@ use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
 use Navel::RabbitMQ::Publisher;
 
+use Navel::Utils 'blessed';
+
 our $VERSION = 0.1;
 
 #-> methods
@@ -123,7 +125,7 @@ sub register_collector_by_name {
 
                         $self->a_collector_stop(
                             job => $timer,
-                            collector => $collector,
+                            collector_name => $collector->{name},
                             event_definition => {
                                 collector => $collector,
                                 starting_time => $collector_starting_time
@@ -141,7 +143,7 @@ sub register_collector_by_name {
                     callback => sub {
                         $self->a_collector_stop(
                             job => $timer,
-                            collector => $collector,
+                            collector_name => $collector->{name},
                             event_definition => {
                                 collector => $collector,
                                 starting_time => $collector_starting_time,
@@ -168,7 +170,7 @@ sub register_collector_by_name {
 
                         $self->a_collector_stop(
                             job => $timer,
-                            collector => $collector,
+                            collector_name => $collector->{name},
                             event_definition => {
                                 collector => $collector,
                                 starting_time => $collector_starting_time
@@ -546,6 +548,8 @@ sub publisher_by_name {
 sub delete_publisher_and_definition_associated_by_name {
     my ($self, $name) = @_;
 
+    croak('name must be defined') unless defined $name;
+
     my $finded;
 
     my $definition_to_delete_index = 0;
@@ -616,10 +620,12 @@ sub unregister_job_by_type_and_name {
 sub a_collector_stop {
     my ($self, %options) = @_;
 
-    my $collector = delete $options{collector};
+    my $collector_name = delete $options{collector_name};
+
+    croak('collector_name must be defined') unless defined $collector_name;
 
     $self->{logger}->push_in_queue(
-        message => 'add an event from collector ' . $collector->{name} . ' in the queue of existing publishers.',
+        message => 'add an event from collector ' . $collector_name . ' in the queue of existing publishers.',
         severity => 'info'
     );
 

@@ -16,6 +16,8 @@ use parent qw/
     Navel::Base::Definition::Parser::Writer
 /;
 
+use Carp 'croak';
+
 use Navel::Base::Definition;
 
 use Navel::Utils ':numeric';
@@ -34,6 +36,8 @@ sub new {
 
 sub validate {
     my ($class, %options) = @_;
+    
+    croak('parameters must be a HASH reference') unless ref $options{parameters} eq 'HASH';
 
     Navel::Base::Definition->validate(
         parameters => $options{parameters},

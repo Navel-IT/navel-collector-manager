@@ -377,13 +377,11 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             my $job = $scheduler->{core}->job_by_type_and_name($job_type, $controller->param('job_name'));
 
             if (defined $job) {
-                for (qw/
+                $job_properties{$_} = $job->{$_} for qw/
                     enabled
                     singleton
                     running
-                /) {
-                   $job_properties{$_} = $job->{$_}
-                }
+                /;
             }
         }
 

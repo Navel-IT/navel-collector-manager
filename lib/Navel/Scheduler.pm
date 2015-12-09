@@ -12,6 +12,8 @@ use warnings;
 
 use parent 'Navel::Base';
 
+use Carp 'croak';
+
 use Exporter::Easy (
     OK => [qw/
         $VERSION
@@ -49,6 +51,8 @@ sub new {
 
 sub prepare {
     my ($self, %options) = @_;
+
+    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger});
 
     $self->{core} = Navel::Scheduler::Core->new(
         configuration => $self->{configuration},

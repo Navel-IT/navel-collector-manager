@@ -43,7 +43,7 @@ sub new {
 
     my $self = bless {
         core => $options{core},
-        collector_execution_timeout => $options{collector_execution_timeout},
+        collector_execution_timeout => $options{collector_execution_timeout} || 0,
         collector => $options{collector},
         collector_content => $options{collector_content},
         fork => undef,
