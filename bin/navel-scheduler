@@ -238,19 +238,19 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api' => {
+    get '/api' => {
         json => {
             version => $VERSION
         }
     };
 
-    get '/scheduler/api/general' => sub {
+    get '/api/general' => sub {
         shift->render(
             json => $scheduler->{configuration}->{definition}
         );
     };
 
-    put '/scheduler/api/save_configuration' => sub {
+    put '/api/save_configuration' => sub {
             my $controller = shift;
 
             my (@ok, @ko);
@@ -288,7 +288,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
             );
     };
 
-    put '/scheduler/api/general/webservices/credentials' => sub {
+    put '/api/general/webservices/credentials' => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -342,7 +342,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api/jobs' => sub {
+    get '/api/jobs' => sub {
         shift->render(
             json => {
                 types => [
@@ -352,7 +352,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api/jobs/(:job_type)' => sub {
+    get '/api/jobs/(:job_type)' => sub {
         my $controller = shift;
 
         my $job_type = $controller->param('job_type');
@@ -366,7 +366,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api/jobs/(:job_type)/(:job_name)' => sub {
+    get '/api/jobs/(:job_type)/(:job_name)' => sub {
         my $controller = shift;
 
         my %job_properties = ();
@@ -390,7 +390,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    put '/scheduler/api/jobs/(:job_type)/(:job_name)/(:job_action)' => [job_action => qr/(enable|disable|execute)/] => sub {
+    put '/api/jobs/(:job_type)/(:job_name)/(:job_action)' => [job_action => qr/(enable|disable|execute)/] => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -437,7 +437,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    any [qw/GET POST/] => '/scheduler/api/collectors' => sub {
+    any [qw/GET POST/] => '/api/collectors' => sub {
         my $controller = shift;
 
         my $http_method = $controller->req()->method();
@@ -488,7 +488,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         }
     };
 
-    any [qw/GET PUT DELETE/] => '/scheduler/api/collectors/(:collector)' => sub {
+    any [qw/GET PUT DELETE/] => '/api/collectors/(:collector)' => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -517,7 +517,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
                         my $errors = $collector_definition->merge($body);
 
                         unless (@{$errors}) {
-                            $scheduler->job_by_type_and_name('collector', $collector_definition->{name})->new(
+                            $scheduler->{core}->job_by_type_and_name('collector', $collector_definition->{name})->new(
                                 singleton => $collector_definition->{singleton},
                                 interval => $collector_definition->{scheduling}
                             ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{scheduling};
@@ -569,7 +569,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
 };
 
-    any [qw/GET POST/] => '/scheduler/api/rabbitmq' => sub {
+    any [qw/GET POST/] => '/api/rabbitmq' => sub {
         my $controller = shift;
 
         my $http_method = $controller->req()->method();
@@ -618,7 +618,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         }
     };
 
-    any [qw/GET PUT DELETE/] => '/scheduler/api/rabbitmq/(:rabbitmq)' => sub {
+    any [qw/GET PUT DELETE/] => '/api/rabbitmq/(:rabbitmq)' => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -702,13 +702,13 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api/publishers' => sub {
+    get '/api/publishers' => sub {
         shift->render(
             json => [map { $_->{definition}->{name} } @{$scheduler->{core}->{publishers}}]
         );
     };
 
-    get '/scheduler/api/publishers/(:publisher)' => sub {
+    get '/api/publishers/(:publisher)' => sub {
         my $controller = shift;
 
         my $publisher_name = $controller->param('publisher');
@@ -723,7 +723,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    put '/scheduler/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect)/] => sub {
+    put '/api/publishers/(:publisher)/(:publisher_action)' => [publisher_action => qr/(connect|disconnect)/] => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -756,7 +756,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    any [qw/GET POST DELETE/] => '/scheduler/api/publishers/(:publisher)/events' => sub {
+    any [qw/GET POST DELETE/] => '/api/publishers/(:publisher)/events' => sub {
         my $controller = shift;
 
         my (@ok, @ko);
@@ -829,11 +829,11 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
         );
     };
 
-    get '/scheduler/api/webservices' => {
+    get '/api/webservices' => {
         json => $web_services_listeners->name()
     };
 
-    get '/scheduler/api/webservices/(:webservice)' => sub {
+    get '/api/webservices/(:webservice)' => sub {
         my $controller = shift;
 
         $controller->render(

@@ -117,13 +117,13 @@ The following endpoints are currently availables for informations and runtime mo
 **Note**: JSON below URI are exemples of what HTTP message body you should get (**GET**, **DEL**) or send (**POST**, **PUT**).
 
 - **GET** - read
-  - /scheduler/api
+  - /api
 ```json
 {
     "version": 0.1
 }
 ```
-  - /scheduler/api/general
+  - /api/general
 ```json
 {
     "collectors": {
@@ -149,7 +149,7 @@ The following endpoints are currently availables for informations and runtime mo
     }
 }
 ```
-  - /scheduler/api/jobs
+  - /api/jobs
 ```json
 {
     "types": [
@@ -159,13 +159,13 @@ The following endpoints are currently availables for informations and runtime mo
     ]
 }
 ```
-  - /scheduler/api/jobs/(:job_type)
+  - /api/jobs/(:job_type)
 ```json
 [
     "glpi-1"
 ]
 ```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)
+  - /api/jobs/(:job_type)/(:job_name)
 ```json
 {
     "enabled": 1,
@@ -173,14 +173,14 @@ The following endpoints are currently availables for informations and runtime mo
     "running": 0
 }
 ```
-  - /scheduler/api/collectors
+  - /api/collectors
 ```json
 [
     "nagios-1",
     "glpi-1"
 ]
 ```
-  - /scheduler/api/collectors/(:collector)
+  - /api/collectors/(:collector)
 ```json
 {
     "name": "nagios-1",
@@ -194,14 +194,14 @@ The following endpoints are currently availables for informations and runtime mo
     }
 }
 ```
-  - /scheduler/api/rabbitmq
+  - /api/rabbitmq
 ```json
 [
     "rabbitmq-1",
     "rabbitmq-2"
 ]
 ```
-  - /scheduler/api/rabbitmq/(:rabbitmq)
+  - /api/rabbitmq/(:rabbitmq)
 ```json
 {
     "name": "rabbitmq-1",
@@ -219,14 +219,14 @@ The following endpoints are currently availables for informations and runtime mo
     "auto_connect": 1
 }
 ```
-  - /scheduler/api/publishers
+  - /api/publishers
 ```json
 [
     "rabbitmq-1",
     "rabbitmq-2"
 ]
 ```
-  - /scheduler/api/publishers/(:publisher)
+  - /api/publishers/(:publisher)
 ```json
 {
     "name": "rabbitmq-1",
@@ -234,20 +234,20 @@ The following endpoints are currently availables for informations and runtime mo
     "messages_in_queue": 500
 }
 ```
-  - /scheduler/api/publishers/(:publisher)/events
+  - /api/publishers/(:publisher)/events
 ```json
 [
     "*/1 * * * * ?einput(*gsecondsdnamegsleep-1/esleepsexec_directory_path&)/usr/local/etc/n"
 ]
 ```
-  - /scheduler/api/webservices
+  - /api/webservices
 ```json
 [
     "webservice-1",
     "webservice-2"
 ]
 ```
-  - /scheduler/api/webservices/(:webservice)
+  - /api/webservices/(:webservice)
 ```json
 [
     {
@@ -264,7 +264,7 @@ The following endpoints are currently availables for informations and runtime mo
 ]
 ```
 - **POST** - create
-  - /scheduler/api/collectors
+  - /api/collectors
 ```json
 {
     "name": "glpi-2",
@@ -278,7 +278,7 @@ The following endpoints are currently availables for informations and runtime mo
     }
 }
 ```
-  - /scheduler/api/rabbitmq
+  - /api/rabbitmq
 ```json
 {
     "name": "rabbitmq-3",
@@ -296,7 +296,7 @@ The following endpoints are currently availables for informations and runtime mo
     "auto_connect": 1
 }
 ```
-  - /scheduler/api/publishers/(:publisher)/events
+  - /api/publishers/(:publisher)/events
 ```javascript
 {
     "event_definition": {
@@ -312,50 +312,50 @@ The following endpoints are currently availables for informations and runtime mo
 }
 ```
 - **PUT** - modify
-  - /scheduler/api/save_configuration
+  - /api/save_configuration
 ```json
 {}
 ```
-  - /scheduler/api/general/webservices/credentials
+  - /api/general/webservices/credentials
 ```json
 {
     "password": "3H4uwZqKjXfmbtjH"
 }
 ```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)/enable
+  - /api/jobs/(:job_type)/(:job_name)/enable
 ```json
 {}
 ```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)/disable
+  - /api/jobs/(:job_type)/(:job_name)/disable
 ```json
 {}
 ```
-  - /scheduler/api/jobs/(:job_type)/(:job_name)/execute
+  - /api/jobs/(:job_type)/(:job_name)/execute
 ```json
 {}
 ```
-  - /scheduler/api/collectors/(:collector)
+  - /api/collectors/(:collector)
 ```json
 {
     "scheduling": 15
 }
 ```
-  - /scheduler/api/rabbitmq/(:rabbitmq)
+  - /api/rabbitmq/(:rabbitmq)
 ```json
 {
     "timeout": 5
 }
 ```
-  - /scheduler/api/publishers/(:publisher)/connect
+  - /api/publishers/(:publisher)/connect
 ```json
 {}
 ```
-  - /scheduler/api/publishers/(:publisher)/disconnect
+  - /api/publishers/(:publisher)/disconnect
 ```json
 {}
 ```
 - **DELETE** - delete
-  - /scheduler/api/collectors/(:collector)
+  - /api/collectors/(:collector)
 ```json
 {
     "ok": [
@@ -364,7 +364,7 @@ The following endpoints are currently availables for informations and runtime mo
     "ko": []
 }
 ```
-  - /scheduler/api/rabbitmq/(:rabbitmq)
+  - /api/rabbitmq/(:rabbitmq)
 ```json
 {
     "ok": [
@@ -374,7 +374,7 @@ The following endpoints are currently availables for informations and runtime mo
     "ko": []
 }
 ```
-  - /scheduler/api/publishers/(:publisher)/events
+  - /api/publishers/(:publisher)/events
 ```json
 {}
 ```
