@@ -114,7 +114,7 @@ pod2usage(1) unless defined $logger;
 
 if ($daemonize && ! $validate_configuration) {
     $logger->push_in_queue(
-        message => 'daemonizing ....',
+        message => 'daemonizing.',
         severity => 'info'
     )->flush_queue();
 
@@ -128,9 +128,14 @@ if ($daemonize && ! $validate_configuration) {
         )->Init();
     };
 
-    if ($@) {
+    unless ($@) {
         $logger->push_in_queue(
-            message => $logger->stepped_log('error while daemonizing ...',
+            message => 'daemon successfully started.',
+            severity => 'info'
+        );
+    } else {
+        $logger->push_in_queue(
+            message => $logger->stepped_log('error while daemonizing.',
                 [
                     $@
                 ]
@@ -859,7 +864,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
     );
 
     $logger->push_in_queue(
-        message => 'starting the webservices ....',
+        message => 'starting the webservices.',
         severity => 'notice'
     )->flush_queue();
 
@@ -885,7 +890,7 @@ if (blessed($web_services_listeners) eq 'Navel::Definition::WebService::Parser' 
 }
 
 $logger->push_in_queue(
-    message => 'starting the scheduler ....',
+    message => 'starting the scheduler.',
     severity => 'notice'
 )->flush_queue();
 
