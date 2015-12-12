@@ -1,9 +1,9 @@
 language: perl
 before_install:
     - "git clone https://github.com/navel-it/navel-base.git"
-    - cd navel-base/
+    - pushd navel-base/
     - cpanm --quiet --notest .
-    - cd "${OLDPWD}"
+    - popd
 perl:
     - "5.20"
     - "5.18"
