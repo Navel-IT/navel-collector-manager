@@ -249,19 +249,17 @@ The following endpoints are currently availables for informations and runtime mo
 ```
   - /api/webservices/(:webservice)
 ```json
-[
-    {
-        "name": "webservice-1",
-        "interface_mask": "*",
-        "port": 22080,
-        "tls": 0,
-        "ca": null,
-        "cert": null,
-        "ciphers": null,
-        "key": null,
-        "verify": null
-    }
-]
+{
+    "name": "webservice-1",
+    "interface_mask": "*",
+    "port": 22080,
+    "tls": 0,
+    "ca": null,
+    "cert": null,
+    "ciphers": null,
+    "key": null,
+    "verify": null
+}
 ```
 - **POST** - create
   - /api/collectors
