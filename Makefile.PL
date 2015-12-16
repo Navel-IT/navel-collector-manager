@@ -10,9 +10,13 @@ use warnings;
 
 use ExtUtils::MakeMaker 6.64;
 
+use File::ShareDir::Install;
+
 #-> main
 
 my $min_perl_version = '5.10.1';
+
+install_share('share');
 
 WriteMakefile(
     NAME => 'Navel::Scheduler',
@@ -35,6 +39,7 @@ WriteMakefile(
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
         'Navel::Base' => 0,
+        'Navel::API' => 0,
         'Exporter::Easy' => 0,
         'Carp' => 0,
         'EV' => 0,
@@ -49,7 +54,8 @@ WriteMakefile(
         'Pod::Usage' => 0,
         'Proc::Daemon' => 0,
         'Cwd' => 0,
-        'Mojolicious::Lite' => 0
+        'File::ShareDir' => 0,
+        'Mojolicious' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,
@@ -62,6 +68,10 @@ WriteMakefile(
         TESTS => 't/*.t'
     }
 );
+
+package MY;
+
+use File::ShareDir::Install 'postamble';
 
 #-> END
 

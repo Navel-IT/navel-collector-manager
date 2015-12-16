@@ -18,15 +18,15 @@ BEGIN {
 
 #-> main
 
-my $main_configuration_file = 't/01-main.json';
+my $main_configuration_file_path = 't/01-main.json';
 
 my $scheduler;
 
 lives_ok {
     $scheduler = Navel::Scheduler->new(
-        main_configuration_path => $main_configuration_file
+        main_configuration_file_path => $main_configuration_file_path
     );
-} 'Navel::Scheduler::new(): loading main configuration from ' . $main_configuration_file;
+} 'Navel::Scheduler::new(): loading main configuration from ' . $main_configuration_file_path;
 
 lives_ok {
     $scheduler->prepare(

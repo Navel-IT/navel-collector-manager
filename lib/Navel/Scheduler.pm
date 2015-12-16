@@ -26,10 +26,13 @@ use Exporter::Easy (
     ]
 );
 
+use File::ShareDir 'dist_dir';
+
 use Navel::Scheduler::Parser;
 use Navel::Scheduler::Core;
 use Navel::Definition::Collector::Parser;
 use Navel::Definition::RabbitMQ::Parser;
+use Navel::Definition::WebService::Parser;
 use Navel::Utils 'blessed';
 
 our $VERSION = 0.1;
@@ -39,20 +42,22 @@ our $VERSION = 0.1;
 sub new {
     my ($class, %options) = @_;
 
-    die "main configuration file path is missing\n" unless defined $options{main_configuration_path};
+    die "main configuration file path is missing\n" unless defined $options{main_configuration_file_path};
 
     bless {
-        core => undef,
+        main_configuration_file_path => $options{main_configuration_file_path},
         configuration => Navel::Scheduler::Parser->new()->read(
-            file_path => $options{main_configuration_path}
-        )
+            file_path => $options{main_configuration_file_path}
+        ),
+        core => undef,
+        webservices => undef
     }, ref $class || $class;
 }
 
 sub prepare {
     my ($self, %options) = @_;
 
-    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger});
+    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger}) eq 'Navel::Logger';
 
     $self->{core} = Navel::Scheduler::Core->new(
         configuration => $self->{configuration},
@@ -68,6 +73,59 @@ sub prepare {
         )->make(),
         logger => $options{logger}
     );
+
+    if ($options{enable_webservices}) {
+        $self->{webservices} = Navel::Definition::WebService::Parser->new()->read(
+            file_path => $self->{configuration}->{definition}->{webservices}->{definitions_from_file}
+        )->make();
+
+        if (@{$self->{webservices}->{definitions}}) {
+            require Navel::Scheduler::Mojolicious::Application;
+            Navel::Scheduler::Mojolicious::Application->import();
+
+            require Mojo::Server::Prefork;
+            Mojo::Server::Prefork->import();
+
+            my $mojolicious_app = Navel::Scheduler::Mojolicious::Application->new($self);
+
+            $mojolicious_app->mode('development'); # To change
+
+            my $mojolicious_app_home = dist_dir('Navel-Scheduler') . '/mojolicious/home';
+
+            @{$mojolicious_app->renderer()->paths()} = ($mojolicious_app_home . '/templates');
+            @{$mojolicious_app->static()->paths()} = ($mojolicious_app_home . '/public');
+
+            $self->{web_server} = Mojo::Server::Prefork->new(
+                app => $mojolicious_app,
+                listen => $self->{webservices}->url()
+            );
+
+            $self->{core}->{logger}->push_in_queue(
+                message => 'starting the webservices.',
+                severity => 'notice'
+            )->flush_queue();
+
+            eval {
+                while (my ($method, $value) = each %{$self->{configuration}->{definition}->{webservices}->{mojo_server}}) {
+                    $self->{web_server}->$method($value);
+                }
+
+                $self->{web_server}->silent(1)->start();
+            };
+
+            if ($@) {
+                $self->{core}->{logger}->push_in_queue(
+                    message => $self->{core}->{logger}->stepped_log($@),
+                    severity => 'crit'
+                )->flush_queue();
+            } else {
+                $self->{core}->{logger}->push_in_queue(
+                    message => 'webservices started.',
+                    severity => 'notice'
+                )->flush_queue();
+            }
+        }
+    }
 
     $self;
 }

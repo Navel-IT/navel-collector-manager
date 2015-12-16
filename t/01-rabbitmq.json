@@ -7,11 +7,11 @@
         "password": "guest",
         "timeout": 0,
         "vhost": "/",
-        "tls": 0,
+        "tls": false,
         "heartbeat": 30,
         "exchange": "amq.topic",
         "delivery_mode": 2,
         "scheduling": 15,
-        "auto_connect": 1
+        "auto_connect": true
     }
 ]
