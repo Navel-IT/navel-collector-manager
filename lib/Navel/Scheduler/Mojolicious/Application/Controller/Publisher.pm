@@ -31,9 +31,7 @@ sub show_publisher {
 
     my %status;
 
-    my $publisher_name = $controller->param('publisher');
-
-    if (defined (my $publisher = $scheduler->{core}->publisher_by_name($arguments->{publisherName}))) {
+    if (defined (my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName}))) {
         $status{name} = $publisher->{definition}->{name};
 
         for (qw/
@@ -48,7 +46,7 @@ sub show_publisher {
         };
     }
 
-    $controller->callback(
+    $controller->$callback(
         \%status,
         200
     );
@@ -56,6 +54,8 @@ sub show_publisher {
 
 sub list_events_of_a_publisher {
     my ($controller, $arguments, $callback) = @_;
+
+    my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName});
 
     $controller->$callback(
         defined $publisher ? [
@@ -72,9 +72,7 @@ sub push_event_to_a_publisher {
 
     my (@ok, @ko);
 
-    my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName});
-
-    if (defined $publisher) {
+    if (defined (my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName}))) {
         my $body = eval {
             decode_json($controller->req()->body());
         };
@@ -149,8 +147,6 @@ sub delete_all_events_from_a_publisher {
 
 sub connect_or_disconnect_publisher {
     my ($controller, $arguments, $callback) = @_;
-
-    my $controller = shift;
 
     my (@ok, @ko);
 

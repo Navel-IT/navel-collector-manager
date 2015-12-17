@@ -25,11 +25,7 @@ sub new {
 
     my $self = $class->SUPER::new();
 
-    $app->secrets(
-        [
-            (caller)[1]
-        ]
-    );
+    $self->secrets(rand);
 
     $self->helper(
         scheduler => sub {
@@ -43,20 +39,18 @@ sub new {
         }
     );
 
-    my $common_log_severity = 'info';
-
     $self->log()->unsubscribe('message')->on(
         message => sub {
             my ($log, $level, @lines) = @_;
 
             $self->scheduler()->{core}->{logger}->push_in_queue(
                 message => 'Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines),
-                severity => $common_log_severity
+                severity => $level eq 'debug' ? 'debug' : 'info'
             );
         }
     );
 
-    $self->log()->level($common_log_severity);
+    $self->log()->level('debug');
 
     $self;
 }

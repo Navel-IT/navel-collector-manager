@@ -44,6 +44,9 @@ sub show_job_by_type_and_name {
         my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
 
         if (defined $job) {
+            $job_properties{name} = $arguments->{jobName};
+            $job_properties{type} = $arguments->{jobType};
+
             $job_properties{$_} = $job->{$_} for qw/
                 enabled
                 singleton
