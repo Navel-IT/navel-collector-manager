@@ -5,7 +5,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
 
-It is build on top of `Mojolicious::Lite` + `AnyEvent` and must work on all Linux platforms.
+It is build on top of `Mojolicious` + `AnyEvent` and must work on all Linux platforms.
 
 Install
 -------
