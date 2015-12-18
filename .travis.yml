@@ -1,9 +1,6 @@
 language: perl
 before_install:
-    - "git clone https://github.com/navel-it/navel-base.git"
-    - pushd navel-base/
-    - cpanm --quiet --notest .
-    - popd
+    - "cpanm https://github.com/navel-it/navel-base.git https://github.com/navel-it/navel-api-blueprints.git"
 perl:
     - "5.20"
     - "5.18"
