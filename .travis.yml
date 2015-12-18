@@ -8,7 +8,6 @@ perl:
   - "5.12"
   - "5.10"
 before_install:
-  - popd
   - |
       f_install_navel_dep() {
           git clone "https://github.com/navel-it/${1}" && \
@@ -17,6 +16,7 @@ before_install:
           cpanm --quiet . && \
           popd
       }
+  - pushd ..
   - f_install_navel_dep navel-base
   - f_install_navel_dep navel-api-blueprints
-  - pushd
+  - popd
