@@ -38,7 +38,7 @@ sub list_job_by_type {
 sub show_job_by_type_and_name {
     my ($controller, $arguments, $callback) = @_;
 
-    my %job_properties = ();
+    my %job_properties;
 
     if ($controller->scheduler()->{core}->job_type_exists($arguments->{jobType})) {
         my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
