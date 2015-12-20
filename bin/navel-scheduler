@@ -30,9 +30,7 @@ my (
     $log_no_color,
     $daemonize,
     $validate_configuration,
-    $disable_web_services,
-    $logger,
-    $scheduler
+    $disable_web_services
 );
 
 my $log_severity = 'notice';
@@ -68,8 +66,8 @@ $getopts->getoptions(
 
 defined (my $main_configuration_file_path = shift @ARGV) or pod2usage(1);
 
-eval {
-    $logger = Navel::Logger->new(
+my $logger = eval {
+    Navel::Logger->new(
         severity => $log_severity,
         file_path => $log_file_path,
         colored => ! $log_no_color,
@@ -90,7 +88,7 @@ if ($daemonize && ! $validate_configuration) {
     };
 
     unless ($@) {
-        $logger->info('daemon successfully started.');
+        $logger->info('daemon successfully started.')->flush_queue();
     } else {
         $logger->emerg(
             $logger->stepped_log('error while daemonizing.',
@@ -104,7 +102,7 @@ if ($daemonize && ! $validate_configuration) {
     }
 }
 
-$scheduler = eval {
+my $scheduler = eval {
     Navel::Scheduler->new(
         main_configuration_file_path => $main_configuration_file_path
     )->prepare(
