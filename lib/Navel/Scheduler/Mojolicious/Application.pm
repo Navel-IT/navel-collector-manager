@@ -43,7 +43,7 @@ sub new {
         message => sub {
             my ($log, $level, @lines) = @_;
             
-            my $method = level eq 'debug' ? 'debug' : 'info';
+            my $method = $level eq 'debug' ? 'debug' : 'info';
 
             $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines));
         }
