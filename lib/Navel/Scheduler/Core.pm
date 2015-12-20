@@ -419,7 +419,7 @@ sub register_publisher_by_name {
                             $self->{logger}->error(
                                 $self->{logger}->stepped_log(
                                     [
-                                        $publish_generic_message . ':'
+                                        $publish_generic_message . ':',
                                         $@
                                     ]
                                 )
