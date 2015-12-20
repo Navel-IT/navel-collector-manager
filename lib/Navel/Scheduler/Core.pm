@@ -112,16 +112,10 @@ sub register_collector_by_name {
                     collector => $collector,
                     collector_content => $collector_content,
                     on_event => sub {
-                        $self->{logger}->push_in_queue(
-                            message => 'AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift() . '.',
-                            severity => 'notice'
-                        );
+                        $self->{logger}->notice('AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift() . '.');
                     },
                     on_error => sub {
-                        $self->{logger}->push_in_queue(
-                            message => 'execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.',
-                            severity => 'error'
-                        );
+                        $self->{logger}->error('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.');
 
                         $self->a_collector_stop(
                             job => $timer,
@@ -134,10 +128,7 @@ sub register_collector_by_name {
                         );
                     },
                     on_destroy => sub {
-                        $self->{logger}->push_in_queue(
-                            message => 'AnyEvent::Fork::RPC DESTROY() called for collector ' . $collector->{name} . '.',
-                            severity => 'info'
-                        );
+                        $self->{logger}->info('AnyEvent::Fork::RPC DESTROY() called for collector ' . $collector->{name} . '.');
                     }
                 )->when_done(
                     callback => sub {
@@ -163,10 +154,7 @@ sub register_collector_by_name {
                     if ($collector_content) {
                         $fork_collector->($collector_content);
                     } else {
-                        $self->{logger}->push_in_queue(
-                            message => 'collector ' . $collector->{name} . ': ' . $! . '.',
-                            severity => 'error'
-                        );
+                        $self->{logger}->error('collector ' . $collector->{name} . ': ' . $! . '.');
 
                         $self->a_collector_stop(
                             job => $timer,
@@ -201,10 +189,7 @@ sub init_publisher_by_name {
 
     croak('unknown rabbitmq') unless defined $rabbitmq;
 
-    $self->{logger}->push_in_queue(
-        message => 'initialize publisher ' . $rabbitmq->{name} . '.',
-        severity => 'notice'
-    );
+    $self->{logger}->notice('initialize publisher ' . $rabbitmq->{name} . '.');
 
     push @{$self->{publishers}}, Navel::RabbitMQ::Publisher->new(
         rabbitmq_definition => $rabbitmq
@@ -239,103 +224,75 @@ sub connect_publisher_by_name {
                     on_success => sub {
                         my $amqp_connection = shift;
 
-                        $self->{logger}->push_in_queue(
-                            message => $publisher_connect_generic_message . ' successfully connected.',
-                            severity => 'notice'
-                        );
+                        $self->{logger}->notice($publisher_connect_generic_message . ' successfully connected.');
 
                         $amqp_connection->open_channel(
                             on_success => sub {
-                                $self->{logger}->push_in_queue(
-                                    message => $publisher_generic_message . ': channel opened.',
-                                    severity => 'notice'
-                                );
+                                $self->{logger}->notice($publisher_generic_message . ': channel opened.');
                             },
                             on_failure => sub {
-                                $self->{logger}->push_in_queue(
-                                    message => $self->{logger}->stepped_log(
+                                $self->{logger}->error(
+                                    $self->{logger}->stepped_log(
                                         [
                                             $publisher_generic_message . ': channel failure.',
                                             \@_
                                         ]
-                                    ),
-                                    severity => 'error'
+                                    )
                                 );
                             },
                             on_close => sub {
-                                $self->{logger}->push_in_queue(
-                                    message => $publisher_generic_message . ': channel closed.',
-                                    severity => 'notice'
-                                );
+                                $self->{logger}->notice($publisher_generic_message . ': channel closed.');
 
                                 $publisher->disconnect();
                             }
                         );
                     },
                     on_failure => sub {
-                        $self->{logger}->push_in_queue(
-                            message => $self->{logger}->stepped_log(
+                        $self->{logger}->error(
+                            $self->{logger}->stepped_log(
                                 [
                                     $publisher_connect_generic_message . ': failure.',
                                     \@_
                                 ]
-                            ),
-                            severity => 'error'
+                            )
                         );
                     },
                     on_read_failure => sub {
-                        $self->{logger}->push_in_queue(
-                            message => $self->{logger}->stepped_log(
+                        $self->{logger}->error(
+                            $self->{logger}->stepped_log(
                                 [
                                     $publisher_generic_message . ': read failure.',
                                     \@_
                                 ]
-                            ),
-                            severity => 'error'
+                            )
                         );
                     },
                     on_return => sub {
-                        $self->{logger}->push_in_queue(
-                            message => $publisher_generic_message . ': unable to deliver frame.',
-                            severity => 'error'
-                        );
+                        $self->{logger}->error($publisher_generic_message . ': unable to deliver frame.');
                     },
                     on_close => sub {
-                        $self->{logger}->push_in_queue(
-                            message => $publisher_generic_message . ' disconnected.',
-                            severity => 'notice'
-                        );
+                        $self->{logger}->notice($publisher_generic_message . ' disconnected.');
                     }
                 );
             };
 
             unless ($@) {
-                $self->{logger}->push_in_queue(
-                    message => $publisher_connect_generic_message . ' ....',
-                    severity => 'notice'
-                );
+                $self->{logger}->notice($publisher_connect_generic_message . ' ....');
             } else {
-                $self->{logger}->push_in_queue(
-                    message => $self->{logger}->stepped_log(
+                $self->{logger}->error(
+                    $self->{logger}->stepped_log(
                         [
                             $publisher_connect_generic_message . ':',
                             $@
                         ]
-                    ),
-                    severity => 'error'
+                    )
                 );
             }
         } else {
-            $self->{logger}->push_in_queue(
-                message => $publisher_connect_generic_message . ': already trying to establish a connection.',
-                severity => 'warning'
-            );
+            $self->{logger}->warning($publisher_connect_generic_message . ': already trying to establish a connection.');
         }
     } else {
-        $self->{logger}->push_in_queue(
-            message => $publisher_connect_generic_message . ': already connected.',
-            severity => 'warning'
-        );
+        $self->{logger}->warning($publisher_connect_generic_message . ': already connected.');
     }
 
     $self;
@@ -365,27 +322,15 @@ sub disconnect_publisher_by_name {
             };
 
             unless ($@) {
-                $self->{logger}->push_in_queue(
-                    message => $disconnect_generic_message . '.',
-                    severity => 'notice'
-                );
+                $self->{logger}->notice($disconnect_generic_message . '.');
             } else {
-                $self->{logger}->push_in_queue(
-                    message => $disconnect_generic_message . ': ' . $@ . '.',
-                    severity => 'error'
-                );
+                $self->{logger}->error($disconnect_generic_message . ': ' . $@ . '.');
             }
         } else {
-            $self->{logger}->push_in_queue(
-                message => $disconnect_generic_message . ': already trying to disconnect.',
-                severity => 'warning'
-            );
+            $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
         }
     } else {
-        $self->{logger}->push_in_queue(
-            message => $disconnect_generic_message . ': already disconnected.',
-            severity => 'warning'
-        );
+        $self->{logger}->warning($disconnect_generic_message . ': already disconnected.');
     }
 
     $self;
@@ -428,10 +373,7 @@ sub register_publisher_by_name {
 
                 if ($publisher->is_connected()) {
                     if (my @channels = values %{$publisher->{net}->channels()}) {
-                        $self->{logger}->push_in_queue(
-                            message => 'clear queue for publisher ' . $publisher->{definition}->{name} . '.',
-                            severity => 'info'
-                        );
+                        $self->{logger}->info('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
 
                         $publisher->clear_queue();
 
@@ -444,27 +386,20 @@ sub register_publisher_by_name {
                                 };
 
                                 unless ($@) {
-                                    $self->{logger}->push_in_queue(
-                                        message => $self->{logger}->stepped_log(
+                                    $self->{logger}->debug(
+                                        $self->{logger}->stepped_log(
                                             [
                                                 $serialize_generic_message,
                                                 $serialized
                                             ]
-                                        ),
-                                        severity => 'debug'
+                                        )
                                     );
 
-                                    $self->{logger}->push_in_queue(
-                                        message => $serialize_generic_message . '.',
-                                        severity => 'info'
-                                    );
+                                    $self->{logger}->info($serialize_generic_message . '.');
 
                                     my $routing_key = $_->routing_key();
 
-                                    $self->{logger}->push_in_queue(
-                                        message => $publish_generic_message . ': sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.',
-                                        severity => 'info'
-                                    );
+                                    $self->{logger}->info($publish_generic_message . ': sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.');
 
                                     $channels[0]->publish(
                                         exchange => $publisher->{definition}->{exchange},
@@ -475,47 +410,31 @@ sub register_publisher_by_name {
                                         body => $serialized
                                     );
                                 } else {
-                                    $self->{logger}->push_in_queue(
-                                        message => $serialize_generic_message . ' failed: ' . $@ . '.' ,
-                                        severity => 'error'
-                                    );
+                                    $self->{logger}->error($serialize_generic_message . ' failed: ' . $@ . '.' );
                                 }
                             }
                         };
 
                         if ($@) {
-                            $self->{logger}->push_in_queue(
-                                message => $self->{logger}->stepped_log(
+                            $self->{logger}->error(
+                                $self->{logger}->stepped_log(
                                     [
-                                        $publish_generic_message . ':',
+                                        $publish_generic_message . ':'
                                         $@
                                     ]
-                                ),
-                                severity => 'error'
+                                )
                             );
                         } else {
-                            $self->{logger}->push_in_queue(
-                                message => $publish_generic_message . '.',
-                                severity => 'notice'
-                            );
+                            $self->{logger}->notice($publish_generic_message . '.');
                         }
                     } else {
-                        $self->{logger}->push_in_queue(
-                            message => $publish_generic_message . ': publisher has no channel opened.',
-                            severity => 'error'
-                        );
+                        $self->{logger}->error($publish_generic_message . ': publisher has no channel opened.');
                     }
                 } else {
-                    $self->{logger}->push_in_queue(
-                        message => $publish_generic_message . ": publisher isn't connected.",
-                        severity => 'notice'
-                    );
+                    $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
                 }
             } else {
-                $self->{logger}->push_in_queue(
-                    message => 'queue for publisher ' . $publisher->{definition}->{name} . ' is empty.',
-                    severity => 'info'
-                );
+                $self->{logger}->info('queue for publisher ' . $publisher->{definition}->{name} . ' is empty.');
             }
 
             $timer->end();
@@ -624,10 +543,7 @@ sub a_collector_stop {
 
     croak('collector_name must be defined') unless defined $collector_name;
 
-    $self->{logger}->push_in_queue(
-        message => 'add an event from collector ' . $collector_name . ' in the queue of existing publishers.',
-        severity => 'info'
-    );
+    $self->{logger}->info('add an event from collector ' . $collector_name . ' in the queue of existing publishers.');
 
     $_->push_in_queue(%options) for @{$self->{publishers}};
 

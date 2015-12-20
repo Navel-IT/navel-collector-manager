@@ -103,10 +103,7 @@ sub when_done {
             $options{callback}
         );
 
-        $self->{core}->{logger}->push_in_queue(
-            message => 'spawned a new process for collector ' . $self->{collector}->{name} . '.',
-            severity => 'info'
-        );
+        $self->{core}->{logger}->info('spawned a new process for collector ' . $self->{collector}->{name} . '.');
 
         undef $self->{rpc};
     }

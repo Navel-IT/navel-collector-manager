@@ -100,10 +100,7 @@ sub prepare {
                 listen => $self->{webservices}->url()
             );
 
-            $self->{core}->{logger}->push_in_queue(
-                message => 'starting the webservices.',
-                severity => 'notice'
-            )->flush_queue();
+            $self->{core}->{logger}->notice('starting the webservices.')->flush_queue();
 
             eval {
                 while (my ($method, $value) = each %{$self->{configuration}->{definition}->{webservices}->{mojo_server}}) {
@@ -114,15 +111,9 @@ sub prepare {
             };
 
             if ($@) {
-                $self->{core}->{logger}->push_in_queue(
-                    message => $self->{core}->{logger}->stepped_log($@),
-                    severity => 'crit'
-                )->flush_queue();
+                $self->{core}->{logger}->crit($self->{core}->{logger}->stepped_log($@))->flush_queue();
             } else {
-                $self->{core}->{logger}->push_in_queue(
-                    message => 'webservices started.',
-                    severity => 'notice'
-                )->flush_queue();
+                $self->{core}->{logger}->notice('webservices started.')->flush_queue();
             }
         }
     }

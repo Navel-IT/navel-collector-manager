@@ -42,11 +42,10 @@ sub new {
     $self->log()->unsubscribe('message')->on(
         message => sub {
             my ($log, $level, @lines) = @_;
+            
+            my $method = level eq 'debug' ? 'debug' : 'info';
 
-            $self->scheduler()->{core}->{logger}->push_in_queue(
-                message => 'Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines),
-                severity => $level eq 'debug' ? 'debug' : 'info'
-            );
+            $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines));
         }
     );
 
@@ -92,14 +91,13 @@ sub startup {
                             my $exception = delete $controller->stash()->{exception};
 
                             if (defined $exception) {
-                                $controller->scheduler()->{core}->{logger}->push_in_queue(
-                                    message => $controller->scheduler()->{core}->{logger}->stepped_log(
+                                $controller->scheduler()->{core}->{logger}->error(
+                                    $controller->scheduler()->{core}->{logger}->stepped_log(
                                         [
                                             'an exception has been raised by Mojolicious for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
                                             $exception
                                         ]
-                                    ),
-                                    severity => 'error'
+                                    )
                                 );
                             }
                         }

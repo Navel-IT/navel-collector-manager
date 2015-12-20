@@ -41,22 +41,6 @@ my $log_datetime_format = '%s';
 
 my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
 
-#-> functions
-
-sub save_configuration_on_success($) {
-    $logger->push_in_queue(
-        message => shift() . ': runtime configuration successfully saved.',
-        severity => 'notice'
-    );
-}
-
-sub save_configuration_on_error($) {
-    $logger->push_in_queue(
-        message => 'an error occurred while saving the runtime configuration: ' . shift() . '.',
-        severity => 'error'
-    );
-}
-
 #-> main
 
 my $getopts = Getopt::Long::Parser->new();
@@ -96,10 +80,7 @@ eval {
 pod2usage(1) unless defined $logger;
 
 if ($daemonize && ! $validate_configuration) {
-    $logger->push_in_queue(
-        message => 'daemonizing.',
-        severity => 'info'
-    )->flush_queue();
+    $logger->info('daemonizing.')->flush_queue();
 
     eval {
         Proc::Daemon->new(
@@ -109,18 +90,14 @@ if ($daemonize && ! $validate_configuration) {
     };
 
     unless ($@) {
-        $logger->push_in_queue(
-            message => 'daemon successfully started.',
-            severity => 'info'
-        );
+        $logger->info('daemon successfully started.');
     } else {
-        $logger->push_in_queue(
-            message => $logger->stepped_log('error while daemonizing.',
+        $logger->emerg(
+            $logger->stepped_log('error while daemonizing.',
                 [
                     $@
                 ]
-            ),
-            severity => 'emerg'
+            )
         )->flush_queue();
 
         exit 1;
@@ -137,37 +114,25 @@ $scheduler = eval {
 };
 
 if ($@) {
-    $logger->push_in_queue(
-        message => $logger->stepped_log($@),
-        severity => 'emerg'
-    )->flush_queue();
+    $logger->emerg($logger->stepped_log($@))->flush_queue();
 
     exit 1;
 }
 
 if ($validate_configuration) {
-    $logger->push_in_queue(
-        message => 'configuration is valid.',
-        severity => 'notice'
-    )->flush_queue();
+    $logger->notice('configuration is valid.')->flush_queue();
 
     exit 0;
 }
 
-$logger->push_in_queue(
-    message => 'starting the scheduler.',
-    severity => 'notice'
-)->flush_queue();
+$logger->notice('starting the scheduler.')->flush_queue();
 
 eval {
     $scheduler->run();
 };
 
 if ($@) {
-    $logger->push_in_queue(
-        message => $logger->stepped_log($@),
-        severity => 'emerg'
-    )->flush_queue();
+    $logger->emerg($logger->stepped_log($@))->flush_queue();
 
     exit 1;
 }
