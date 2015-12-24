@@ -107,7 +107,7 @@ my $scheduler = eval {
         main_configuration_file_path => $main_configuration_file_path
     )->prepare(
         logger => $logger,
-        enable_webservices => ! $disable_web_services
+        enable_webservices => ! $disable_web_services && ! $validate_configuration
     );
 };
 
