@@ -14,18 +14,6 @@ use parent 'Navel::Base';
 
 use Carp 'croak';
 
-use Exporter::Easy (
-    OK => [qw/
-        $VERSION
-        :all
-    /],
-    TAGS => [
-        all => [qw/
-            $VERSION
-        /]
-    ]
-);
-
 use File::ShareDir 'dist_dir';
 
 use Navel::Scheduler::Parser;

@@ -40,7 +40,6 @@ WriteMakefile(
     PREREQ_PM => {
         'Navel::Base' => 0,
         'Navel::API' => 0,
-        'Exporter::Easy' => 0,
         'Carp' => 0,
         'EV' => 0,
         'AnyEvent::IO' => 0,

@@ -21,7 +21,7 @@ use Proc::Daemon;
 use Cwd;
 
 use Navel::Logger;
-use Navel::Scheduler '$VERSION';
+use Navel::Scheduler;
 use Navel::Utils 'blessed';
 
 #-> defaults
@@ -77,7 +77,7 @@ $getopts->getoptions(
         pod2usage(0);
     },
     'version' => sub {
-        say $VERSION;
+        say Navel::Scheduler->VERSION();
 
         exit 0;
     }
