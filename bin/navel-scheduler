@@ -11,12 +11,6 @@ use warnings;
 
 use feature 'say';
 
-use sigtrap qw/
-    handler
-    signal_handler
-    normal-signals
-/;
-
 use File::Basename;
 
 use Getopt::Long;
@@ -49,17 +43,20 @@ my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
 
 #-> sigtrap
 
-sub signal_handler {
-    $logger->notice(
-        $logger->stepped_log('catch signal.',
-            [
-                $!
-            ]
-        )
-    )->flush_queue() if blessed($logger) eq 'Navel::Logger';
+use sigtrap (
+    handler => sub {
+        $logger->notice(
+            $logger->stepped_log('catch signal.',
+                [
+                    $!
+                ]
+            )
+        )->flush_queue() if blessed($logger) eq 'Navel::Logger';
 
-    exit 0;
-}
+        exit 0;
+    },
+    'normal-signals'
+);
 
 #-> main
 
