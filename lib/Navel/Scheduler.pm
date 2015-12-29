@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler;
+package Navel::Scheduler 0.1;
 
 use strict;
 use warnings;
@@ -34,8 +34,6 @@ use Navel::Definition::Collector::Parser;
 use Navel::Definition::RabbitMQ::Parser;
 use Navel::Definition::WebService::Parser;
 use Navel::Utils 'blessed';
-
-our $VERSION = 0.1;
 
 #-> methods
 
@@ -148,6 +146,8 @@ sub run {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

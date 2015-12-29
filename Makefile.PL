@@ -14,7 +14,7 @@ use File::ShareDir::Install;
 
 #-> main
 
-my $min_perl_version = '5.10.1';
+my $min_perl_version = '5.18.0';
 
 install_share('share');
 

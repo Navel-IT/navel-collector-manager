@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Job;
+package Navel::Scheduler::Mojolicious::Application::Controller::Job 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -114,6 +114,8 @@ sub action_on_job_by_type_and_name {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

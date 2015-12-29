@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Collector;
+package Navel::Scheduler::Mojolicious::Application::Controller::Collector 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -172,6 +172,8 @@ sub delete_collector {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

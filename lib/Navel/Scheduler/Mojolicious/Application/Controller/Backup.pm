@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Backup;
+package Navel::Scheduler::Mojolicious::Application::Controller::Backup 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -69,6 +69,8 @@ sub save_all_configuration {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

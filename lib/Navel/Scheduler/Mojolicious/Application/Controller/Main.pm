@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Main;
+package Navel::Scheduler::Mojolicious::Application::Controller::Main 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -88,6 +88,8 @@ sub modify_webservices_credentials {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

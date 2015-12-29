@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Parser;
+package Navel::Scheduler::Parser 0.1;
 
 use strict;
 use warnings;
@@ -22,8 +22,6 @@ use Navel::Base::Definition;
 
 use Navel::Utils ':numeric';
 
-our $VERSION = 0.1;
-
 #-> methods
 
 sub new {
@@ -36,7 +34,7 @@ sub new {
 
 sub validate {
     my ($class, %options) = @_;
-    
+
     croak('parameters must be a HASH reference') unless ref $options{parameters} eq 'HASH';
 
     Navel::Base::Definition->validate(
@@ -151,6 +149,8 @@ sub write {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

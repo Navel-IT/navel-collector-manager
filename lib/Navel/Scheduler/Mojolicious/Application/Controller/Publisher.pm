@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Publisher;
+package Navel::Scheduler::Mojolicious::Application::Controller::Publisher 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -186,6 +186,8 @@ sub connect_or_disconnect_publisher {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

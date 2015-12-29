@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application;
+package Navel::Scheduler::Mojolicious::Application 0.1;
 
 use Carp 'croak';
 
@@ -13,8 +13,6 @@ use Mojo::Base 'Mojolicious';
 
 use Navel::API::Swagger2::Scheduler;
 use Navel::Utils 'blessed';
-
-our $VERSION = 0.1;
 
 #-> methods
 
@@ -42,7 +40,7 @@ sub new {
     $self->log()->unsubscribe('message')->on(
         message => sub {
             my ($log, $level, @lines) = @_;
-            
+
             my $method = $level eq 'debug' ? 'debug' : 'info';
 
             $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines));
@@ -123,6 +121,8 @@ sub startup {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

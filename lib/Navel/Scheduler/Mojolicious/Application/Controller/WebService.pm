@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::WebService;
+package Navel::Scheduler::Mojolicious::Application::Controller::WebService 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -40,6 +40,8 @@ sub show_webservice {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

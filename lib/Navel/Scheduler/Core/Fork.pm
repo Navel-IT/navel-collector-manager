@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Core::Fork;
+package Navel::Scheduler::Core::Fork 0.1;
 
 use strict;
 use warnings;
@@ -31,8 +31,6 @@ use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
 use Navel::Utils 'blessed';
-
-our $VERSION = 0.1;
 
 #-> methods
 
@@ -122,6 +120,8 @@ sub when_done {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

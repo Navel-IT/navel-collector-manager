@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::RabbitMQ;
+package Navel::Scheduler::Mojolicious::Application::Controller::RabbitMQ 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -167,6 +167,8 @@ sub delete_rabbitmq {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 

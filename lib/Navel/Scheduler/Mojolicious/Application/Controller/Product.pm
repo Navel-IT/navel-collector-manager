@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Product;
+package Navel::Scheduler::Mojolicious::Application::Controller::Product 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -34,6 +34,8 @@ sub show_status {
 __END__
 
 =pod
+
+=encoding utf8
 
 =head1 NAME
 
