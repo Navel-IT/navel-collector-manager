@@ -73,6 +73,8 @@ sub push_event_to_a_publisher {
     my (@ok, @ko);
 
     if (defined (my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName}))) {
+        local $@;
+
         my $body = eval {
             decode_json($controller->req()->body());
         };

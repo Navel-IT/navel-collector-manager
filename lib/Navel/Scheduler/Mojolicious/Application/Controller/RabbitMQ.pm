@@ -26,6 +26,8 @@ sub new_rabbitmq {
 
     my (@ok, @ko);
 
+    local $@;
+
     my $body = eval {
         decode_json($controller->req()->body());
     };
@@ -75,6 +77,8 @@ sub modify_rabbitmq {
     my ($controller, $arguments, $callback) = @_;
 
     my (@ok, @ko);
+
+    local $@;
 
     my $body = eval {
         decode_json($controller->req()->body());
@@ -132,6 +136,8 @@ sub delete_rabbitmq {
 
     if ($controller->scheduler()->{core}->unregister_job_by_type_and_name('publisher', $arguments->{rabbitmqName})) {
         push @ok, 'unregistering publisher ' . $arguments->{rabbitmqName} . '.';
+        
+        local $@;
 
         eval {
             $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{rabbitmqName});

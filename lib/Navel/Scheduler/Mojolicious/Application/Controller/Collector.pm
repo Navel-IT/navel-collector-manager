@@ -27,6 +27,8 @@ sub new_collector {
 
     my (@ok, @ko);
 
+    local $@;
+
     my $body = eval {
         decode_json($controller->req()->body());
     };
@@ -79,6 +81,8 @@ sub modify_collector {
     my ($controller, $arguments, $callback) = @_;
 
     my (@ok, @ko);
+
+    local $@;
 
     my $body = eval {
         decode_json($controller->req()->body());
@@ -135,6 +139,8 @@ sub delete_collector {
     my (@ok, @ko);
 
     if ($controller->scheduler()->{core}->unregister_job_by_type_and_name('collector', $arguments->{collectorName})) {
+        local $@;
+
         eval {
             $controller->scheduler()->{core}->{collectors}->delete_definition(
                 definition_name => $arguments->{collectorName}

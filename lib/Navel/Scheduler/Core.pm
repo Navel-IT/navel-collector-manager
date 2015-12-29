@@ -97,7 +97,7 @@ sub register_collector_by_name {
 
             $timer->begin();
 
-            local ($@, $!);
+            local $!;
 
             my $collector_starting_time = time;
 
@@ -215,6 +215,8 @@ sub connect_publisher_by_name {
 
     unless ($publisher->is_connected()) {
         unless ($publisher->is_connecting()) {
+            local $@;
+
             my $publisher_generic_message = 'publisher ' . $publisher->{definition}->{name};
 
             eval {
@@ -315,6 +317,8 @@ sub disconnect_publisher_by_name {
 
     if ($publisher->is_connected() || $publisher->is_connecting()) {
         unless ($publisher->is_disconnecting()) {
+            local $@;
+
             eval {
                 $publisher->disconnect();
             };
@@ -360,8 +364,6 @@ sub register_publisher_by_name {
 
             $timer->begin();
 
-            local $@;
-
             if ($publisher->{definition}->{auto_connect}) {
                 $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected() || $publisher->is_connecting();
             }
@@ -371,6 +373,8 @@ sub register_publisher_by_name {
 
                 if ($publisher->is_connected()) {
                     if (my @channels = values %{$publisher->{net}->channels()}) {
+                        local $@;
+
                         $self->{logger}->info('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
 
                         $publisher->clear_queue();
@@ -475,6 +479,8 @@ sub delete_publisher_and_definition_associated_by_name {
 
     die $self->{definition_class} . ': definition ' . $name . " does not exists\n" unless $finded;
 
+    local $@;
+
     eval {
         $self->{publishers}->[$definition_to_delete_index]->disconnect(); # workaround, DESTROY with disconnect() inside does not work
     };
@@ -550,7 +556,7 @@ sub a_collector_stop {
     1;
 }
 
-sub start {
+sub recv {
     my $self = shift;
 
     $self->{condvar}->recv();
@@ -558,7 +564,7 @@ sub start {
     $self;
 }
 
-sub stop {
+sub send {
     my $self = shift;
 
     $self->{condvar}->send();

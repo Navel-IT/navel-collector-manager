@@ -11,6 +11,12 @@ use warnings;
 
 use feature 'say';
 
+use sigtrap qw/
+    handler
+    signal_handler
+    normal-signals
+/;
+
 use File::Basename;
 
 use Getopt::Long;
@@ -22,6 +28,7 @@ use Cwd;
 
 use Navel::Logger;
 use Navel::Scheduler '$VERSION';
+use Navel::Utils 'blessed';
 
 #-> defaults
 
@@ -30,7 +37,8 @@ my (
     $log_no_color,
     $daemonize,
     $validate_configuration,
-    $disable_web_services
+    $disable_web_services,
+    $logger
 );
 
 my $log_severity = 'notice';
@@ -38,6 +46,20 @@ my $log_severity = 'notice';
 my $log_datetime_format = '%s';
 
 my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
+
+#-> sigtrap
+
+sub signal_handler {
+    $logger->notice(
+        $logger->stepped_log('catch signal.',
+            [
+                $!
+            ]
+        )
+    )->flush_queue() if blessed($logger) eq 'Navel::Logger';
+
+    exit 0;
+}
 
 #-> main
 
@@ -66,7 +88,7 @@ $getopts->getoptions(
 
 defined (my $main_configuration_file_path = shift @ARGV) or pod2usage(1);
 
-my $logger = eval {
+$logger = eval {
     Navel::Logger->new(
         severity => $log_severity,
         file_path => $log_file_path,
@@ -126,7 +148,7 @@ if ($validate_configuration) {
 $logger->notice('starting the scheduler.')->flush_queue();
 
 eval {
-    $scheduler->run();
+    $scheduler->start();
 };
 
 if ($@) {

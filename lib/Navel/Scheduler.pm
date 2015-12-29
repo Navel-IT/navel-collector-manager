@@ -48,7 +48,8 @@ sub new {
             file_path => $options{main_configuration_file_path}
         ),
         core => undef,
-        webservices => undef
+        webservices => undef,
+        web_server => undef
     }, ref $class || $class;
 }
 
@@ -86,7 +87,7 @@ sub prepare {
 
             my $mojolicious_app = Navel::Scheduler::Mojolicious::Application->new($self);
 
-            $mojolicious_app->mode('development'); # To change
+            $mojolicious_app->mode('production');
 
             my $mojolicious_app_home = dist_dir('Navel-Scheduler') . '/mojolicious/home';
 
@@ -97,32 +98,36 @@ sub prepare {
                 app => $mojolicious_app,
                 listen => $self->{webservices}->url()
             );
-
-            $self->{core}->{logger}->notice('starting the webservices.')->flush_queue();
-
-            eval {
-                while (my ($method, $value) = each %{$self->{configuration}->{definition}->{webservices}->{mojo_server}}) {
-                    $self->{web_server}->$method($value);
-                }
-
-                $self->{web_server}->silent(1)->start();
-            };
-
-            if ($@) {
-                $self->{core}->{logger}->crit($self->{core}->{logger}->stepped_log($@))->flush_queue();
-            } else {
-                $self->{core}->{logger}->notice('webservices started.')->flush_queue();
-            }
         }
     }
 
     $self;
 }
 
-sub run {
+sub start {
     my $self = shift;
 
     croak("scheduler isn't prepared") unless blessed($self->{core}) eq 'Navel::Scheduler::Core';
+
+    if ($self->{web_server}) {
+        local $@;
+
+        $self->{core}->{logger}->notice('starting the webservices.')->flush_queue();
+
+        eval {
+            while (my ($method, $value) = each %{$self->{configuration}->{definition}->{webservices}->{mojo_server}}) {
+                $self->{web_server}->$method($value);
+            }
+
+            $self->{web_server}->silent(1)->start();
+        };
+
+        if ($@) {
+            $self->{core}->{logger}->crit($self->{core}->{logger}->stepped_log($@))->flush_queue();
+        } else {
+            $self->{core}->{logger}->notice('webservices started.')->flush_queue();
+        }
+    }
 
     my $run = $self->{core}->register_the_logger(0)->register_collectors()->init_publishers();
 
@@ -130,7 +135,17 @@ sub run {
         $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};
     }
 
-    $run->register_publishers()->start();
+    $run->register_publishers()->recv();
+
+    $self;
+}
+
+sub stop {
+    my $self = shift;
+
+    $self->{web_server}->stop() if defined $self->{web_server};
+
+    $self->{core}->send();
 
     $self;
 }

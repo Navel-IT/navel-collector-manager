@@ -27,6 +27,8 @@ sub modify_webservices_credentials {
 
     my (@ok, @ko);
 
+    local $@;
+
     my $body = eval {
         decode_json($controller->req()->body());
     };
