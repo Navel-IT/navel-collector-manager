@@ -21,6 +21,8 @@ sub new {
 
     croak('scheduler must be of Navel::Scheduler class') unless blessed($scheduler) eq 'Navel::Scheduler';
 
+    local $@;
+
     my $self = $class->SUPER::new();
 
     $self->secrets(rand);
@@ -48,6 +50,12 @@ sub new {
     );
 
     $self->log()->level('debug');
+
+    eval {
+        $self->plugin('MojoX::JSON::XS');
+    };
+
+    $self->log()->debug($@) if $@;
 
     $self;
 }
