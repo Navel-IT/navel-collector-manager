@@ -48,7 +48,6 @@ WriteMakefile(
         'Sereal' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
-        'File::Basename' => 0,
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
         'Proc::Daemon' => 0,

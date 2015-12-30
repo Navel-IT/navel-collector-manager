@@ -11,8 +11,6 @@ use warnings;
 
 use feature 'say';
 
-use File::Basename;
-
 use Getopt::Long;
 use Pod::Usage;
 
@@ -30,6 +28,7 @@ my (
     $log_file_path,
     $log_no_color,
     $daemonize,
+    $pid_file,
     $validate_configuration,
     $disable_web_services,
     $logger
@@ -38,8 +37,6 @@ my (
 my $log_severity = 'notice';
 
 my $log_datetime_format = '%s';
-
-my $pid_file = '/var/run/navel-scheduler/' . basename(__FILE__) . '.pid';
 
 #-> sigtrap
 
@@ -101,7 +98,7 @@ if ($daemonize && ! $validate_configuration) {
 
     eval {
         Proc::Daemon->new(
-            working_directory => getcwd(),
+            work_dir => getcwd(),
             pid_file => $pid_file
         )->Init();
     };
