@@ -23,8 +23,17 @@ sub list_webservices {
 sub show_webservice {
     my ($controller, $arguments, $callback) = @_;
 
+    my $webservice = $controller->scheduler()->{webservices}->definition_properties_by_name($arguments->{webServiceName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{webServiceName}
+        }
+    ) unless defined $webservice;
+
     $controller->$callback(
-        $controller->scheduler()->{webservices}->definition_properties_by_name($arguments->{webServiceName}) || {},
+        $webservice,
         200
     );
 }

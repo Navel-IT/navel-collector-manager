@@ -71,8 +71,17 @@ sub new_collector {
 sub show_collector {
     my ($controller, $arguments, $callback) = @_;
 
+    my $collector = $controller->scheduler()->{core}->{collectors}->definition_properties_by_name($arguments->{collectorName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless defined $collector;
+
     $controller->$callback(
-        $controller->scheduler()->{core}->{collectors}->definition_properties_by_name($arguments->{collectorName}) || {},
+        $collector,
         200
     );
 }
@@ -92,28 +101,31 @@ sub modify_collector {
         if (ref $body eq 'HASH') {
             my $collector_definition = $controller->scheduler()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
 
-            if (defined $collector_definition) {
-                delete $body->{name};
+            return $controller->resource_not_found(
+                {
+                    callback => $callback,
+                    resource_name => $arguments->{collectorName}
+                }
+            ) unless defined $collector_definition;
 
-                my %before_modifications = (
+            delete $body->{name};
+
+            my %before_modifications = (
+                singleton => $collector_definition->{singleton},
+                interval => $collector_definition->{scheduling}
+            );
+
+            my $errors = $collector_definition->merge($body);
+
+            unless (@{$errors}) {
+                $controller->scheduler()->{core}->job_by_type_and_name('collector', $collector_definition->{name})->new(
                     singleton => $collector_definition->{singleton},
                     interval => $collector_definition->{scheduling}
-                );
+                ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{scheduling};
 
-                my $errors = $collector_definition->merge($body);
-
-                unless (@{$errors}) {
-                    $controller->scheduler()->{core}->job_by_type_and_name('collector', $collector_definition->{name})->new(
-                        singleton => $collector_definition->{singleton},
-                        interval => $collector_definition->{scheduling}
-                    ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{scheduling};
-
-                    push @ok, 'modifying collector ' . $collector_definition->{name} . '.';
-                } else {
-                    push @ko, 'error(s) occurred while modifying collector ' . $collector_definition->{name} . ':', $errors;
-                }
+                push @ok, 'modifying collector ' . $collector_definition->{name} . '.';
             } else {
-                push @ko, 'collector ' . $arguments->{collectorName} . " don't exists.";
+                push @ko, 'error(s) occurred while modifying collector ' . $collector_definition->{name} . ':', $errors;
             }
         } else {
             push @ko, 'body need to represent a hashtable.';
@@ -136,24 +148,27 @@ sub modify_collector {
 sub delete_collector {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless $controller->scheduler()->{core}->unregister_job_by_type_and_name('collector', $arguments->{collectorName});
+
     my (@ok, @ko);
 
-    if ($controller->scheduler()->{core}->unregister_job_by_type_and_name('collector', $arguments->{collectorName})) {
-        local $@;
+    local $@;
 
-        eval {
-            $controller->scheduler()->{core}->{collectors}->delete_definition(
-                definition_name => $arguments->{collectorName}
-            );
-        };
+    eval {
+        $controller->scheduler()->{core}->{collectors}->delete_definition(
+            definition_name => $arguments->{collectorName}
+        );
+    };
 
-        unless ($@) {
-            push @ok, 'unregistering and deleting collector ' . $arguments->{collectorName} . '.';
-        } else {
-            push @ko, $@;
-        }
+    unless ($@) {
+        push @ok, 'unregistering and deleting collector ' . $arguments->{collectorName} . '.';
     } else {
-        push @ko, 'collector ' . $arguments->{collectorName} . " don't exists.";
+        push @ko, $@;
     }
 
     $controller->$callback(

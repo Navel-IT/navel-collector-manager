@@ -67,8 +67,17 @@ sub new_rabbitmq {
 sub show_rabbitmq {
     my ($controller, $arguments, $callback) = @_;
 
+    my $rabbitmq = $controller->scheduler()->{core}->{rabbitmq}->definition_properties_by_name($arguments->{rabbitmqName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{rabbitmqName}
+        }
+    ) unless defined $rabbitmq;
+
     $controller->$callback(
-        $controller->scheduler()->{core}->{rabbitmq}->definition_properties_by_name($arguments->{rabbitmqName}) || {},
+        $rabbitmq,
         200
     );
 }
@@ -88,29 +97,32 @@ sub modify_rabbitmq {
         if (ref $body eq 'HASH') {
             my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{rabbitmqName});
 
-            if (defined $publisher) {
-                delete $body->{name};
-
-                my %before_modifications = (
-                    connected => $publisher->is_connected() || $publisher->is_connecting(),
-                    interval => $publisher->{definition}->{scheduling}
-                );
-
-                my $errors = $publisher->{definition}->merge($body);
-
-                unless (@{$errors}) {
-                    $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{definition}->{name}) if $before_modifications{connected};
-
-                    $controller->scheduler()->{core}->job_by_type_and_name('publisher', $publisher->{definition}->{name})->new(
-                        interval => $publisher->{definition}->{scheduling}
-                    ) unless $publisher->{definition}->{scheduling} == $before_modifications{interval};
-
-                    push @ok, 'modifying rabbitmq ' . $publisher->{definition}->{name} . '.';
-                } else {
-                    push @ko, 'error(s) occurred while modifying rabbitmq ' . $publisher->{definition}->{name}, $errors;
+            return $controller->resource_not_found(
+                {
+                    callback => $callback,
+                    resource_name => $arguments->{rabbitmqName}
                 }
+            ) unless defined $publisher;
+
+            delete $body->{name};
+
+            my %before_modifications = (
+                connected => $publisher->is_connected() || $publisher->is_connecting(),
+                interval => $publisher->{definition}->{scheduling}
+            );
+
+            my $errors = $publisher->{definition}->merge($body);
+
+            unless (@{$errors}) {
+                $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{definition}->{name}) if $before_modifications{connected};
+
+                $controller->scheduler()->{core}->job_by_type_and_name('publisher', $publisher->{definition}->{name})->new(
+                    interval => $publisher->{definition}->{scheduling}
+                ) unless $publisher->{definition}->{scheduling} == $before_modifications{interval};
+
+                push @ok, 'modifying rabbitmq ' . $publisher->{definition}->{name} . '.';
             } else {
-                push @ko, 'rabbitmq ' . $arguments->{rabbitmqName} . " and his publisher don't exists.";
+                push @ko, 'error(s) occurred while modifying rabbitmq ' . $publisher->{definition}->{name}, $errors;
             }
         } else {
             push @ko, 'body need to represent a hashtable.';
@@ -132,24 +144,27 @@ sub modify_rabbitmq {
 sub delete_rabbitmq {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{rabbitmqName}
+        }
+    ) unless $controller->scheduler()->{core}->unregister_job_by_type_and_name('publisher', $arguments->{rabbitmqName});
+
     my (@ok, @ko);
 
-    if ($controller->scheduler()->{core}->unregister_job_by_type_and_name('publisher', $arguments->{rabbitmqName})) {
-        push @ok, 'unregistering publisher ' . $arguments->{rabbitmqName} . '.';
-        
-        local $@;
+    push @ok, 'unregistering publisher ' . $arguments->{rabbitmqName} . '.';
 
-        eval {
-            $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{rabbitmqName});
-        };
+    local $@;
 
-        unless ($@) {
-            push @ok, 'deleting rabbitmq ' . $arguments->{rabbitmqName} . ' and his publisher.';
-        } else {
-            push @ko, $@;
-        }
+    eval {
+        $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{rabbitmqName});
+    };
+
+    unless ($@) {
+        push @ok, 'deleting rabbitmq ' . $arguments->{rabbitmqName} . ' and his publisher.';
     } else {
-        push @ko, 'rabbitmq ' . $arguments->{rabbitmqName} . " don't exists.";
+        push @ko, $@;
     }
 
     $controller->$callback(

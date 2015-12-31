@@ -25,12 +25,18 @@ sub list_job_types {
 sub list_job_by_type {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_not_found(
+        {
+            callback => $callback
+        }
+    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+
     $controller->$callback(
-        $controller->scheduler()->{core}->job_type_exists($arguments->{jobType}) ? [
+        [
             map {
                 $_->{name}
             } @{$controller->scheduler()->{core}->jobs_by_type($arguments->{jobType})}
-        ] : [],
+        ],
         200
     );
 }
@@ -38,22 +44,31 @@ sub list_job_by_type {
 sub show_job_by_type_and_name {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_not_found(
+        {
+            callback => $callback
+        }
+    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+
+    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{jobName}
+        }
+    ) unless defined $job;
+
     my %job_properties;
 
-    if ($controller->scheduler()->{core}->job_type_exists($arguments->{jobType})) {
-        my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+    $job_properties{name} = $arguments->{jobName};
+    $job_properties{type} = $arguments->{jobType};
 
-        if (defined $job) {
-            $job_properties{name} = $arguments->{jobName};
-            $job_properties{type} = $arguments->{jobType};
-
-            $job_properties{$_} = $job->{$_} for qw/
-                enabled
-                singleton
-                running
-            /;
-        }
-    }
+    $job_properties{$_} = $job->{$_} for qw/
+        enabled
+        singleton
+        running
+    /;
 
     $controller->$callback(
         \%job_properties,
@@ -64,32 +79,37 @@ sub show_job_by_type_and_name {
 sub action_on_job_by_type_and_name {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_not_found(
+        {
+            callback => $callback
+        }
+    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+
+    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{jobName}
+        }
+    ) unless defined $job;
+
     my (@ok, @ko);
 
-    if ($controller->scheduler()->{core}->job_type_exists($arguments->{jobType})) {
-        my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+    my $enable_property = 'enabled';
 
-        if (defined $job) {
-            my $enable_property = 'enabled';
+    if ($arguments->{jobAction} eq 'enable') {
+        $job->{$enable_property} = 1;
 
-            if ($arguments->{jobAction} eq 'enable') {
-                $job->{$enable_property} = 1;
+        push @ok, 'enabling job ' . $job->{name} . '.';
+    } elsif ($arguments->{jobAction} eq 'disable') {
+        $job->{$enable_property} = 0;
 
-                push @ok, 'enabling job ' . $job->{name} . '.';
-            } elsif ($arguments->{jobAction} eq 'disable') {
-                $job->{$enable_property} = 0;
+        push @ok, 'disabling job ' . $job->{name} . '.';
+    } elsif ($arguments->{jobAction} eq 'execute') {
+        $job->exec();
 
-                push @ok, 'disabling job ' . $job->{name} . '.';
-            } elsif ($arguments->{jobAction} eq 'execute') {
-                $job->exec();
-
-                push @ok, 'executing job ' . $job->{name} . '.';
-            }
-        } else {
-            push @ko, 'job ' . $arguments->{jobName} . " don't exists.";
-        }
-    } else {
-        push @ko, 'job ' . $arguments->{jobType} . " don't exists";
+        push @ok, 'executing job ' . $job->{name} . '.';
     }
 
     $controller->$callback(
