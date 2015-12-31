@@ -117,7 +117,7 @@ sub start {
         }
     }
 
-    my $run = $self->{core}->register_the_logger(0)->register_collectors()->init_publishers();
+    my $run = $self->{core}->register_logger_by_name(0)->register_collectors()->init_publishers();
 
     for (@{$self->{core}->{publishers}}) {
         $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};

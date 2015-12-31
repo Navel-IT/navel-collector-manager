@@ -54,7 +54,7 @@ sub new {
     bless $self, ref $class || $class;
 }
 
-sub register_the_logger {
+sub register_logger_by_name {
     my ($self, $job_name) = @_;
 
     croak('job name must be defined') unless defined $job_name;
