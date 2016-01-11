@@ -123,7 +123,7 @@ sub push_event_to_a_publisher {
                 }
             }
         } else {
-            push @ko, 'body need to represent a hashtable.';
+            push @ko, 'the request payload must represent a hash.';
         }
     } else {
         push @ko, $@;
@@ -136,7 +136,7 @@ sub push_event_to_a_publisher {
                 ko => \@ko
             }
         ),
-        200
+        @ko ? 400 : 201
     );
 }
 

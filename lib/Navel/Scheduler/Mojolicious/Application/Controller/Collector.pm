@@ -35,12 +35,15 @@ sub new_collector {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
+            return $controller->resource_already_exists(
+                {
+                    callback => $callback,
+                    resource_name => $body->{name}
+                }
+            ) if defined $controller->scheduler()->{core}->{collectors}->definition_properties_by_name($body->{name});
+
             my $collector = eval {
-                $controller->scheduler()->{core}->{collectors}->add_definition(
-                    {
-                        %{$body}
-                    }
-                );
+                $controller->scheduler()->{core}->{collectors}->add_definition($body);
             };
 
             unless ($@) {
@@ -51,7 +54,7 @@ sub new_collector {
                 push @ko, $@;
             }
         } else {
-            push @ko, 'body need to represent a hashtable.';
+            push @ko, 'the request payload must represent a hash.';
         }
     } else {
         push @ko, $@;
@@ -64,7 +67,7 @@ sub new_collector {
                 ko => \@ko
             }
         ),
-        200
+        @ko ? 400 : 201
     );
 }
 
@@ -128,7 +131,7 @@ sub modify_collector {
                 push @ko, 'error(s) occurred while modifying collector ' . $collector_definition->{name} . ':', $errors;
             }
         } else {
-            push @ko, 'body need to represent a hashtable.';
+            push @ko, 'the request payload must represent a hash.';
         }
     } else {
         push @ko, $@;
@@ -141,7 +144,7 @@ sub modify_collector {
                 ko => \@ko
             }
         ),
-        200
+        @ko ? 400 : 200
     );
 }
 
@@ -178,7 +181,7 @@ sub delete_collector {
                 ko => \@ko
             }
         ),
-        200
+        @ko ? 400 : 200
     );
 }
 

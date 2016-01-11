@@ -75,7 +75,7 @@ sub modify_webservices_credentials {
                 ko => \@ko
             }
         ),
-        200
+        @ko ? 400 : 200
     );
 }
 

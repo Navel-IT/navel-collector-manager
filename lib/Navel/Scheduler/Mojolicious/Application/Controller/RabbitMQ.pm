@@ -17,7 +17,8 @@ sub list_rabbitmq {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->scheduler()->{core}->{rabbitmq}->name()
+        $controller->scheduler()->{core}->{rabbitmq}->name(),
+        200
     );
 }
 
@@ -34,6 +35,13 @@ sub new_rabbitmq {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
+            return $controller->resource_already_exists(
+                {
+                    callback => $callback,
+                    resource_name => $body->{name}
+                }
+            ) if defined $controller->scheduler()->{core}->{rabbitmq}->definition_properties_by_name($body->{name});
+
             my $rabbitmq = eval {
                 $controller->scheduler()->{core}->{rabbitmq}->add_definition($body);
             };
@@ -48,7 +56,7 @@ sub new_rabbitmq {
                 push @ko, $@;
             }
         } else {
-            push @ko, 'body need to represent a hashtable.';
+            push @ko, 'the request payload must represent a hash.';
         }
     } else {
         push @ko, $@;
@@ -60,7 +68,8 @@ sub new_rabbitmq {
                 ok => \@ok,
                 ko => \@ko
             }
-        )
+        ),
+        @ko ? 400 : 201
     );
 }
 
@@ -125,7 +134,7 @@ sub modify_rabbitmq {
                 push @ko, 'error(s) occurred while modifying rabbitmq ' . $publisher->{definition}->{name}, $errors;
             }
         } else {
-            push @ko, 'body need to represent a hashtable.';
+            push @ko, 'the request payload must represent a hash.';
         }
     } else {
         push @ko, $@;
@@ -137,7 +146,8 @@ sub modify_rabbitmq {
                 ok => \@ok,
                 ko => \@ko
             }
-        )
+        ),
+        @ko ? 400 : 200
     );
 }
 
@@ -173,7 +183,8 @@ sub delete_rabbitmq {
                 ok => \@ok,
                 ko => \@ko
             }
-        )
+        ),
+        @ko ? 400 : 200
     );
 }
 
