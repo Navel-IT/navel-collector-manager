@@ -91,26 +91,14 @@ sub startup {
                             my $exception = delete $controller->stash()->{exception};
 
                             if (defined $exception) {
-                                my @exception_message = (
-                                    'an exception has been raised for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
-                                    $exception
-                                );
-
                                 $controller->scheduler()->{core}->{logger}->error(
-                                    $controller->scheduler()->{core}->{logger}->stepped_log(\@exception_message)
+                                    $controller->scheduler()->{core}->{logger}->stepped_log(
+                                        [
+                                            'an exception has been raised for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
+                                            $exception
+                                        ]
+                                    )
                                 );
-
-                                $controller->render(
-                                    json => $controller->ok_ko(
-                                        {
-                                            ok => [],
-                                            ko => @exception_message
-                                        }
-                                    ),
-                                    status => 500
-                                );
-
-                                return undef;
                             }
                         }
                     );
