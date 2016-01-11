@@ -124,7 +124,7 @@ sub modify_collector {
                 $controller->scheduler()->{core}->job_by_type_and_name('collector', $collector_definition->{name})->new(
                     singleton => $collector_definition->{singleton},
                     interval => $collector_definition->{scheduling}
-                ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{scheduling};
+                ) unless $collector_definition->{singleton} == $before_modifications{singleton} && $collector_definition->{scheduling} == $before_modifications{interval};
 
                 push @ok, 'modifying collector ' . $collector_definition->{name} . '.';
             } else {
