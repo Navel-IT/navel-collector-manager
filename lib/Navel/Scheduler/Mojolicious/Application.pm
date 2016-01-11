@@ -94,25 +94,26 @@ sub startup {
         before_render => sub {
             my ($controller, $arguments) = @_;
 
-            return unless $arguments->{template} eq 'exception';
+            my (@ok, @ko);
 
-            my $exception_message = $controller->stash('exception')->message();
+            if ($arguments->{template} eq 'exception') {
+                my $exception_message = $controller->stash('exception')->message();
 
-            $controller->scheduler()->{core}->{logger}->error(
-                $controller->scheduler()->{core}->{logger}->stepped_log(
-                    [
-                        'an unexpected error has been raised for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
-                        $exception_message
-                    ]
-                )
-            );
+                push @ko, $exception_message;
+
+                $controller->scheduler()->{core}->{logger}->error(
+                    $controller->scheduler()->{core}->{logger}->stepped_log(\@ko)
+                );
+            } elsif ($arguments->{template} eq 'not_found') {
+                push @ko, "the page you were looking for doesn't exist."
+            } else {
+                return;
+            }
 
             $arguments->{json} = {
-                ok => [],
-                ko => [
-                    $exception_message
-                ]
-            }
+                ok => \@ok,
+                ko => \@ko
+            };
         }
     );
 
