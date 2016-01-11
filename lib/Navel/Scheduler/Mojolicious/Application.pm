@@ -75,7 +75,9 @@ sub startup {
                             json => $controller->ok_ko(
                                 {
                                     ok => [],
-                                    ko => ['unauthorized: access is denied due to invalid credentials.']
+                                    ko => [
+                                        'unauthorized: access is denied due to invalid credentials.'
+                                    ]
                                 }
                             ),
                             status => 401
@@ -83,27 +85,34 @@ sub startup {
 
                         return undef;
                     }
-
-                    $controller->on(
-                        finish => sub {
-                            my $controller = shift;
-
-                            my $exception = delete $controller->stash()->{exception};
-
-                            if (defined $exception) {
-                                $controller->scheduler()->{core}->{logger}->error(
-                                    $controller->scheduler()->{core}->{logger}->stepped_log(
-                                        [
-                                            'an exception has been raised for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
-                                            $exception
-                                        ]
-                                    )
-                                );
-                            }
-                        }
-                    );
                 }
             )
+        }
+    );
+
+    $self->hook(
+        before_render => sub {
+            my ($controller, $arguments) = @_;
+
+            return unless $arguments->{template} eq 'exception';
+
+            my $exception_message = $controller->stash('exception')->message();
+
+            $controller->scheduler()->{core}->{logger}->error(
+                $controller->scheduler()->{core}->{logger}->stepped_log(
+                    [
+                        'an unexpected error has been raised for HTTP ' . $controller->req()->method() . ' on ' . $controller->req()->url()->to_string() . ': ',
+                        $exception_message
+                    ]
+                )
+            );
+
+            $arguments->{json} = {
+                ok => [],
+                ko => [
+                    $exception_message
+                ]
+            }
         }
     );
 
@@ -147,5 +156,4 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
-
 
