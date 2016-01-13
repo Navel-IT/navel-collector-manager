@@ -93,10 +93,12 @@ sub startup {
     $self->hook(
         before_render => sub {
             my ($controller, $arguments) = @_;
-
+            
             my (@ok, @ko);
+            
+            my $template = defined $arguments->{template} ? $arguments->{template} : '';
 
-            if ($arguments->{template} eq 'exception') {
+            if ($template eq 'exception') {
                 my $exception_message = $controller->stash('exception')->message();
 
                 push @ko, $exception_message;
@@ -104,7 +106,7 @@ sub startup {
                 $controller->scheduler()->{core}->{logger}->error(
                     $controller->scheduler()->{core}->{logger}->stepped_log(\@ko)
                 );
-            } elsif ($arguments->{template} eq 'not_found') {
+            } elsif ($template eq 'not_found') {
                 push @ko, "the page you were looking for doesn't exist."
             } else {
                 return;
