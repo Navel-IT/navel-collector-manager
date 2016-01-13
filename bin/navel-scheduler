@@ -84,6 +84,7 @@ defined (my $main_configuration_file_path = shift @ARGV) or pod2usage(1);
 
 $logger = eval {
     Navel::Logger->new(
+        service => 'Navel::Scheduler',
         severity => $log_severity,
         file_path => $log_file_path,
         colored => ! $log_no_color,
@@ -104,6 +105,8 @@ if ($daemonize && ! $validate_configuration) {
     };
 
     unless ($@) {
+        $logger->{service_pid} = $$;
+
         $logger->info('daemon successfully started.')->flush_queue();
     } else {
         $logger->emerg(
@@ -139,7 +142,7 @@ if ($validate_configuration) {
     exit 0;
 }
 
-$logger->notice('starting the scheduler.')->flush_queue();
+$logger->notice('core starting.')->flush_queue();
 
 eval {
     $scheduler->start();
