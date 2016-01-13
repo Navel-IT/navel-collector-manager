@@ -96,18 +96,9 @@ For RabbitMQ installation and configuration, see [here](http://www.rabbitmq.com/
 Service
 -------
 
-By default, the service will run under *navel-scheduler:navel-scheduler*.
+By default, the service is named *navel-scheduler* and run under the user and the group of the same name.
 
-If you want to change the service options, edit */etc/sysconfig/navel-scheduler* in accordance with the options returned by `navel-scheduler --help`.
-
-- systemd
-
-`systemctl <action> navel-scheduler`
-
-- SysV
-
-`service navel-scheduler <action>`
-
+If you want to change the service options, edit */etc/sysconfig/navel-scheduler* or */etc/default/navel-scheduler* in accordance with the options returned by `navel-scheduler --help`.
 
 REST API
 --------
@@ -170,5 +161,3 @@ sub collector {
     \@datas;
 }
 ```
-
-
