@@ -84,7 +84,7 @@ defined (my $main_configuration_file_path = shift @ARGV) or pod2usage(1);
 
 $logger = eval {
     Navel::Logger->new(
-        service => 'Navel::Scheduler',
+        service => 'navel-scheduler',
         severity => $log_severity,
         file_path => $log_file_path,
         colored => ! $log_no_color,

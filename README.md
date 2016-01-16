@@ -102,14 +102,14 @@ All the help is available with `navel-scheduler --help`.
 
 ```
 [root@navel-scheduler ~]# navel-scheduler /usr/local/etc/navel-scheduler/main.json --log-no-color --log-severity=info
-2016-01-13 17-00-51 +0000 Navel::Scheduler[2724] (notice): initialization.
-2016-01-13 17-00-51 +0000 Navel::Scheduler[2724] (notice): starting the webservices.
-2016-01-13 17-00-51 +0000 Navel::Scheduler[2724] (notice): webservices started.
-2016-01-13 17-00-51 +0000 Navel::Scheduler[2724] (info): spawned a new process for collector dummy-0.
-2016-01-13 17-00-51 +0000 Navel::Scheduler[2724] (info): spawned a new process for collector dummy-1.
-2016-01-13 17-00-53 +0000 Navel::Scheduler[2724] (warning): job dummy-1 is already running.
-2016-01-13 17-00-54 +0000 Navel::Scheduler[2724] (warning): job dummy-0 is already running.
-2016-01-13 17-00-55 +0000 Navel::Scheduler[2724] (warning): job dummy-1 is already running.
+2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): initialization.
+2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): starting the webservices.
+2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): webservices started.
+2016-01-16 17-00-51 +0000 navel-scheduler[2724] (info): spawned a new process for collector dummy-0.
+2016-01-16 17-00-51 +0000 navel-scheduler[2724] (info): spawned a new process for collector dummy-1.
+2016-01-16 17-00-53 +0000 navel-scheduler[2724] (warning): job dummy-1 is already running.
+2016-01-16 17-00-54 +0000 navel-scheduler[2724] (warning): job dummy-0 is already running.
+2016-01-16 17-00-55 +0000 navel-scheduler[2724] (warning): job dummy-1 is already running.
 ```
 
 - As a service
