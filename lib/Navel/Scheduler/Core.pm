@@ -405,7 +405,7 @@ sub register_publisher_by_name {
 
                                     $channels[0]->publish(
                                         exchange => $publisher->{definition}->{exchange},
-                                        routing_key => $_->routing_key(),
+                                        routing_key => $routing_key,
                                         header => {
                                             delivery_mode => $publisher->{definition}->{delivery_mode}
                                         },
