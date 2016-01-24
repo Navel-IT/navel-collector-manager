@@ -169,7 +169,7 @@ sub delete_all_events_from_a_publisher {
     );
 }
 
-sub connect_or_disconnect_publisher {
+sub connect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
     my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName});
@@ -183,13 +183,38 @@ sub connect_or_disconnect_publisher {
 
     my (@ok, @ko);
 
-    if ($arguments->{publisherAction} eq 'connect' || $arguments->{publisherAction} eq 'disconnect') {
-        my $method = $arguments->{publisherAction} . '_publisher_by_name';
+    push @ok, 'connecting publisher ' . $publisher->{definition}->{name} . '.';
 
-        push @ok, $arguments->{publisherAction} . 'ing publisher ' . $publisher->{definition}->{name} . '.';
+    $controller->scheduler()->{core}->connect_publisher_by_name($publisher->{definition}->{name});
 
-        $controller->scheduler()->{core}->$method($publisher->{definition}->{name});
-    }
+    $controller->$callback(
+        $controller->ok_ko(
+            {
+                ok => \@ok,
+                ko => \@ko
+            }
+        ),
+        200
+    );
+}
+
+sub disconnect_publisher {
+    my ($controller, $arguments, $callback) = @_;
+
+    my $publisher = $controller->scheduler()->{core}->publisher_by_name($arguments->{publisherName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{publisherName}
+        }
+    ) unless defined $publisher;
+
+    my (@ok, @ko);
+
+    push @ok, 'disconnecting publisher ' . $publisher->{definition}->{name} . '.';
+
+    $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{definition}->{name});
 
     $controller->$callback(
         $controller->ok_ko(
