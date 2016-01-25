@@ -15,7 +15,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Prepare configuration
 ---------------------
 
-*main.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties cannot be changed at runtime. It must look like this:
+*main.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime. It must look like this:
 
 ```javascript
 {
@@ -60,7 +60,7 @@ heartbeat_timeout | float
 multi_accept | int
 workers | int
 
-*webservices.json* contains the definitions of navel-scheduler's web services and cannot be changed at runtime. It must look like this:
+*webservices.json* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
 
 ```json
 [
@@ -138,9 +138,9 @@ There are two types of collectors:
 **Notes for Perl based collectors**:
 
 - They must always contain a subroutine named `collector`.
+- The subroutine named `__collector` is reserved and therefore should never be used in a collector.
 - `STDOUT` and `STDERR` are closed.
-- A subroutine named `__collector` must not be declared.
-- The error messages (syntax error, `die`, ...) are not accurate. First test your collectors manually.
+- The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
 An exemple of Perl package collector:
 
