@@ -137,9 +137,9 @@ There are two types of collectors:
 
 **Notes for Perl based collectors**:
 
-- They must always contain a function named `collector`.
+- They must always contain a subroutine named `collector`.
 - `STDOUT` and `STDERR` are closed.
-- The `__collector` function is reserved.
+- A subroutine named `__collector` must not be declared.
 - The error messages (syntax error, `die`, ...) are not accurate. First test your collectors manually.
 
 An exemple of Perl package collector:
