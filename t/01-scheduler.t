@@ -39,5 +39,3 @@ lives_ok {
 #-> END
 
 __END__
-
-

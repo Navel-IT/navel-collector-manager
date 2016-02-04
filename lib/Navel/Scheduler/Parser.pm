@@ -48,7 +48,7 @@ sub validate {
                 maximum_simultaneous_exec => 'main_positive_integer',
                 execution_timeout => 'main_positive_integer'
             },
-            rabbitmq => {
+            publishers => {
                 definitions_from_file => 'text',
                 maximum => 'main_positive_integer',
                 maximum_simultaneous_exec => 'main_positive_integer'
@@ -165,5 +165,3 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
-
-

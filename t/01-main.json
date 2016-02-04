@@ -6,8 +6,8 @@
         "maximum_simultaneous_exec": 0,
         "execution_timeout": 0
     },
-    "rabbitmq": {
-        "definitions_from_file": "t/01-rabbitmq.json",
+    "publishers": {
+        "definitions_from_file": "t/01-publishers.json",
         "maximum": 0,
         "maximum_simultaneous_exec": 0
     },
@@ -21,5 +21,3 @@
         }
     }
 }
-
-

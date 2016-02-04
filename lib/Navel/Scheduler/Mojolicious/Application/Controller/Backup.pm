@@ -21,7 +21,11 @@ sub save_all_configuration {
     };
 
     my $save_configuration_on_error = sub {
-        $controller->scheduler()->{core}->{logger}->error('an error occurred while saving the runtime configuration: ' . shift() . '.');
+        $controller->scheduler()->{core}->{logger}->error('an error occurred while saving the runtime configuration.',
+            $controller->scheduler()->{core}->{logger}->stepped_log(
+                shift
+            )
+        );
     };
 
     $controller->scheduler()->{core}->{collectors}->write(
@@ -85,5 +89,3 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
-
-

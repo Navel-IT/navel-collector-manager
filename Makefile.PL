@@ -53,7 +53,8 @@ WriteMakefile(
         'Proc::Daemon' => 0,
         'Cwd' => 0,
         'File::ShareDir' => 0,
-        'Mojolicious' => 0
+        'Mojolicious' => 0,
+        'Storable' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,
@@ -74,5 +75,3 @@ use File::ShareDir::Install 'postamble';
 #-> END
 
 __END__
-
-

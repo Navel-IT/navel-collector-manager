@@ -1,0 +1,9 @@
+[
+    {
+        "name": "dummy-1",
+        "backend": "t::lib::Navel::Broker::Publisher::Backend::Dummy",
+        "backend_input": null,
+        "scheduling": 15,
+        "auto_connect": 1
+    }
+]

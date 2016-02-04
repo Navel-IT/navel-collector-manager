@@ -91,8 +91,6 @@ workers | int
 
 Others parts of the configuration of navel-scheduler must be done via the REST API.
 
-For RabbitMQ installation and configuration, see [here](http://www.rabbitmq.com/documentation.html).
-
 Start
 -----
 

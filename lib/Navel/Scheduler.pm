@@ -19,7 +19,7 @@ use File::ShareDir 'dist_dir';
 use Navel::Scheduler::Parser;
 use Navel::Scheduler::Core;
 use Navel::Definition::Collector::Parser;
-use Navel::Definition::RabbitMQ::Parser;
+use Navel::Definition::Publisher::Parser;
 use Navel::Definition::WebService::Parser;
 use Navel::Utils 'blessed';
 
@@ -53,10 +53,10 @@ sub prepare {
         )->read(
             file_path => $self->{configuration}->{definition}->{collectors}->{definitions_from_file}
         )->make(),
-        rabbitmq => Navel::Definition::RabbitMQ::Parser->new(
-            maximum => $self->{configuration}->{definition}->{rabbitmq}->{maximum}
+        publishers => Navel::Definition::Publisher::Parser->new(
+            maximum => $self->{configuration}->{definition}->{publishers}->{maximum}
         )->read(
-            file_path => $self->{configuration}->{definition}->{rabbitmq}->{definitions_from_file}
+            file_path => $self->{configuration}->{definition}->{publishers}->{definitions_from_file}
         )->make(),
         logger => $options{logger}
     );
@@ -117,13 +117,7 @@ sub start {
         }
     }
 
-    my $run = $self->{core}->register_logger_by_name(0)->register_collectors()->init_publishers();
-
-    for (@{$self->{core}->{publishers}}) {
-        $self->{core}->connect_publisher_by_name($_->{definition}->{name}) if $_->{definition}->{auto_connect};
-    }
-
-    $run->register_publishers()->recv();
+    $self->{core}->register_logger_by_name(0)->register_collectors()->init_publishers()->register_publishers()->recv();
 
     $self;
 }
@@ -165,5 +159,3 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
-
-

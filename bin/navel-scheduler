@@ -43,7 +43,7 @@ my $log_datetime_format = '%Y-%m-%d %H-%M-%S %z';
 use sigtrap (
     handler => sub {
         $logger->notice(
-            $logger->stepped_log('catch signal.',
+            $logger->stepped_log('catch a signal.',
                 [
                     $!
                 ]

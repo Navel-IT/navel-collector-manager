@@ -19,9 +19,24 @@ use AnyEvent::IO;
 
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
-use Navel::RabbitMQ::Publisher;
+use Navel::Broker::Publisher;
 
 use Navel::Utils 'blessed';
+
+#-> functions
+
+my $publisher_logger = sub {
+    my ($self, $generic_message, $severity, $message) = @_;
+
+    $self->{logger}->push_in_queue(
+        severity => $severity,
+        message => $self->{logger}->stepped_log($generic_message . '.',
+            [
+               $message
+            ]
+        )
+    ) if defined $message;
+};
 
 #-> methods
 
@@ -31,8 +46,8 @@ sub new {
     my $self = {
         configuration => $options{configuration},
         collectors => $options{collectors},
-        rabbitmq => $options{rabbitmq},
-        publishers => [],
+        publishers => $options{publishers},
+        runtime_per_publisher => [],
         logger => $options{logger},
         condvar => AnyEvent->condvar()
     };
@@ -46,8 +61,8 @@ sub new {
         ),
         publisher => Navel::AnyEvent::Pool->new(
             logger => $self->{logger},
-            maximum => $self->{configuration}->{rabbitmq}->{maximum},
-            maximum_simultaneous_exec => $self->{configuration}->{rabbitmq}->{maximum_simultaneous_exec}
+            maximum => $self->{configuration}->{publishers}->{maximum},
+            maximum_simultaneous_exec => $self->{configuration}->{publishers}->{maximum_simultaneous_exec}
         )
     };
 
@@ -152,7 +167,13 @@ sub register_collector_by_name {
                     if ($collector_content) {
                         $fork_collector->($collector_content);
                     } else {
-                        $self->{logger}->error('collector ' . $collector->{name} . ': ' . $! . '.');
+                        $self->{logger}->error(
+                            $self->{logger}->stepped_log('collector ' . $collector->{name} . '.',
+                                [
+                                    $!
+                                ]
+                            )
+                        );
 
                         $self->a_collector_stop(
                             job => $timer,
@@ -183,14 +204,14 @@ sub register_collectors {
 sub init_publisher_by_name {
     my $self = shift;
 
-    my $rabbitmq = $self->{rabbitmq}->definition_by_name(shift);
+    my $publisher_definition = $self->{publishers}->definition_by_name(shift);
 
-    croak('unknown rabbitmq') unless defined $rabbitmq;
+    croak('unknown publisher') unless defined $publisher_definition;
 
-    $self->{logger}->notice('initialize publisher ' . $rabbitmq->{name} . '.');
+    $self->{logger}->notice('initialize publisher ' . $publisher_definition->{name} . '.');
 
-    push @{$self->{publishers}}, Navel::RabbitMQ::Publisher->new(
-        rabbitmq_definition => $rabbitmq
+    push @{$self->{runtime_per_publisher}}, Navel::Broker::Publisher->new(
+        definition => $publisher_definition
     );
 
     $self;
@@ -199,7 +220,7 @@ sub init_publisher_by_name {
 sub init_publishers {
     my $self = shift;
 
-    $self->init_publisher_by_name($_->{name}) for @{$self->{rabbitmq}->{definitions}};
+    $self->init_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
 
     $self;
 }
@@ -207,92 +228,46 @@ sub init_publishers {
 sub connect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_name(shift);
+    my $publisher = $self->publisher_runtime_by_name(shift);
 
     croak('unknown publisher') unless defined $publisher;
 
-    my $publisher_connect_generic_message = 'connect publisher ' . $publisher->{definition}->{name};
+    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
 
-    unless ($publisher->is_connected()) {
-        unless ($publisher->is_connecting()) {
-            local $@;
+    my $connect_generic_message = 'connect ' . $generic_message;
 
-            my $publisher_generic_message = 'publisher ' . $publisher->{definition}->{name};
+    if ($publisher->{seems_connectable}) {
+        unless ($publisher->is_connected()) {
+            unless ($publisher->is_connecting()) {
+                local $@;
 
-            eval {
-                $publisher->connect(
-                    on_success => sub {
-                        my $amqp_connection = shift;
+                eval {
+                    $publisher->connect(
+                        logger => sub {
+                            $self->$publisher_logger($connect_generic_message, @_);
+                        }
+                    );
+                };
 
-                        $self->{logger}->notice($publisher_connect_generic_message . ' successfully connected.');
-
-                        $amqp_connection->open_channel(
-                            on_success => sub {
-                                $self->{logger}->notice($publisher_generic_message . ': channel opened.');
-                            },
-                            on_failure => sub {
-                                $self->{logger}->error(
-                                    $self->{logger}->stepped_log(
-                                        [
-                                            $publisher_generic_message . ': channel failure.',
-                                            \@_
-                                        ]
-                                    )
-                                );
-                            },
-                            on_close => sub {
-                                $self->{logger}->notice($publisher_generic_message . ': channel closed.');
-
-                                $publisher->disconnect();
-                            }
-                        );
-                    },
-                    on_failure => sub {
-                        $self->{logger}->error(
-                            $self->{logger}->stepped_log(
-                                [
-                                    $publisher_connect_generic_message . ': failure.',
-                                    \@_
-                                ]
-                            )
-                        );
-                    },
-                    on_read_failure => sub {
-                        $self->{logger}->error(
-                            $self->{logger}->stepped_log(
-                                [
-                                    $publisher_generic_message . ': read failure.',
-                                    \@_
-                                ]
-                            )
-                        );
-                    },
-                    on_return => sub {
-                        $self->{logger}->error($publisher_generic_message . ': unable to deliver frame.');
-                    },
-                    on_close => sub {
-                        $self->{logger}->notice($publisher_generic_message . ' disconnected.');
-                    }
-                );
-            };
-
-            unless ($@) {
-                $self->{logger}->notice($publisher_connect_generic_message . ' ....');
+                unless ($@) {
+                    $self->{logger}->notice($connect_generic_message . '.');
+                } else {
+                    $self->{logger}->error(
+                        $self->{logger}->stepped_log($connect_generic_message . '.',
+                            [
+                                $@
+                            ]
+                        )
+                    );
+                }
             } else {
-                $self->{logger}->error(
-                    $self->{logger}->stepped_log(
-                        [
-                            $publisher_connect_generic_message . ':',
-                            $@
-                        ]
-                    )
-                );
+                $self->{logger}->warning($connect_generic_message . ': already trying to establish a connection.');
             }
         } else {
-            $self->{logger}->warning($publisher_connect_generic_message . ': already trying to establish a connection.');
+            $self->{logger}->warning($connect_generic_message . ': already connected.');
         }
     } else {
-        $self->{logger}->warning($publisher_connect_generic_message . ': already connected.');
+        $self->{logger}->debug($connect_generic_message . ': nothing to connect.')
     }
 
     $self;
@@ -301,7 +276,7 @@ sub connect_publisher_by_name {
 sub connect_publishers {
     my $self = shift;
 
-    $self->connect_publisher_by_name($_->{definition}->{name}) for @{$self->{publishers}};
+    $self->connect_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
 
     $self;
 }
@@ -309,30 +284,46 @@ sub connect_publishers {
 sub disconnect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_name(shift);
+    my $publisher = $self->publisher_runtime_by_name(shift);
 
     croak('unknown publisher') unless defined $publisher;
 
-    my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
+    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
 
-    if ($publisher->is_connected() || $publisher->is_connecting()) {
-        unless ($publisher->is_disconnecting()) {
-            local $@;
+    my $disconnect_generic_message = 'disconnect ' . $generic_message;
 
-            eval {
-                $publisher->disconnect();
-            };
+    if ($publisher->{seems_connectable}) {
+        if ($publisher->is_connected() || $publisher->is_connecting()) {
+            unless ($publisher->is_disconnecting()) {
+                local $@;
 
-            unless ($@) {
-                $self->{logger}->notice($disconnect_generic_message . '.');
+                eval {
+                    $publisher->disconnect(
+                        logger => sub {
+                            $self->$publisher_logger($disconnect_generic_message, @_);
+                        }
+                    );
+                };
+
+                unless ($@) {
+                    $self->{logger}->notice($disconnect_generic_message . '.');
+                } else {
+                    $self->{logger}->error(
+                        $self->{logger}->stepped_log($disconnect_generic_message . '.',
+                            [
+                                $@
+                            ]
+                        )
+                    );
+                }
             } else {
-                $self->{logger}->error($disconnect_generic_message . ': ' . $@ . '.');
+                $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
             }
         } else {
-            $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
+            $self->{logger}->warning($disconnect_generic_message . ': already disconnected.');
         }
     } else {
-        $self->{logger}->warning($disconnect_generic_message . ': already disconnected.');
+        $self->{logger}->debug($generic_message . ': nothing to disconnect');
     }
 
     $self;
@@ -341,7 +332,7 @@ sub disconnect_publisher_by_name {
 sub disconnect_publishers {
     my $self = shift;
 
-    $self->disconnect_publisher_by_name($_->{name}) for @{$self->{publishers}};
+    $self->disconnect_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
 
     $self;
 }
@@ -349,7 +340,7 @@ sub disconnect_publishers {
 sub register_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_by_name(shift);
+    my $publisher = $self->publisher_runtime_by_name(shift);
 
     croak('unknown publisher') unless defined $publisher;
 
@@ -364,79 +355,74 @@ sub register_publisher_by_name {
 
             $timer->begin();
 
-            if ($publisher->{definition}->{auto_connect}) {
+            if ($publisher->{seems_connectable} && $publisher->{definition}->{auto_connect}) {
                 $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected() || $publisher->is_connecting();
             }
 
+            my $generic_message = 'publisher ' . $publisher->{definition}->{name};
+
             if (my @queue = @{$publisher->{queue}}) {
-                my $publish_generic_message = 'publish events for publisher ' . $publisher->{definition}->{name};
+                my $publish_generic_message = 'publish events for ' . $generic_message;
 
-                if ($publisher->is_connected()) {
-                    if (my @channels = values %{$publisher->{net}->channels()}) {
-                        local $@;
+                unless ($publisher->{seems_connectable} && ! $publisher->is_connected()) {
+                    local $@;
 
-                        $self->{logger}->info('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
+                    $self->{logger}->info('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
 
-                        $publisher->clear_queue();
+                    $publisher->clear_queue();
 
-                        eval {
-                            for (@queue) {
-                                my $serialize_generic_message = 'serialize datas for collection ' . $_->{collection};
+                    eval {
+                        for (@queue) {
+                            my $serialize_generic_message = 'serialize datas for collection ' . $_->{collection};
 
-                                my $serialized = eval {
-                                    $_->serialized_datas();
-                                };
+                            my $serialized = eval {
+                                $_->serialized_datas();
+                            };
 
-                                unless ($@) {
-                                    $self->{logger}->debug(
-                                        $self->{logger}->stepped_log(
-                                            [
-                                                $serialize_generic_message,
-                                                $serialized
-                                            ]
-                                        )
-                                    );
+                            unless ($@) {
+                                $self->{logger}->debug(
+                                    $self->{logger}->stepped_log($serialize_generic_message . ': this serialized event will normally be send.',
+                                        [
+                                            $serialized
+                                        ]
+                                    )
+                                );
 
-                                    $self->{logger}->info($serialize_generic_message . '.');
-
-                                    my $routing_key = $_->routing_key();
-
-                                    $self->{logger}->info($publish_generic_message . ': sending one event with routing key ' . $routing_key . ' to exchange ' . $publisher->{definition}->{exchange} . '.');
-
-                                    $channels[0]->publish(
-                                        exchange => $publisher->{definition}->{exchange},
-                                        routing_key => $routing_key,
-                                        header => {
-                                            delivery_mode => $publisher->{definition}->{delivery_mode}
-                                        },
-                                        body => $serialized
-                                    );
-                                } else {
-                                    $self->{logger}->error($serialize_generic_message . ' failed: ' . $@ . '.' );
-                                }
-                            }
-                        };
-
-                        if ($@) {
-                            $self->{logger}->error(
-                                $self->{logger}->stepped_log(
-                                    [
-                                        $publish_generic_message . ':',
-                                        $@
-                                    ]
+                                $publisher->publish(
+                                    event => $_,
+                                    serialized_event => $serialized,
+                                    logger =>  sub {
+                                        $self->$publisher_logger($publish_generic_message, @_);
+                                    }
                                 )
-                            );
-                        } else {
-                            $self->{logger}->notice($publish_generic_message . '.');
+                            } else {
+                                $self->{logger}->error(
+                                    $self->{logger}->stepped_log($serialize_generic_message . '.',
+                                        [
+                                            $@
+                                        ]
+                                    )
+                                );
+                            }
                         }
+                    };
+
+                    unless ($@) {
+                        $self->{logger}->notice($publish_generic_message . '.');
                     } else {
-                        $self->{logger}->error($publish_generic_message . ': publisher has no channel opened.');
+                        $self->{logger}->error(
+                            $self->{logger}->stepped_log($publish_generic_message . '.',
+                                [
+                                    $@
+                                ]
+                            )
+                        );
                     }
                 } else {
                     $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
                 }
             } else {
-                $self->{logger}->info('queue for publisher ' . $publisher->{definition}->{name} . ' is empty.');
+                $self->{logger}->info('queue for ' . $generic_message . ' is empty.');
             }
 
             $timer->end();
@@ -449,17 +435,17 @@ sub register_publisher_by_name {
 sub register_publishers {
     my $self = shift;
 
-    $self->register_publisher_by_name($_->{definition}->{name}) for @{$self->{publishers}};
+    $self->register_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
 
     $self;
 }
 
-sub publisher_by_name {
+sub publisher_runtime_by_name {
     my ($self, $name) = @_;
 
     croak('name must be defined') unless defined $name;
 
-    for (@{$self->{publishers}}) {
+    for (@{$self->{runtime_per_publisher}}) {
         return $_ if $_->{definition}->{name} eq $name;
     }
 
@@ -475,19 +461,21 @@ sub delete_publisher_and_definition_associated_by_name {
 
     my $definition_to_delete_index = 0;
 
-    $definition_to_delete_index++ until $finded = $self->{publishers}->[$definition_to_delete_index]->{definition}->{name} eq $name;
+    $definition_to_delete_index++ until $finded = $self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}->{name} eq $name;
 
     die $self->{definition_class} . ': definition ' . $name . " does not exists\n" unless $finded;
 
     local $@;
 
-    eval {
-        $self->{publishers}->[$definition_to_delete_index]->disconnect(); # workaround, DESTROY with disconnect() inside does not work
-    };
+    if ($self->{runtime_per_publisher}->[$definition_to_delete_index]->{seems_connectable}) {
+        eval {
+            $self->{runtime_per_publisher}->[$definition_to_delete_index]->disconnect(); # workaround, DESTROY with disconnect() inside does not work
+        };
+    }
 
-    splice @{$self->{publishers}}, $definition_to_delete_index, 1;
+    splice @{$self->{runtime_per_publisher}}, $definition_to_delete_index, 1;
 
-    $self->{rabbitmq}->delete_definition(
+    $self->{publishers}->delete_definition(
         definition_name => $name
     );
 }
@@ -549,7 +537,7 @@ sub a_collector_stop {
 
     $self->{logger}->info('add an event from collector ' . $collector_name . ' in the queue of existing publishers.');
 
-    $_->push_in_queue(%options) for @{$self->{publishers}};
+    $_->push_in_queue(%options) for @{$self->{runtime_per_publisher}};
 
     $options{job}->end() if defined $options{job};
 
@@ -599,5 +587,3 @@ Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 GNU GPL v3
 
 =cut
-
-
