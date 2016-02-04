@@ -63,7 +63,7 @@ workers | int
 ]
 ```
 
-Others parts of the configuration of navel-scheduler must be done via the REST API.
+- Others parts of the configuration of navel-scheduler must be done via the REST API.
 
 Start
 -----
