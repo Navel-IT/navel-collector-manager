@@ -3,7 +3,7 @@ navel-scheduler
 
 [![Build Status](https://travis-ci.org/Navel-IT/navel-scheduler.svg)](https://travis-ci.org/Navel-IT/navel-scheduler)
 
-navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through a broker to navel-storer.
 
 It is build on top of `Mojolicious` + `AnyEvent` and must work on all Linux platforms.
 
@@ -15,33 +15,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Prepare configuration
 ---------------------
 
-*main.json* is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime. It must look like this:
-
-```javascript
-{
-    "collectors": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/collectors.json",
-        "collectors_exec_directory": "/usr/local/etc/navel-scheduler/collectors",
-        "maximum": 0,
-        "maximum_simultaneous_exec": 0,
-        "execution_timeout": 0
-    },
-    "rabbitmq": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/rabbitmq.json",
-        "maximum": 0,
-        "maximum_simultaneous_exec": 0
-    },
-    "webservices": {
-        "definitions_from_file": "/usr/local/etc/navel-scheduler/webservices.json",
-        "credentials": { // changeable at runtime
-            "login": "admin",
-            "password": "password"
-        },
-        "mojo_server": {
-        }
-    }
-}
-```
+- *main.json* ([t/01-main.json](t/01-main.json)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
 
 List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Prefork#ATTRIBUTES)):
 
@@ -60,7 +34,7 @@ heartbeat_timeout | float
 multi_accept | int
 workers | int
 
-*webservices.json* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
+- *webservices.json* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
 
 ```json
 [
