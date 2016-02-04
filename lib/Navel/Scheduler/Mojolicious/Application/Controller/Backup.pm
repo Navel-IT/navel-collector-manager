@@ -35,8 +35,8 @@ sub save_all_configuration {
         on_error => $save_configuration_on_error
     );
 
-    $controller->scheduler()->{core}->{rabbitmq}->write(
-        file_path => $controller->scheduler()->{configuration}->{definition}->{rabbitmq}->{definitions_from_file},
+    $controller->scheduler()->{core}->{publishers}->write(
+        file_path => $controller->scheduler()->{configuration}->{definition}->{publishers}->{definitions_from_file},
         async => 1,
         on_success => $save_configuration_on_success,
         on_error => $save_configuration_on_error

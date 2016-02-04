@@ -7,8 +7,7 @@
 
 package t::lib::Navel::Broker::Publisher::Backend::Dummy 0.1;
 
-use strict;
-use warnings;
+use Navel::Base;
 
 #-> functions
 

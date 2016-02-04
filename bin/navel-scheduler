@@ -6,10 +6,7 @@
 
 #-> initialization
 
-use strict;
-use warnings;
-
-use feature 'say';
+use Navel::Base;
 
 use Getopt::Long;
 use Pod::Usage;

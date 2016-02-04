@@ -119,8 +119,7 @@ An exemple of Perl package collector:
 ```perl
 package Navel::Collectors::Exemple;
 
-use strict;
-use warnings;
+use Navel::Base;
 
 sub collector {
     my ($collector_properties, $input) = @_;
@@ -138,8 +137,7 @@ sub collector {
 An exemple of Perl source collector:
 
 ```perl
-use strict;
-use warnings;
+use Navel::Base;
 
 sub collector {
     my ($collector_properties, $input) = @_;

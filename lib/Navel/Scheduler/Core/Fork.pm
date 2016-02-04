@@ -7,10 +7,7 @@
 
 package Navel::Scheduler::Core::Fork 0.1;
 
-use strict;
-use warnings;
-
-use parent 'Navel::Base';
+use Navel::Base;
 
 use constant {
     SEREAL_SERIALISER => '

@@ -76,17 +76,17 @@ sub new_publisher {
 sub show_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $rabbitmq = $controller->scheduler()->{core}->{publishers}->definition_properties_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_properties_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
             callback => $callback,
             resource_name => $arguments->{publisheName}
         }
-    ) unless defined $rabbitmq;
+    ) unless defined $publisher;
 
     $controller->$callback(
-        $rabbitmq,
+        $publisher,
         200
     );
 }
