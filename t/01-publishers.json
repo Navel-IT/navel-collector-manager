@@ -4,6 +4,7 @@
         "backend": "t::lib::Navel::Broker::Publisher::Backend::Dummy",
         "backend_input": null,
         "scheduling": 15,
+        "auto_clean": 0,
         "auto_connect": 1
     }
 ]
