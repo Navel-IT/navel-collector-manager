@@ -50,7 +50,6 @@ WriteMakefile(
         'AnyEvent::Fork::RPC' => 0,
         'Getopt::Long' => 0,
         'Pod::Usage' => 0,
-        'Proc::Daemon' => 0,
         'Cwd' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0,

@@ -11,13 +11,14 @@ use Navel::Base;
 use Getopt::Long;
 use Pod::Usage;
 
-use Proc::Daemon;
-
 use Cwd;
 
 use Navel::Logger;
 use Navel::Scheduler;
-use Navel::Utils 'blessed';
+use Navel::Utils qw/
+    blessed
+    daemonize
+/;
 
 #-> defaults
 
@@ -95,10 +96,10 @@ if ($daemonize && ! $validate_configuration) {
     $logger->info('daemonizing.')->flush_queue();
 
     eval {
-        Proc::Daemon->new(
-            work_dir => getcwd(),
+        daemonize(
+            work_dir => cwd(),
             pid_file => $pid_file
-        )->Init();
+        );
     };
 
     unless ($@) {
