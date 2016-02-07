@@ -122,7 +122,7 @@ package Navel::Collectors::Exemple;
 use Navel::Base;
 
 sub collector {
-    my ($collector_properties, $input) = @_;
+    my $collector = shift;
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 
@@ -140,7 +140,7 @@ An exemple of Perl source collector:
 use Navel::Base;
 
 sub collector {
-    my ($collector_properties, $input) = @_;
+    my $collector = shift;
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 

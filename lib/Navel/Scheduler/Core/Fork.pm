@@ -24,7 +24,6 @@ use Sereal;
 '
 };
 
-use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
 use Navel::Utils 'blessed';
@@ -41,8 +40,7 @@ sub new {
         collector_execution_timeout => $options{collector_execution_timeout} || 0,
         collector => $options{collector},
         collector_content => $options{collector_content},
-        fork => undef,
-        rpc => undef
+        ae_fork => $options{ae_fork}
     }, ref $class || $class;
 
     my $collector_init_content;
@@ -72,12 +70,11 @@ alarm ' . $self->{collector_execution_timeout} . ';
 
     $collector_init_content .= $self->{collector_content} unless $self->{collector}->is_type_package();
 
-    $self->{fork} = AnyEvent::Fork->new()->eval($collector_init_content . '
+    $self->{rpc} = $self->{ae_fork}->fork()->eval($collector_init_content . '
 sub __collector {
     ' . ($self->{collector}->is_type_package() ? $collector_basename . '::' : '') . 'collector(@_);
-}');
-
-    $self->{rpc} = $self->{fork}->AnyEvent::Fork::RPC::run(
+}'
+    )->AnyEvent::Fork::RPC::run(
         '__collector',
         on_event => $options{on_event},
         on_error => $options{on_error},
@@ -94,7 +91,6 @@ sub when_done {
     if (defined $self->{rpc}) {
         $self->{rpc}->(
             $self->{collector}->properties(),
-            $self->{collector}->{input},
             $options{callback}
         );
 

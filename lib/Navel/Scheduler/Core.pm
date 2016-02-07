@@ -12,6 +12,7 @@ use Navel::Base;
 use Carp 'croak';
 
 use AnyEvent;
+use AnyEvent::Fork;
 use AnyEvent::IO;
 
 use Navel::AnyEvent::Pool;
@@ -46,7 +47,8 @@ sub new {
         publishers => $options{publishers},
         runtime_per_publisher => [],
         logger => $options{logger},
-        condvar => AnyEvent->condvar()
+        ae_condvar => AnyEvent->condvar(),
+        ae_fork => AnyEvent::Fork->new()
     };
 
     $self->{job_types} = {
@@ -121,6 +123,7 @@ sub register_collector_by_name {
                     collector_execution_timeout => $self->{configuration}->{definition}->{collectors}->{execution_timeout},
                     collector => $collector,
                     collector_content => $collector_content,
+                    ae_fork => $self->{ae_fork},
                     on_event => sub {
                         $self->{logger}->notice('AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift() . '.');
                     },
@@ -544,7 +547,7 @@ sub a_collector_stop {
 sub recv {
     my $self = shift;
 
-    $self->{condvar}->recv();
+    $self->{ae_condvar}->recv();
 
     $self;
 }
@@ -552,7 +555,7 @@ sub recv {
 sub send {
     my $self = shift;
 
-    $self->{condvar}->send();
+    $self->{ae_condvar}->send();
 
     $self;
 }
