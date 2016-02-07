@@ -9,6 +9,8 @@ package Navel::Scheduler::Core::Fork 0.1;
 
 use Navel::Base;
 
+use Carp 'croak';
+
 use constant {
     SEREAL_SERIALISER => '
 use Sereal;
@@ -24,6 +26,7 @@ use Sereal;
 '
 };
 
+use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
 use Navel::Utils 'blessed';
@@ -33,14 +36,14 @@ use Navel::Utils 'blessed';
 sub new {
     my ($class, %options) = @_;
 
-    $options{collector_execution_timeout} = $options{collector_execution_timeout} || 0;
+    croak('collector definition is invalid') unless blessed($options{collector}) eq 'Navel::Definition::Collector';
 
     my $self = bless {
         core => $options{core},
         collector_execution_timeout => $options{collector_execution_timeout} || 0,
         collector => $options{collector},
         collector_content => $options{collector_content},
-        ae_fork => $options{ae_fork}
+        ae_fork => blessed($options{ae_fork}) eq 'AnyEvent::Fork' ? $options{ae_fork} : AnyEvent::Fork->new()
     }, ref $class || $class;
 
     my $collector_init_content;
@@ -51,6 +54,7 @@ sub new {
 
     $collector_init_content .= '
 BEGIN {
+    close STDIN;
     close STDOUT;
     close STDERR;
 }

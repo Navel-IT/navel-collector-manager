@@ -111,7 +111,7 @@ There are two types of collectors:
 
 - They must always contain a subroutine named `collector`.
 - The subroutine named `__collector` is reserved and therefore should never be used in a collector.
-- `STDOUT` and `STDERR` are closed.
+- `STDIN`, `STDOUT` and `STDERR` are closed.
 - The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
 An exemple of Perl package collector:
