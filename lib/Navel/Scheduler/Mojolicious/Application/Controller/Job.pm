@@ -11,6 +11,53 @@ use Mojo::Base 'Mojolicious::Controller';
 
 #-> methods
 
+my $action_on_job_by_type_and_name = sub {
+    my ($controller, $arguments, $callback, $jobAction) = @_;
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback
+        }
+    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+
+    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{jobName}
+        }
+    ) unless defined $job;
+
+    my (@ok, @ko);
+
+    my $enable_property = 'enabled';
+
+    if ($jobAction eq 'enable') {
+        $job->{$enable_property} = 1;
+
+        push @ok, 'enabling job ' . $job->{name} . '.';
+    } elsif ($jobAction eq 'disable') {
+        $job->{$enable_property} = 0;
+
+        push @ok, 'disabling job ' . $job->{name} . '.';
+    } elsif ($jobAction eq 'execute') {
+        $job->exec();
+
+        push @ok, 'executing job ' . $job->{name} . '.';
+    }
+
+    $controller->$callback(
+        $controller->ok_ko(
+            {
+                ok => \@ok,
+                ko => \@ko
+            }
+        ),
+        200
+    );
+}
+
 sub list_job_types {
     my ($controller, $arguments, $callback) = @_;
 
@@ -76,50 +123,24 @@ sub show_job_by_type_and_name {
     );
 }
 
-sub action_on_job_by_type_and_name {
-    my ($controller, $arguments, $callback) = @_;
+sub enable_job_by_type_and_name {
+    $action_on_job_by_type_and_name->(
+        @_,
+        'enable'
+    );
+}
 
-    return $controller->resource_not_found(
-        {
-            callback => $callback
-        }
-    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+sub execute_job_by_type_and_name {
+    $action_on_job_by_type_and_name->(
+        @_,
+        'execute'
+    );
+}
 
-    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{jobName}
-        }
-    ) unless defined $job;
-
-    my (@ok, @ko);
-
-    my $enable_property = 'enabled';
-
-    if ($arguments->{jobAction} eq 'enable') {
-        $job->{$enable_property} = 1;
-
-        push @ok, 'enabling job ' . $job->{name} . '.';
-    } elsif ($arguments->{jobAction} eq 'disable') {
-        $job->{$enable_property} = 0;
-
-        push @ok, 'disabling job ' . $job->{name} . '.';
-    } elsif ($arguments->{jobAction} eq 'execute') {
-        $job->exec();
-
-        push @ok, 'executing job ' . $job->{name} . '.';
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
-        200
+sub disable_job_by_type_and_name {
+    $action_on_job_by_type_and_name->(
+        @_,
+        'disable'
     );
 }
 
