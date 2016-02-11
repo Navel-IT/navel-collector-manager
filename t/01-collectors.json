@@ -4,7 +4,7 @@
         "collection": "test",
         "type": "package",
         "singleton": 1,
-        "scheduling": 15,
+        "scheduling": 5,
         "source": "Navel::Collector::Test",
         "input": null
     },
@@ -13,7 +13,7 @@
         "collection": "test",
         "type": "source",
         "singleton": 1,
-        "scheduling": 30,
+        "scheduling": 10,
         "source": null,
         "input": null
     }
