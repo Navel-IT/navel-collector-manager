@@ -106,6 +106,7 @@ sub register_collector_by_name {
         name => $collector->{name},
         singleton => $collector->{singleton},
         interval => $collector->{scheduling},
+        splay => 1,
         callback => sub {
             my $timer = shift;
 
@@ -350,6 +351,7 @@ sub register_publisher_by_name {
         name => $publisher->{definition}->{name},
         singleton => 1,
         interval => $publisher->{definition}->{scheduling},
+        splay => 1,
         callback => sub {
             my $timer = shift;
 
