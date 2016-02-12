@@ -229,7 +229,7 @@ sub show_publisher_runtime {
         /) {
             my $method = 'is_' . $_;
 
-            $status{$_} = $publisher->$method() || 0;
+            $status{$_} = int $publisher->$method();
         };
     }
 
