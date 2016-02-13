@@ -69,7 +69,7 @@ sub list_job_types {
     );
 }
 
-sub list_job_by_type {
+sub list_jobs_by_type {
     my ($controller, $arguments, $callback) = @_;
 
     return $controller->resource_not_found(

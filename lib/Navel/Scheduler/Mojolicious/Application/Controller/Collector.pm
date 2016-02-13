@@ -13,7 +13,7 @@ use Navel::Utils 'decode_json';
 
 #-> methods
 
-sub list_collector {
+sub list_collectors {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
