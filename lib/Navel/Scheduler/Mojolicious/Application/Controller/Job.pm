@@ -56,7 +56,7 @@ my $action_on_job_by_type_and_name = sub {
         ),
         200
     );
-}
+};
 
 sub list_job_types {
     my ($controller, $arguments, $callback) = @_;
