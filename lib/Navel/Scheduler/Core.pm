@@ -79,6 +79,9 @@ sub register_logger_by_name {
         name => $job_name,
         singleton => 1,
         interval => 0.1,
+        on_disabled => sub {
+            $self->{logger}->clear_queue()
+        },
         callback => sub {
             my $timer = shift;
 
