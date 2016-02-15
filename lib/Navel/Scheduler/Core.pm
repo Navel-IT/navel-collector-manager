@@ -129,10 +129,10 @@ sub register_collector_by_name {
                     collector_content => $collector_content,
                     ae_fork => $self->{ae_fork},
                     on_event => sub {
-                        $self->{logger}->notice('AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift() . '.');
+                        $self->{logger}->notice('AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift . '.');
                     },
                     on_error => sub {
-                        $self->{logger}->error('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift() . '.');
+                        $self->{logger}->error('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
 
                         $self->a_collector_stop(
                             job => $timer,

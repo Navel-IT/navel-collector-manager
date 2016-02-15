@@ -17,14 +17,12 @@ sub save_all_configuration {
     my (@ok, @ko);
 
     my $save_configuration_on_success = sub {
-        $controller->scheduler()->{core}->{logger}->notice(shift() . ': runtime configuration successfully saved.');
+        $controller->scheduler()->{core}->{logger}->notice(shift . ': runtime configuration successfully saved.');
     };
 
     my $save_configuration_on_error = sub {
         $controller->scheduler()->{core}->{logger}->error('an error occurred while saving the runtime configuration.',
-            $controller->scheduler()->{core}->{logger}->stepped_log(
-                shift
-            )
+            $controller->scheduler()->{core}->{logger}->stepped_log(shift)
         );
     };
 
