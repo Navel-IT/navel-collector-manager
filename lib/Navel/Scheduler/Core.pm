@@ -165,31 +165,33 @@ sub register_collector_by_name {
             if ($collector->is_type_package()) {
                 $fork_collector->();
             } else {
-                aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(), sub {
-                    my ($collector_content) = @_;
+                aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(),
+                    sub {
+                        my $collector_content = shift;
 
-                    if ($collector_content) {
-                        $fork_collector->($collector_content);
-                    } else {
-                        $self->{logger}->error(
-                            $self->{logger}->stepped_log('collector ' . $collector->{name} . '.',
-                                [
-                                    $!
-                                ]
-                            )
-                        );
+                        if ($collector_content) {
+                            $fork_collector->($collector_content);
+                        } else {
+                            $self->{logger}->error(
+                                $self->{logger}->stepped_log('collector ' . $collector->{name} . '.',
+                                    [
+                                        $!
+                                    ]
+                                )
+                            );
 
-                        $self->a_collector_stop(
-                            job => $timer,
-                            collector_name => $collector->{name},
-                            event_definition => {
-                                collector => $collector,
-                                starting_time => $collector_starting_time
-                            },
-                            status_method => 'set_status_to_ko_no_source'
-                        );
+                            $self->a_collector_stop(
+                                job => $timer,
+                                collector_name => $collector->{name},
+                                event_definition => {
+                                    collector => $collector,
+                                    starting_time => $collector_starting_time
+                                },
+                                status_method => 'set_status_to_ko_no_source'
+                            );
+                        }
                     }
-                });
+                );
             }
         }
     );
