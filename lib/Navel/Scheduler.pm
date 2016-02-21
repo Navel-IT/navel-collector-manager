@@ -9,8 +9,6 @@ package Navel::Scheduler 0.1;
 
 use Navel::Base;
 
-use Carp 'croak';
-
 use File::ShareDir 'dist_dir';
 
 use Navel::Scheduler::Parser;
@@ -18,7 +16,10 @@ use Navel::Scheduler::Core;
 use Navel::Definition::Collector::Parser;
 use Navel::Definition::Publisher::Parser;
 use Navel::Definition::WebService::Parser;
-use Navel::Utils 'blessed';
+use Navel::Utils qw/
+    croak
+    blessed
+/;
 
 #-> methods
 

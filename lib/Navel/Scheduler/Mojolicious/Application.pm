@@ -7,12 +7,13 @@
 
 package Navel::Scheduler::Mojolicious::Application 0.1;
 
-use Carp 'croak';
-
 use Mojo::Base 'Mojolicious';
 
 use Navel::API::Swagger2::Scheduler;
-use Navel::Utils 'blessed';
+use Navel::Utils qw/
+    croak
+    blessed
+/;
 
 #-> methods
 
@@ -93,9 +94,9 @@ sub startup {
     $self->hook(
         before_render => sub {
             my ($controller, $arguments) = @_;
-            
+
             my (@ok, @ko);
-            
+
             my $template = defined $arguments->{template} ? $arguments->{template} : '';
 
             if ($template eq 'exception') {

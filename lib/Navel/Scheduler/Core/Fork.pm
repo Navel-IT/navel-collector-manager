@@ -9,8 +9,6 @@ package Navel::Scheduler::Core::Fork 0.1;
 
 use Navel::Base;
 
-use Carp 'croak';
-
 use constant {
     SEREAL_SERIALISER => '
 use Sereal;
@@ -29,7 +27,10 @@ use Sereal;
 use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
-use Navel::Utils 'blessed';
+use Navel::Utils qw/
+    blessed
+    croak
+/;
 
 #-> methods
 

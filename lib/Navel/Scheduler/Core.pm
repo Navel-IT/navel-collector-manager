@@ -9,8 +9,6 @@ package Navel::Scheduler::Core 0.1;
 
 use Navel::Base;
 
-use Carp 'croak';
-
 use AnyEvent;
 use AnyEvent::Fork;
 use AnyEvent::IO;
@@ -19,7 +17,7 @@ use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
 use Navel::Broker::Publisher;
 
-use Navel::Utils 'blessed';
+use Navel::Utils 'croak';
 
 #-> functions
 
