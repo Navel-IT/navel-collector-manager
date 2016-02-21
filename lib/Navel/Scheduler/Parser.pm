@@ -14,11 +14,7 @@ use parent qw/
     Navel::Base::Definition::Parser::Writer
 /;
 
-use Carp 'croak';
-
 use Navel::Base::Definition;
-
-use Navel::Utils ':numeric';
 
 #-> methods
 
@@ -31,84 +27,194 @@ sub new {
 }
 
 sub validate {
-    my ($class, %options) = @_;
-
-    croak('parameters must be a HASH reference') unless ref $options{parameters} eq 'HASH';
+    my ($class, $raw_definition) = @_;
 
     Navel::Base::Definition->validate(
-        parameters => $options{parameters},
         definition_class => __PACKAGE__,
-        validator_struct => {
-            collectors => {
-                definitions_from_file => 'text',
-                collectors_exec_directory => 'text',
-                maximum => 'main_positive_integer',
-                maximum_simultaneous_exec => 'main_positive_integer',
-                execution_timeout => 'main_positive_integer'
-            },
-            publishers => {
-                definitions_from_file => 'text',
-                maximum => 'main_positive_integer',
-                maximum_simultaneous_exec => 'main_positive_integer'
-            },
-            webservices => {
-                definitions_from_file => 'text',
-                credentials => {
-                    login => 'text',
-                    password => 'text'
+        validator => {
+            type => 'object',
+            required => [
+                qw/
+                    collectors
+                    publishers
+                    webservices
+                /
+            ],
+            properties => {
+                collectors => {
+                    type => 'object',
+                    required => [
+                        qw/
+                            definitions_from_file
+                            collectors_exec_directory
+                            maximum
+                            maximum_simultaneous_exec
+                            execution_timeout
+                        /
+                    ],
+                    properties => {
+                        definitions_from_file => {
+                            type => [
+                                qw/
+                                    string
+                                    integer
+                                    number
+                                /
+                            ]
+                        },
+                        collectors_exec_directory => {
+                            type => [
+                                qw/
+                                    string
+                                    integer
+                                    number
+                                /
+                            ]
+                        },
+                        maximum => {
+                            type => 'integer',
+                            minimum => 0
+                        },
+                        maximum_simultaneous_exec => {
+                            type => 'integer',
+                            minimum => 0
+                        },
+                        execution_timeout => {
+                            type => 'integer',
+                            minimum => 0
+                        }
+                    }
                 },
-                mojo_server => 'main_mojo_server_properties'
-            }
-        },
-        validator_types => {
-            main_positive_integer => sub {
-                my $value = shift;
-
-                isint($value) && $value >= 0;
-            },
-            main_mojo_server_properties => sub {
-                my $value = shift;
-
-                my $customs_options_ok = 0;
-
-                if (ref $value eq 'HASH') {
-                    $customs_options_ok = 1;
-
-                    my $properties_type = {
-                        # Mojo::Server
-                        reverse_proxy => \&isint,
-                        # Mojo::Server::Daemon
-                        backlog => \&isint,
-                        inactivity_timeout => \&isint,
-                        max_clients => \&isint,
-                        max_requests => \&isint,
-                        # Mojo::Server::Prefork
-                        accepts => \&isint,
-                        accept_interval => \&isfloat,
-                        graceful_timeout => \&isfloat,
-                        heartbeat_interval => \&isfloat,
-                        heartbeat_timeout => \&isfloat,
-                        multi_accept => \&isint,
-                        workers => \&isint
-                    };
-
-                    while (my ($property, $type) = each %{$properties_type}) {
-                        $customs_options_ok = 0 if exists $value->{$property} && ! $type->($value->{$property});
+                publishers => {
+                    type => 'object',
+                    required => [
+                        qw/
+                            definitions_from_file
+                            maximum
+                            maximum_simultaneous_exec
+                        /
+                    ],
+                    properties => {
+                        definitions_from_file => {
+                            type => [
+                                qw/
+                                    string
+                                    integer
+                                    number
+                                /
+                            ]
+                        },
+                        maximum => {
+                            type => 'integer',
+                            minimum => 0
+                        },
+                        maximum_simultaneous_exec => {
+                            type => 'integer',
+                            minimum => 0
+                        }
+                    }
+                },
+                webservices => {
+                    type => 'object',
+                    required => [
+                        qw/
+                            definitions_from_file
+                            credentials
+                            mojo_server
+                        /
+                    ],
+                    properties => {
+                        definitions_from_file => {
+                            type => [
+                                qw/
+                                    string
+                                    integer
+                                    number
+                                /
+                            ]
+                        },
+                        credentials => {
+                            type => 'object',
+                            required => [
+                                qw/
+                                    login
+                                    password
+                                /
+                            ],
+                            properties => {
+                                login => {
+                                    type => [
+                                        qw/
+                                            string
+                                            integer
+                                            number
+                                        /
+                                    ]
+                                },
+                                password => {
+                                    type => [
+                                        qw/
+                                            string
+                                            integer
+                                            number
+                                        /
+                                    ]
+                                }
+                            }
+                        },
+                        mojo_server => {
+                            type => 'object',
+                            properties => {
+                                reverse_proxy => {
+                                    type => 'integer'
+                                },
+                                backlog => {
+                                    type => 'integer'
+                                },
+                                inactivity_timeout => {
+                                    type => 'integer'
+                                },
+                                max_clients => {
+                                    type => 'integer'
+                                },
+                                max_requests => {
+                                    type => 'integer'
+                                },
+                                accepts => {
+                                    type => 'integer'
+                                },
+                                accept_interval => {
+                                    type => 'number'
+                                },
+                                graceful_timeout => {
+                                    type => 'number'
+                                },
+                                heartbeat_interval => {
+                                    type => 'number'
+                                },
+                                heartbeat_timeout => {
+                                    type => 'number'
+                                },
+                                multi_accept => {
+                                    type => 'integer'
+                                },
+                                workers => {
+                                    type => 'integer'
+                                }
+                            }
+                        }
                     }
                 }
-
-                $customs_options_ok;
             }
-        }
+        },
+        raw_definition => $raw_definition
     );
 }
 
 sub set_definition {
     my ($self, $value) = @_;
 
-    my $errors = $self->validate(
-        parameters => $value
-    );
+    my $errors = $self->validate($value);
 
     die $errors if @{$errors};
 
