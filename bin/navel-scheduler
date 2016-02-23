@@ -8,8 +8,7 @@
 
 use Navel::Base;
 
-use Getopt::Long;
-use Pod::Usage;
+use Getopt::Long::Descriptive;
 
 use Cwd;
 
@@ -20,21 +19,13 @@ use Navel::Utils qw/
     daemonize
 /;
 
-#-> defaults
+#-> vars
 
 my (
-    $log_file_path,
-    $log_no_color,
-    $daemonize,
-    $pid_file,
-    $validate_configuration,
-    $disable_web_services,
+    $options,
+    $usage,
     $logger
 );
-
-my $log_severity = 'notice';
-
-my $log_datetime_format = '%Y-%m-%d %H-%M-%S %z';
 
 #-> sigtrap
 
@@ -53,52 +44,101 @@ use sigtrap (
     'normal-signals'
 );
 
+#-> functions
+
+sub usage($) {
+    print $usage->text();
+
+    exit shift;
+}
+
 #-> main
 
-my $getopts = Getopt::Long::Parser->new();
+($options, $usage) = describe_options(
+    'navel-scheduler %o <main-configuration-file-path>',
+    [
+        'log-file-path=s',
+        'log output to a file'
+    ],
+    [
+        'log-severity=s',
+        'set severity (syslog format)',
+        {
+            default => 'notice'
+        }
+    ],
+    [
+        'log-no-color',
+        'disable colored output'
+    ],
+    [
+        'log-datetime-format=s',
+        'set datetime format',
+        {
+            default => '%Y-%m-%d %H-%M-%S %z'
+        }
+    ],
+    [],
+    [
+        'validate-configuration',
+        'validate the configuration and exit with the proper code'
+    ],
+    [],
+    [
+        'no-web-services',
+        'disable the web services'
+    ],
+    [],
+    [
+        'pid-file=s',
+        'write pid to a file'
+    ],
+    [
+        'daemonize',
+        'run as a standalone daemon'
+    ],
+    [],
+    [
+        'version',
+        'print version'
+    ],
+    [
+        'help',
+        'print help'
+    ]
+);
 
-$getopts->configure('bundling');
+usage(0) if $options->help();
 
-$getopts->getoptions(
-    'log-file-path=s' => \$log_file_path,
-    'log-severity=s' => \$log_severity,
-    'log-no-color' => \$log_no_color,
-    'log-datetime-format=s' => \$log_datetime_format,
-    'daemonize' => \$daemonize,
-    'pid-file=s' => \$pid_file,
-    'validate-configuration' => \$validate_configuration,
-    'no-web-services' => \$disable_web_services,
-    'help' => sub {
-        pod2usage(0);
-    },
-    'version' => sub {
-        say Navel::Scheduler->VERSION();
+if ($options->version()) {
+    say Navel::Scheduler->VERSION();
 
-        exit 0;
-    }
-) || pod2usage(1);
+    exit 0;
+}
 
-defined (my $main_configuration_file_path = shift @ARGV) or pod2usage(1);
+my $main_configuration_file_path = shift @ARGV;
+
+usage(1) unless defined $main_configuration_file_path;
 
 $logger = eval {
     Navel::Logger->new(
         service => 'navel-scheduler',
-        severity => $log_severity,
-        file_path => $log_file_path,
-        colored => ! $log_no_color,
-        datetime_format => $log_datetime_format
+        severity => $options->log_severity(),
+        file_path => $options->log_file_path(),
+        colored => ! $options->log_no_color(),
+        datetime_format => $options->log_datetime_format()
     );
 };
 
-pod2usage(1) unless defined $logger;
+usage(1) unless defined $logger;
 
-if ($daemonize && ! $validate_configuration) {
+if ($options->daemonize() && ! $options->validate_configuration()) {
     $logger->info('daemonizing.')->flush_queue();
 
     eval {
         daemonize(
             work_dir => cwd(),
-            pid_file => $pid_file
+            pid_file => $options->pid_file()
         );
     };
 
@@ -124,7 +164,7 @@ my $scheduler = eval {
         main_configuration_file_path => $main_configuration_file_path
     )->prepare(
         logger => $logger,
-        enable_webservices => ! $disable_web_services && ! $validate_configuration
+        enable_webservices => ! $options->no_web_services() && ! $options->validate_configuration()
     );
 };
 
@@ -134,7 +174,7 @@ if ($@) {
     exit 1;
 }
 
-if ($validate_configuration) {
+if ($options->validate_configuration()) {
     $logger->notice('configuration is valid.')->flush_queue();
 
     exit 0;
@@ -163,54 +203,6 @@ __END__
 =head1 NAME
 
 navel-scheduler - Control and run Navel::Scheduler
-
-=head1 SYNOPSIS
-
-navel-scheduler [<options>] <main-configuration-file-path>
-
-=head1 OPTIONS
-
-=over 4
-
-=item B<--log-file-path=<FILE>>
-
-Log output to FILE.
-
-=item B<--log-severity=<SEVERITY>>
-
-Set severity (syslog format) to SEVERITY.
-
-=item B<--log-no-color>
-
-Disable colored log output.
-
-=item B<--log-datetime-format=<FORMAT>>
-
-Display datetime in the given FORMAT.
-
-=item B<--daemonize>
-
-Run as a standalone daemon.
-
-=item B<--pid-file=<FILE>>
-
-Write pid to FILE.
-
-=item B<--validate-configuration>
-
-Validate the configuration and exit with the proper code.
-
-=item B<--no-web-services>
-
-Disable the web services.
-
-=item B<--help>
-
-Print help.
-
-=item B<--version>
-
-Print version.
 
 =back
 
