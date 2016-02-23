@@ -126,7 +126,12 @@ sub collector {
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 
-    AnyEvent::Fork::RPC::event("It's done father!") # send a log message to navel-scheduler
+    AnyEvent::Fork::RPC::event(
+        [
+            'notice',
+            "It's done father!"
+        ]
+    ); # send a log message to navel-scheduler
 
     \@datas;
 }
@@ -144,7 +149,12 @@ sub collector {
 
     my @datas; # or retrieve datas from databases, message brokers, web services, ....
 
-    AnyEvent::Fork::RPC::event("It's done father!") # send a log message to navel-scheduler
+    AnyEvent::Fork::RPC::event(
+        [
+            'notice',
+            "It's done father!"
+        ]
+    ); # send a log message to navel-scheduler
 
     \@datas;
 }

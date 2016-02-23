@@ -127,7 +127,24 @@ sub register_collector_by_name {
                     collector_content => $collector_content,
                     ae_fork => $self->{ae_fork},
                     on_event => sub {
-                        $self->{logger}->notice('AnyEvent::Fork::RPC event message for collector ' . $collector->{name} . ': ' . shift . '.');
+                        my $ae_event = shift;
+
+                        local $@;
+
+                        eval {
+                            $self->{logger}->push_in_queue(
+                                severity => $ae_event->[0],
+                                message => $ae_event->[1]
+                            );
+                        };
+
+                        $self->{logger}->error(
+                            $self->{logger}->stepped_log('incorrect event log format on collector ' . $collector->{name} . '.',
+                                [
+                                    $@
+                                ]
+                            )
+                        ) if $@;
                     },
                     on_error => sub {
                         $self->{logger}->error('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
