@@ -15,6 +15,7 @@ use AnyEvent::IO;
 
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
+use Navel::Event;
 use Navel::Broker::Publisher;
 
 use Navel::Utils 'croak';
@@ -156,7 +157,7 @@ sub register_collector_by_name {
                                 collector => $collector,
                                 starting_time => $collector_starting_time
                             },
-                            status_method => 'set_status_to_ko_exception'
+                            status_method => 'set_status_to_internal_ko'
                         );
                     },
                     on_destroy => sub {
@@ -164,15 +165,30 @@ sub register_collector_by_name {
                     }
                 )->when_done(
                     callback => sub {
-                        $self->a_collector_stop(
-                            job => $timer,
-                            collector_name => $collector->{name},
-                            event_definition => {
-                                collector => $collector,
-                                starting_time => $collector_starting_time,
-                                datas => shift
-                            }
-                        );
+                        my $collector_event = shift;
+
+                        if (ref $collector_event eq 'ARRAY' && @{$collector_event} >= 2 && defined $collector_event->[0]) {
+                            $self->a_collector_stop(
+                                job => $timer,
+                                collector_name => $collector->{name},
+                                event_definition => {
+                                    collector => $collector,
+                                    starting_time => $collector_starting_time,
+                                    datas => $collector_event->[1]
+                                },
+                                status_method => Navel::Event::OK == int $collector_event->[0] ? undef : 'set_status_to_ko'
+                            );
+                        } else {
+                            $self->a_collector_stop(
+                                job => $timer,
+                                collector_name => $collector->{name},
+                                event_definition => {
+                                    collector => $collector,
+                                    starting_time => $collector_starting_time
+                                },
+                                status_method => 'set_status_to_internal_ko'
+                            );
+                        }
                     }
                 );
             };
@@ -202,7 +218,7 @@ sub register_collector_by_name {
                                     collector => $collector,
                                     starting_time => $collector_starting_time
                                 },
-                                status_method => 'set_status_to_ko_no_source'
+                                status_method => 'set_status_to_ko_internal'
                             );
                         }
                     }

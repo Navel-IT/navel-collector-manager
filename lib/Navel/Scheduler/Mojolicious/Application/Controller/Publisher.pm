@@ -282,7 +282,7 @@ sub push_event_to_a_publisher {
     unless ($@) {
         if (ref $body eq 'HASH') {
             if (defined ($body->{status_method} = delete $body->{status})) {
-                if ($body->{status_method} eq 'ok' || $body->{status_method} eq 'ko_no_source' || $body->{status_method} eq 'ko_exception') {
+                if ($body->{status_method} eq 'ok' || $body->{status_method} eq 'ko') {
                     $body->{status_method} = 'set_status_to_' . $body->{status_method};
                 } else {
                     push @ko, 'event status is incorrect.';

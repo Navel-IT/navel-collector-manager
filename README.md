@@ -104,58 +104,69 @@ Collectors
 
 There are two types of collectors:
 
-- Perl package.
-- Perl source.
+- Perl package (.pm).
+- Perl source (.pl).
 
-**Notes for Perl based collectors**:
+**Notes**:
 
 - They must always contain a subroutine named `collector`.
 - The subroutine named `__collector` is reserved and therefore should never be used in a collector.
 - `STDIN`, `STDOUT` and `STDERR` are closed.
 - The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
-An exemple of Perl package collector:
+A collector of type *package*:
 
 ```perl
-package Navel::Collectors::Exemple;
+package Navel::Collectors::JIRA::Issue;
 
 use Navel::Base;
+
+use Navel::Event;
+
+use JIRA::Client::Automated;
 
 sub collector {
     my $collector = shift;
 
-    my @datas; # or retrieve datas from databases, message brokers, web services, ....
+    my @search_issues = eval {
+        JIRA::Client::Automated->new(
+            'http://jira.home',
+            'admin',
+            'p@assw0rD'
+        )->search_issues(
+            $collector->{input}->{jql_request},
+            $collector->{input}->{page},
+            $collector->{input}->{per_page}
+        ); # or retrieve datas from databases, message brokers, ....
+    };
+
+    my ($logger_message, $event);
+
+    if ($@) {
+        $logger_message = $@;
+
+        $event = [
+            Navel::Event::OK,
+            $@
+        ];
+    } else {
+        $logger_message = "I've found " . $search_issues[0] . ' issues!';
+
+        $event = [
+            Navel::Event::KO,
+            $search_issues[3]
+        ];
+    }
 
     AnyEvent::Fork::RPC::event(
         [
-            'notice',
-            "It's done father!"
+            'info',
+            $logger_message
         ]
-    ); # send a log message to navel-scheduler
+    ); # send a message the the logger
 
-    \@datas;
+    $event;
 }
 
 1;
-```
-
-An exemple of Perl source collector:
-
-```perl
-use Navel::Base;
-
-sub collector {
-    my $collector = shift;
-
-    my @datas; # or retrieve datas from databases, message brokers, web services, ....
-
-    AnyEvent::Fork::RPC::event(
-        [
-            'notice',
-            "It's done father!"
-        ]
-    ); # send a log message to navel-scheduler
-
-    \@datas;
-}
 ```
