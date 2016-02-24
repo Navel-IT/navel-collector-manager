@@ -15,7 +15,11 @@ use Sereal;
 
 (
     sub {
-        Sereal::Encoder->new()->encode(\@_);
+        Sereal::Encoder->new(
+            {
+                no_shared_hashkeys => 1
+            }
+        )->encode(\@_);
     },
     sub {
         @{Sereal::Decoder->new()->decode(shift)};
@@ -64,7 +68,12 @@ BEGIN {
     if ($self->{collector_execution_timeout}) {
         $collector_init_content .= '
 $SIG{ALRM} = sub {
-    AnyEvent::Fork::RPC::event("execution timeout after ' . $self->{collector_execution_timeout} . ' second' . ($self->{collector_execution_timeout} > 1 ? 's' : '') . '");
+    AnyEvent::Fork::RPC::event(
+        [
+            "warning",
+            "execution timeout after ' . $self->{collector_execution_timeout} . 's."
+        ]
+    );
 
     exit;
 };
