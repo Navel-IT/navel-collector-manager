@@ -139,7 +139,7 @@ sub collector {
             $collector->{input}->{jql_request},
             $collector->{input}->{page},
             $collector->{input}->{per_page}
-        ); # or retrieve datas from databases, message brokers, ....
+        );
     };
 
     if ($@) {
