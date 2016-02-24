@@ -21,6 +21,10 @@ use Navel::Utils qw/
 
 #-> vars
 
+my $binary_default_name = 'navel-scheduler';
+
+my $main_argument = 'main-configuration-file-path';
+
 my (
     $options,
     $usage,
@@ -55,7 +59,7 @@ sub usage($) {
 #-> main
 
 ($options, $usage) = describe_options(
-    'navel-scheduler %o <main-configuration-file-path>',
+    $binary_default_name . ' %o <' . $main_argument . '>',
     [
         'log-file-path=s',
         'log output to a file'
@@ -118,11 +122,15 @@ if ($options->version()) {
 
 my $main_configuration_file_path = shift @ARGV;
 
-usage(1) unless defined $main_configuration_file_path;
+unless (defined $main_configuration_file_path) {
+    say 'Error: ' . $main_argument . ' must be defined';
+
+    usage(1);
+}
 
 $logger = eval {
     Navel::Logger->new(
-        service => 'navel-scheduler',
+        service => $binary_default_name,
         severity => $options->log_severity(),
         file_path => $options->log_file_path(),
         colored => ! $options->log_no_color(),
@@ -130,7 +138,13 @@ $logger = eval {
     );
 };
 
-usage(1) unless defined $logger;
+if ($@) {
+    chomp $@;
+
+    say 'Logger error: ' . $@;
+
+    usage(1);
+}
 
 if ($options->daemonize() && ! $options->validate_configuration()) {
     $logger->info('daemonizing.')->flush_queue();
