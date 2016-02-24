@@ -128,11 +128,13 @@ use JIRA::Client::Automated;
 sub collector {
     my $collector = shift;
 
+    my ($logger_severity, $logger_message, $event);
+
     my @search_issues = eval {
         JIRA::Client::Automated->new(
-            'http://jira.home',
-            'admin',
-            'p@assw0rD'
+            $collector->{input}->{url},
+            $collector->{input}->{user},
+            $collector->{input}->{password}
         )->search_issues(
             $collector->{input}->{jql_request},
             $collector->{input}->{page},
@@ -140,9 +142,9 @@ sub collector {
         ); # or retrieve datas from databases, message brokers, ....
     };
 
-    my ($logger_message, $event);
-
     if ($@) {
+        $logger_severity = 'warning';
+
         $logger_message = $@;
 
         $event = [
@@ -150,6 +152,8 @@ sub collector {
             $@
         ];
     } else {
+        $logger_severity = 'notice';
+
         $logger_message = "I've found " . $search_issues[0] . ' issues!';
 
         $event = [
@@ -160,7 +164,7 @@ sub collector {
 
     AnyEvent::Fork::RPC::event(
         [
-            'info',
+            $logger_severity,
             $logger_message
         ]
     ); # send a message the the logger
