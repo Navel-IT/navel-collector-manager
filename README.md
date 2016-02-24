@@ -123,22 +123,23 @@ use Navel::Base;
 
 use Navel::Event;
 
-use JIRA::Client::Automated;
+use JIRA::REST;
 
 sub collector {
     my $collector = shift;
 
     my ($logger_severity, $logger_message, $event);
 
-    my @search_issues = eval {
-        JIRA::Client::Automated->new(
+    my $search = eval {
+        JIRA::REST->new(
             $collector->{input}->{url},
             $collector->{input}->{user},
-            $collector->{input}->{password}
-        )->search_issues(
-            $collector->{input}->{jql_request},
-            $collector->{input}->{page},
-            $collector->{input}->{per_page}
+            $collector->{input}->{password},
+            $collector->{input}->{rest_client}
+        )->POST(
+            '/search',
+            undef,
+            $collector->{input}->{headers}
         );
     };
 
@@ -154,11 +155,11 @@ sub collector {
     } else {
         $logger_severity = 'notice';
 
-        $logger_message = "I've found " . $search_issues[0] . ' issues!';
+        $logger_message = "I've found " . @{$search} . ' issues!';
 
         $event = [
             Navel::Event::KO,
-            $search_issues[3]
+            $search
         ];
     }
 
