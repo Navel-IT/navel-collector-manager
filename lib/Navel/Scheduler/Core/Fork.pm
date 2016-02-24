@@ -37,14 +37,14 @@ use Navel::Utils qw/
 sub new {
     my ($class, %options) = @_;
 
-    croak('collector definition is invalid') unless blessed($options{collector}) eq 'Navel::Definition::Collector';
+    croak('collector definition is invalid') unless blessed($options{collector}) && $options{collector}->isa('Navel::Definition::Collector');
 
     my $self = bless {
         core => $options{core},
         collector_execution_timeout => $options{collector_execution_timeout} || 0,
         collector => $options{collector},
         collector_content => $options{collector_content},
-        ae_fork => blessed($options{ae_fork}) eq 'AnyEvent::Fork' ? $options{ae_fork} : AnyEvent::Fork->new()
+        ae_fork => blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new()
     }, ref $class || $class;
 
     my $collector_init_content;

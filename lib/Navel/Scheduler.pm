@@ -42,7 +42,7 @@ sub new {
 sub prepare {
     my ($self, %options) = @_;
 
-    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger}) eq 'Navel::Logger';
+    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger}) && $options{logger}->isa('Navel::Logger');
 
     $self->{core} = Navel::Scheduler::Core->new(
         configuration => $self->{configuration},
@@ -93,7 +93,7 @@ sub prepare {
 sub start {
     my $self = shift;
 
-    croak("scheduler isn't prepared") unless blessed($self->{core}) eq 'Navel::Scheduler::Core';
+    croak("scheduler isn't prepared") unless blessed($self->{core}) && $self->{core}->isa('Navel::Scheduler::Core');
 
     if ($self->{web_server}) {
         local $@;

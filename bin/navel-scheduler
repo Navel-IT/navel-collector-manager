@@ -37,7 +37,7 @@ use sigtrap (
                     $!
                 ]
             )
-        )->flush_queue() if blessed($logger) eq 'Navel::Logger';
+        )->flush_queue() if blessed($logger) && $logger->isa('Navel::Logger');
 
         exit 0;
     },

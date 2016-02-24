@@ -20,7 +20,7 @@ use Navel::Utils qw/
 sub new {
     my ($class, $scheduler) = @_;
 
-    croak('scheduler must be of Navel::Scheduler class') unless blessed($scheduler) eq 'Navel::Scheduler';
+    croak('scheduler must be of Navel::Scheduler class') unless blessed($scheduler) && $scheduler->isa('Navel::Scheduler');
 
     my $self = $class->SUPER::new();
 
@@ -40,7 +40,7 @@ sub new {
         message => sub {
             my ($log, $level, @lines) = @_;
 
-            my $method = $level eq 'debug' ? 'debug' : 'info';
+            my $method = $level eq 'debug' ? $level : 'info';
 
             $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines));
         }
