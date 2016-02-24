@@ -161,7 +161,7 @@ sub register_collector_by_name {
                         );
                     },
                     on_destroy => sub {
-                        $self->{logger}->info('AnyEvent::Fork::RPC DESTROY() called for collector ' . $collector->{name} . '.');
+                        $self->{logger}->info('DESTROY() called for collector ' . $collector->{name} . '.');
                     }
                 )->when_done(
                     callback => sub {
