@@ -86,7 +86,9 @@ sub register_logger_by_name {
 
             $timer->begin();
 
-            $self->{logger}->flush_queue();
+            $self->{logger}->flush_queue(
+                async => 1
+            );
 
             $timer->end();
         }
