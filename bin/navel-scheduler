@@ -123,7 +123,7 @@ if ($options->version()) {
 my $main_configuration_file_path = shift @ARGV;
 
 unless (defined $main_configuration_file_path) {
-    say 'Error: ' . $main_argument . ' must be defined';
+    say 'Missing argument: ' . $main_argument . ' must be defined';
 
     usage(1);
 }
