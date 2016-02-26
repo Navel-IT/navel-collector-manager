@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Backup 0.1;
+package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -76,7 +76,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Mojolicious::Application::Controller::Backup
+Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup
 
 =head1 AUTHOR
 

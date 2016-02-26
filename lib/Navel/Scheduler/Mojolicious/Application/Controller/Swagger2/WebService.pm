@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::WebService 0.1;
+package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::WebService 0.1;
 
 use Mojo::Base 'Mojolicious::Controller';
 
@@ -54,7 +54,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Mojolicious::Application::Controller::WebService
+Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::WebService
 
 =head1 AUTHOR
 
