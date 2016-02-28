@@ -19,7 +19,7 @@ use Navel::Utils qw/
     daemonize
 /;
 
-#-> vars
+#-> variables
 
 my $binary_default_name = 'navel-scheduler';
 
