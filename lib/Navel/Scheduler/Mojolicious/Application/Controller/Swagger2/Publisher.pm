@@ -63,12 +63,7 @@ sub new_publisher {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 201
     );
 }
@@ -155,12 +150,7 @@ sub modify_publisher {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 200
     );
 }
@@ -192,12 +182,7 @@ sub delete_publisher {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 200
     );
 }
@@ -308,12 +293,7 @@ sub push_event_to_a_publisher {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 201
     );
 }
@@ -337,12 +317,7 @@ sub delete_all_events_from_a_publisher {
     push @ok, 'clearing queue for publisher ' . $publisher->{definition}->{name} . '.';
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         200
     );
 }
@@ -366,12 +341,7 @@ sub connect_publisher {
     $controller->scheduler()->{core}->connect_publisher_by_name($publisher->{definition}->{name});
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         200
     );
 }
@@ -395,12 +365,7 @@ sub disconnect_publisher {
     $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{definition}->{name});
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         200
     );
 }

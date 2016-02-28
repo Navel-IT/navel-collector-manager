@@ -48,12 +48,7 @@ my $action_on_job_by_type_and_name = sub {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         200
     );
 };

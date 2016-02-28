@@ -50,12 +50,7 @@ sub save_all_configuration {
     push @ok, 'saving the runtime configuration.';
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         200
     );
 }
