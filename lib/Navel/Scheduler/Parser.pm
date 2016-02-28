@@ -33,6 +33,7 @@ sub validate {
         definition_class => __PACKAGE__,
         validator => {
             type => 'object',
+            additionalProperties => 0,
             required => [
                 qw/
                     collectors
@@ -43,6 +44,7 @@ sub validate {
             properties => {
                 collectors => {
                     type => 'object',
+                    additionalProperties => 0,
                     required => [
                         qw/
                             definitions_from_file
@@ -87,6 +89,7 @@ sub validate {
                 },
                 publishers => {
                     type => 'object',
+                    additionalProperties => 0,
                     required => [
                         qw/
                             definitions_from_file
@@ -116,6 +119,7 @@ sub validate {
                 },
                 webservices => {
                     type => 'object',
+                    additionalProperties => 0,
                     required => [
                         qw/
                             definitions_from_file
@@ -135,6 +139,7 @@ sub validate {
                         },
                         credentials => {
                             type => 'object',
+                            additionalProperties => 0,
                             required => [
                                 qw/
                                     login
@@ -164,9 +169,12 @@ sub validate {
                         },
                         mojo_server => {
                             type => 'object',
+                            additionalProperties => 0,
                             properties => {
                                 reverse_proxy => {
-                                    type => 'integer'
+                                    type => 'integer',
+                                    minimum => 0,
+                                    maximum => 1
                                 },
                                 backlog => {
                                     type => 'integer'
@@ -178,27 +186,6 @@ sub validate {
                                     type => 'integer'
                                 },
                                 max_requests => {
-                                    type => 'integer'
-                                },
-                                accepts => {
-                                    type => 'integer'
-                                },
-                                accept_interval => {
-                                    type => 'number'
-                                },
-                                graceful_timeout => {
-                                    type => 'number'
-                                },
-                                heartbeat_interval => {
-                                    type => 'number'
-                                },
-                                heartbeat_timeout => {
-                                    type => 'number'
-                                },
-                                multi_accept => {
-                                    type => 'integer'
-                                },
-                                workers => {
                                     type => 'integer'
                                 }
                             }
