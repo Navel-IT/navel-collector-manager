@@ -68,8 +68,8 @@ sub prepare {
             require Navel::Scheduler::Mojolicious::Application;
             Navel::Scheduler::Mojolicious::Application->import();
 
-            require Mojo::Server::Prefork;
-            Mojo::Server::Prefork->import();
+            require Mojo::Server::Daemon;
+            Mojo::Server::Daemon->import();
 
             my $mojolicious_app = Navel::Scheduler::Mojolicious::Application->new($self);
 
@@ -80,7 +80,7 @@ sub prepare {
             @{$mojolicious_app->renderer()->paths()} = ($mojolicious_app_home . '/templates');
             @{$mojolicious_app->static()->paths()} = ($mojolicious_app_home . '/public');
 
-            $self->{web_server} = Mojo::Server::Prefork->new(
+            $self->{web_server} = Mojo::Server::Daemon->new(
                 app => $mojolicious_app,
                 listen => $self->{webservices}->url()
             );
@@ -115,7 +115,7 @@ sub start {
         }
     }
 
-    $self->{core}->register_logger_by_name(0)->register_collectors()->init_publishers()->register_publishers()->recv();
+    $self->{core}->register_core_logger()->register_collectors()->init_publishers()->register_publishers()->recv();
 
     $self;
 }

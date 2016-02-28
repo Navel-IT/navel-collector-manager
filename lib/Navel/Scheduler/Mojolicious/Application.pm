@@ -9,6 +9,8 @@ package Navel::Scheduler::Mojolicious::Application 0.1;
 
 use Mojo::Base 'Mojolicious';
 
+use Mojo::Util 'secure_compare';
+
 use Navel::API::Swagger2::Scheduler;
 use Navel::Utils qw/
     croak
@@ -54,42 +56,47 @@ sub startup {
 
     local $@;
 
+    $self->plugin('Navel::Mojolicious::Plugin::Swagger2::StdResponses');
+
     $self->secrets(rand);
 
-    $self->plugin('Navel::Mojolicious::Plugin::Swagger2::StdResponses');
+    my $routes = $self->routes();
+
+    my $authenticated = $routes->under(
+        '/',
+        sub {
+            my $controller = shift;
+
+            my $userinfo = $controller->req()->url()->to_abs()->userinfo();
+
+            unless (secure_compare($controller->req()->url()->to_abs()->userinfo(), $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{login} . ':' . $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{password})) {
+                $controller->res()->headers()->www_authenticate('Basic');
+
+                $controller->render(
+                    json => $controller->ok_ko(
+                        [],
+                        [
+                            'unauthorized: access is denied due to invalid credentials.'
+                        ]
+                    ),
+                    status => 401
+                );
+
+                return undef;
+            }
+        }
+    );
 
     my $swagger_spec = Navel::API::Swagger2::Scheduler->new();
 
     $self->plugin(
         'Swagger2' => {
             swagger => $swagger_spec,
-            route => $self->routes()->under()->to(
-                cb => sub {
-                    my $controller = shift;
-
-                    my $userinfo = $controller->req()->url()->to_abs()->userinfo();
-
-                    unless (defined $userinfo && $userinfo eq $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{login} . ':' . $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{password}) {
-                        $controller->res()->headers()->www_authenticate('Basic');
-
-                        $controller->render(
-                            json => $controller->ok_ko(
-                                {
-                                    ok => [],
-                                    ko => [
-                                        'unauthorized: access is denied due to invalid credentials.'
-                                    ]
-                                }
-                            ),
-                            status => 401
-                        );
-
-                        return undef;
-                    }
-                }
-            )
+            route => $authenticated
         }
     );
+
+    $authenticated->websocket('/api/ws/logger/tail')->to('WebSocket::CoreLogger#tail');
 
     $self->hook(
         before_render => sub {

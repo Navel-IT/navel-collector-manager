@@ -46,6 +46,7 @@ sub new {
         publishers => $options{publishers},
         runtime_per_publisher => [],
         logger => $options{logger},
+        logger_callbacks => {},
         ae_condvar => AnyEvent->condvar(),
         ae_fork => AnyEvent::Fork->new()
     };
@@ -67,10 +68,10 @@ sub new {
     bless $self, ref $class || $class;
 }
 
-sub register_logger_by_name {
-    my ($self, $job_name) = @_;
+sub register_core_logger {
+    my $self = shift;
 
-    croak('job name must be defined') unless defined $job_name;
+    my $job_name = 0;
 
     $self->unregister_job_by_type_and_name('logger', $job_name);
 
@@ -85,6 +86,8 @@ sub register_logger_by_name {
             my $timer = shift;
 
             $timer->begin();
+
+            $_->($self->{logger}) for values %{$self->{logger_callbacks}};
 
             $self->{logger}->flush_queue(
                 async => 1

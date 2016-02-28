@@ -17,22 +17,15 @@ Prepare configuration
 
 - *main.json* ([t/01-main.json](t/01-main.json)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
 
-List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Prefork#ATTRIBUTES)):
+List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Daemon#ATTRIBUTES)):
 
 Property name  | Property type
 ------------- | -------------
-reverse_proxy | int
-backlog | int
-inactivity_timeout | int
-max_clients | int
-max_requests | int
-accepts | int
-accept_interval | float
-graceful_timeout | float
-heartbeat_interval | float
-heartbeat_timeout | float
-multi_accept | int
-workers | int
+reverse_proxy | boolean
+backlog | integer
+inactivity_timeout | integer
+max_clients | integer
+max_requests | integer
 
 - *webservices.json* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
 
@@ -90,13 +83,23 @@ By default, the service is named *navel-scheduler* and run under the user and th
 
 If you want to change the service options, edit */etc/sysconfig/navel-scheduler* or */etc/default/navel-scheduler* in accordance with the help.
 
-REST API
---------
+API
+---
+
+- REST
 
 The documentation is available as POD through the Swagger spec:
 
 ```bash
 perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->new()->pod()->to_string();' | pod2man | nroff -man | less
+```
+
+- WebSocket
+
+navel-scheduler expose the following endpoints:
+
+```
+/api/ws/logger/tail
 ```
 
 Collectors
