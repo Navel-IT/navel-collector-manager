@@ -96,7 +96,7 @@ sub startup {
         }
     );
 
-    $authenticated->websocket('/api/ws/logger/tail')->to('WebSocket::CoreLogger#tail');
+    $authenticated->websocket('/api/logger/stream')->to('WebSocket::CoreLogger#stream');
 
     $self->hook(
         before_render => sub {

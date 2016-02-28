@@ -99,7 +99,7 @@ perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler
 navel-scheduler expose the following endpoints:
 
 ```
-/api/ws/logger/tail
+/api/logger/stream
 ```
 
 Collectors

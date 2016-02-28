@@ -11,7 +11,7 @@ use Mojo::Base 'Mojolicious::Controller';
 
 #-> methods
 
-sub tail {
+sub stream {
     my $controller = shift;
 
     my $tx = $controller->tx();
