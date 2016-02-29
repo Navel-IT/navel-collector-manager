@@ -19,7 +19,7 @@ Prepare configuration
 
 List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Daemon#ATTRIBUTES)):
 
-Property name  | Property type
+Property name | Property type
 ------------- | -------------
 reverse_proxy | boolean
 backlog | integer
@@ -98,9 +98,9 @@ perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler
 
 navel-scheduler expose the following endpoints:
 
-```
-/api/logger/stream
-```
+Endpoint | Summary
+-------- | -------
+/api/logger/stream | stream the output of the core logger
 
 Collectors
 ----------
