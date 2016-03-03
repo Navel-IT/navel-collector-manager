@@ -7,7 +7,11 @@
 
 package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup 0.1;
 
+use Navel::Base;
+
 use Mojo::Base 'Mojolicious::Controller';
+
+use Navel::Logger::Message;
 
 #-> methods
 
@@ -22,7 +26,7 @@ sub save_all_configuration {
 
     my $save_configuration_on_error = sub {
         $controller->scheduler()->{core}->{logger}->error('an error occurred while saving the runtime configuration.',
-            $controller->scheduler()->{core}->{logger}->stepped_log(shift)
+            Navel::Logger::Message->stepped_message(shift)
         );
     };
 

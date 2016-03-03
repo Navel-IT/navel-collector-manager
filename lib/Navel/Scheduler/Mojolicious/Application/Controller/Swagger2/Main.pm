@@ -7,6 +7,8 @@
 
 package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Main 0.1;
 
+use Navel::Base;
+
 use Mojo::Base 'Mojolicious::Controller';
 
 use Navel::Utils 'decode_json';

@@ -7,9 +7,9 @@
 
 package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Publisher 0.1;
 
-use Mojo::Base 'Mojolicious::Controller';
+use Navel::Base;
 
-use Storable 'dclone';
+use Mojo::Base 'Mojolicious::Controller';
 
 use Navel::Utils 'decode_json';
 
@@ -111,9 +111,7 @@ sub modify_publisher {
             delete $body->{name};
 
             $body = {
-                %{
-                    dclone($publisher->{definition}->properties())
-                },
+                %{$publisher->{definition}->properties()},
                 %{$body}
             };
 
