@@ -13,6 +13,7 @@ use Getopt::Long::Descriptive;
 use Cwd;
 
 use Navel::Logger;
+use Navel::Logger::Message;
 use Navel::Scheduler;
 use Navel::Utils qw/
     blessed
@@ -36,7 +37,7 @@ my (
 use sigtrap (
     handler => sub {
         $logger->notice(
-            $logger->stepped_log('catch a signal.',
+            Navel::Logger::Message->stepped_message('catch a signal.',
                 [
                     $!
                 ]
@@ -162,7 +163,7 @@ if ($options->daemonize() && ! $options->validate_configuration()) {
         $logger->info('daemon successfully started.')->flush_queue();
     } else {
         $logger->emerg(
-            $logger->stepped_log('error while daemonizing.',
+            Navel::Logger::Message->stepped_message('error while daemonizing.',
                 [
                     $@
                 ]
@@ -183,7 +184,7 @@ my $scheduler = eval {
 };
 
 if ($@) {
-    $logger->emerg($logger->stepped_log($@))->flush_queue();
+    $logger->emerg(Navel::Logger::Message->stepped_message($@))->flush_queue();
 
     exit 1;
 }
@@ -201,7 +202,7 @@ eval {
 };
 
 if ($@) {
-    $logger->emerg($logger->stepped_log($@))->flush_queue();
+    $logger->emerg(Navel::Logger::Message->stepped_message($@))->flush_queue();
 
     exit 1;
 }

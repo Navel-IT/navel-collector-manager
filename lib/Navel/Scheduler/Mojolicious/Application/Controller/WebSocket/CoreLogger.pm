@@ -7,6 +7,8 @@
 
 package Navel::Scheduler::Mojolicious::Application::Controller::WebSocket::CoreLogger 0.1;
 
+use Navel::Base;
+
 use Mojo::Base 'Mojolicious::Controller';
 
 #-> methods
@@ -23,14 +25,14 @@ sub stream {
 
         $tx->send(
             {
-                json => $_
+                json => $_->properties()
             }
         ) for @{$logger->{queue}};
     };
 
     $controller->on(
         finish => sub {
-            delete $controller->scheduler()->{logger_callbacks}->{$tx_id};
+            delete $controller->scheduler()->{core}->{logger_callbacks}->{$tx_id};
         }
     );
 }

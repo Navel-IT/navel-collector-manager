@@ -16,6 +16,7 @@ use Navel::Scheduler::Core;
 use Navel::Definition::Collector::Parser;
 use Navel::Definition::Publisher::Parser;
 use Navel::Definition::WebService::Parser;
+use Navel::Logger::Message;
 use Navel::Utils qw/
     croak
     blessed
@@ -109,7 +110,7 @@ sub start {
         };
 
         if ($@) {
-            $self->{core}->{logger}->crit($self->{core}->{logger}->stepped_log($@))->flush_queue();
+            $self->{core}->{logger}->crit(Navel::Logger::Message->stepped_message($@))->flush_queue();
         } else {
             $self->{core}->{logger}->notice('webservices started.')->flush_queue();
         }

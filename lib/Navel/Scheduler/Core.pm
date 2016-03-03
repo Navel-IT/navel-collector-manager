@@ -13,26 +13,26 @@ use AnyEvent;
 use AnyEvent::Fork;
 use AnyEvent::IO;
 
+use Navel::Logger::Message;
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
 use Navel::Event;
 use Navel::Broker::Publisher;
-
 use Navel::Utils 'croak';
 
 #-> functions
 
 my $publisher_logger = sub {
-    my ($self, $generic_message, $severity, $message) = @_;
+    my ($self, $generic_message, $severity, $text) = @_;
 
     $self->{logger}->push_in_queue(
         severity => $severity,
-        message => $self->{logger}->stepped_log($generic_message . '.',
+        text => Navel::Logger::Message->stepped_message($generic_message . '.',
             [
-               $message
+               $text
             ]
         )
-    ) if defined $message;
+    ) if defined $text;
 };
 
 #-> methods
@@ -140,12 +140,12 @@ sub register_collector_by_name {
                         eval {
                             $self->{logger}->push_in_queue(
                                 severity => $ae_event->[0],
-                                message => $ae_event->[1]
+                                text => $ae_event->[1]
                             );
                         };
 
                         $self->{logger}->error(
-                            $self->{logger}->stepped_log('incorrect event log format on collector ' . $collector->{name} . '.',
+                            Navel::Logger::Message->stepped_message('incorrect event log format on collector ' . $collector->{name} . '.',
                                 [
                                     $@
                                 ]
@@ -209,7 +209,7 @@ sub register_collector_by_name {
                             $fork_collector->($collector_content);
                         } else {
                             $self->{logger}->error(
-                                $self->{logger}->stepped_log('collector ' . $collector->{name} . '.',
+                                Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
                                     [
                                         $!
                                     ]
@@ -295,7 +295,7 @@ sub connect_publisher_by_name {
                     $self->{logger}->notice($connect_generic_message . '.');
                 } else {
                     $self->{logger}->error(
-                        $self->{logger}->stepped_log($connect_generic_message . '.',
+                        Navel::Logger::Message->stepped_message($connect_generic_message . '.',
                             [
                                 $@
                             ]
@@ -351,7 +351,7 @@ sub disconnect_publisher_by_name {
                     $self->{logger}->notice($disconnect_generic_message . '.');
                 } else {
                     $self->{logger}->error(
-                        $self->{logger}->stepped_log($disconnect_generic_message . '.',
+                        Navel::Logger::Message->stepped_message($disconnect_generic_message . '.',
                             [
                                 $@
                             ]
@@ -424,7 +424,7 @@ sub register_publisher_by_name {
 
                             unless ($@) {
                                 $self->{logger}->debug(
-                                    $self->{logger}->stepped_log($serialize_generic_message . ': this serialized event will normally be send.',
+                                    Navel::Logger::Message->stepped_message($serialize_generic_message . ': this serialized event will normally be send.',
                                         [
                                             $serialized
                                         ]
@@ -440,7 +440,7 @@ sub register_publisher_by_name {
                                 )
                             } else {
                                 $self->{logger}->error(
-                                    $self->{logger}->stepped_log($serialize_generic_message . '.',
+                                    Navel::Logger::Message->stepped_message($serialize_generic_message . '.',
                                         [
                                             $@
                                         ]
@@ -454,7 +454,7 @@ sub register_publisher_by_name {
                         $self->{logger}->notice($publish_generic_message . '.');
                     } else {
                         $self->{logger}->error(
-                            $self->{logger}->stepped_log($publish_generic_message . '.',
+                            Navel::Logger::Message->stepped_message($publish_generic_message . '.',
                                 [
                                     $@
                                 ]

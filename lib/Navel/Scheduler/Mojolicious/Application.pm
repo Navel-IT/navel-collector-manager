@@ -11,6 +11,7 @@ use Mojo::Base 'Mojolicious';
 
 use Mojo::Util 'secure_compare';
 
+use Navel::Logger::Message;
 use Navel::API::Swagger2::Scheduler;
 use Navel::Utils qw/
     croak
@@ -44,7 +45,7 @@ sub new {
 
             my $method = $level eq 'debug' ? $level : 'info';
 
-            $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . $self->scheduler()->{core}->{logger}->stepped_log(\@lines));
+            $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . Navel::Logger::Message->stepped_message(\@lines));
         }
     );
 
@@ -112,7 +113,7 @@ sub startup {
                 push @ko, $exception_message;
 
                 $controller->scheduler()->{core}->{logger}->error(
-                    $controller->scheduler()->{core}->{logger}->stepped_log(\@ko)
+                    Navel::Logger::Message->stepped_message(\@ko)
                 );
             } elsif ($template eq 'not_found') {
                 push @ko, "the page you were looking for doesn't exist."
