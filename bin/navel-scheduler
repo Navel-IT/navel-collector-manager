@@ -71,10 +71,10 @@ sub usage($) {
         }
     ],
     [
-        'log-facility-code=i',
-        'set facility code (syslog format) (default: 16)',
+        'log-facility=s',
+        'set facility (syslog format (only local[0-7])) (default: local0)',
         {
-            default => 16
+            default => 'local0'
         }
     ],
     [
@@ -87,6 +87,10 @@ sub usage($) {
     [
         'log-no-color',
         'disable colored output'
+    ],
+    [
+        'log-to-syslog',
+        'log to syslog'
     ],
     [
         'log-file-path=s',
@@ -145,9 +149,10 @@ $logger = eval {
             hostname();
         },
         service => $binary_default_name,
-        facility_code => $options->log_facility_code(),
+        facility => $options->log_facility(),
         severity => $options->log_severity(),
         colored => ! $options->log_no_color(),
+        syslog => $options->log_to_syslog(),
         file_path => $options->log_file_path()
     );
 };

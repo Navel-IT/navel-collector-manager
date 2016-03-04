@@ -112,7 +112,7 @@ sub startup {
 
                 push @ko, $exception_message;
 
-                $controller->scheduler()->{core}->{logger}->error(
+                $controller->scheduler()->{core}->{logger}->err(
                     Navel::Logger::Message->stepped_message(\@ko)
                 );
             } elsif ($template eq 'not_found') {

@@ -25,14 +25,26 @@ use Navel::Utils 'croak';
 my $publisher_logger = sub {
     my ($self, $generic_message, $severity, $text) = @_;
 
-    $self->{logger}->push_in_queue(
-        severity => $severity,
-        text => Navel::Logger::Message->stepped_message($generic_message . '.',
+    local $@;
+
+    eval {
+        $self->{logger}->push_in_queue(
+            severity => $severity,
+            text => Navel::Logger::Message->stepped_message($generic_message . '.',
+                [
+                   $text
+                ]
+            )
+        ) if defined $text;
+    };
+
+    $self->{logger}->err(
+        Navel::Logger::Message->stepped_message($generic_message . '.',
             [
-               $text
+               $@
             ]
         )
-    ) if defined $text;
+    ) if $@;
 };
 
 #-> methods
@@ -144,7 +156,7 @@ sub register_collector_by_name {
                             );
                         };
 
-                        $self->{logger}->error(
+                        $self->{logger}->err(
                             Navel::Logger::Message->stepped_message('incorrect event log format on collector ' . $collector->{name} . '.',
                                 [
                                     $@
@@ -153,7 +165,7 @@ sub register_collector_by_name {
                         ) if $@;
                     },
                     on_error => sub {
-                        $self->{logger}->error('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
+                        $self->{logger}->err('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
 
                         $self->a_collector_stop(
                             job => $timer,
@@ -208,7 +220,7 @@ sub register_collector_by_name {
                         if ($collector_content) {
                             $fork_collector->($collector_content);
                         } else {
-                            $self->{logger}->error(
+                            $self->{logger}->err(
                                 Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
                                     [
                                         $!
@@ -294,7 +306,7 @@ sub connect_publisher_by_name {
                 unless ($@) {
                     $self->{logger}->notice($connect_generic_message . '.');
                 } else {
-                    $self->{logger}->error(
+                    $self->{logger}->err(
                         Navel::Logger::Message->stepped_message($connect_generic_message . '.',
                             [
                                 $@
@@ -350,7 +362,7 @@ sub disconnect_publisher_by_name {
                 unless ($@) {
                     $self->{logger}->notice($disconnect_generic_message . '.');
                 } else {
-                    $self->{logger}->error(
+                    $self->{logger}->err(
                         Navel::Logger::Message->stepped_message($disconnect_generic_message . '.',
                             [
                                 $@
@@ -439,7 +451,7 @@ sub register_publisher_by_name {
                                     }
                                 )
                             } else {
-                                $self->{logger}->error(
+                                $self->{logger}->err(
                                     Navel::Logger::Message->stepped_message($serialize_generic_message . '.',
                                         [
                                             $@
@@ -453,7 +465,7 @@ sub register_publisher_by_name {
                     unless ($@) {
                         $self->{logger}->notice($publish_generic_message . '.');
                     } else {
-                        $self->{logger}->error(
+                        $self->{logger}->err(
                             Navel::Logger::Message->stepped_message($publish_generic_message . '.',
                                 [
                                     $@
