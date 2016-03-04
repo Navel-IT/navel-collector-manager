@@ -10,6 +10,8 @@ use Navel::Base;
 
 use Getopt::Long::Descriptive;
 
+use Sys::Hostname;
+
 use Cwd;
 
 use Navel::Logger;
@@ -62,8 +64,18 @@ sub usage($) {
 ($options, $usage) = describe_options(
     $binary_default_name . ' %o <' . $main_argument . '>',
     [
-        'log-file-path=s',
-        'log output to a file'
+        'log-datetime-format=s',
+        'set datetime format (default: %b  %d %H-%M-%S)',
+        {
+            default => '%b  %d %H-%M-%S'
+        }
+    ],
+    [
+        'log-facility-code=i',
+        'set facility code (syslog format) (default: 16)',
+        {
+            default => 16
+        }
     ],
     [
         'log-severity=s',
@@ -77,11 +89,8 @@ sub usage($) {
         'disable colored output'
     ],
     [
-        'log-datetime-format=s',
-        'set datetime format (default: %Y-%m-%d %H-%M-%S %z)',
-        {
-            default => '%Y-%m-%d %H-%M-%S %z'
-        }
+        'log-file-path=s',
+        'log output to a file'
     ],
     [],
     [
@@ -131,11 +140,15 @@ unless (defined $main_configuration_file_path) {
 
 $logger = eval {
     Navel::Logger->new(
+        datetime_format => $options->log_datetime_format(),
+        hostname => eval {
+            hostname();
+        },
         service => $binary_default_name,
+        facility_code => $options->log_facility_code(),
         severity => $options->log_severity(),
-        file_path => $options->log_file_path(),
         colored => ! $options->log_no_color(),
-        datetime_format => $options->log_datetime_format()
+        file_path => $options->log_file_path()
     );
 };
 

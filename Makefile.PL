@@ -48,6 +48,7 @@ WriteMakefile(
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
         'Getopt::Long::Descriptive' => 0,
+        'Sys::Hostname' => 0,
         'Cwd' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0

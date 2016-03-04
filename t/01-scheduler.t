@@ -31,6 +31,7 @@ lives_ok {
 lives_ok {
     $scheduler->prepare(
         logger => Navel::Logger->new(
+            facility_code => 16,
             severity => 'debug'
         )
     );

@@ -25,7 +25,7 @@ sub stream {
 
         $tx->send(
             {
-                json => $_->properties()
+                json => $_->constructor_properties()
             }
         ) for @{$logger->{queue}};
     };
