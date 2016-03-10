@@ -10,6 +10,7 @@ package Navel::Scheduler::Core 0.1;
 use Navel::Base;
 
 use AnyEvent;
+use EV;
 use AnyEvent::Fork;
 use AnyEvent::IO;
 
