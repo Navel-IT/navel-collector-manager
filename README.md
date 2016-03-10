@@ -5,7 +5,7 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through a broker to navel-storer.
 
-It is build on top of `Mojolicious` + `AnyEvent` and must work on all Linux platforms.
+It is build on top of `Mojolicious`, `AnyEvent` (with `EV` (interface to `libev`) backend) and `AnyEvent::Fork::RPC` and must work on all Linux platforms.
 
 Install
 -------
@@ -112,8 +112,8 @@ There are two types of collectors:
 
 **Notes**:
 
-- They must always contain a subroutine named `collector`.
-- The subroutine named `__collector` is reserved and therefore should never be used in a collector.
+- They must always contain a subroutine named `collect`.
+- The subroutine named `__collect` is reserved and therefore should never be used in a collector.
 - `STDIN`, `STDOUT` and `STDERR` are closed.
 - The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
@@ -128,7 +128,7 @@ use Navel::Event;
 
 use JIRA::REST;
 
-sub collector {
+sub collect {
     my $collector = shift;
 
     my ($logger_severity, $logger_message, $event);
