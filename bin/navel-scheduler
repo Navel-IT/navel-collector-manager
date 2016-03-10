@@ -31,7 +31,8 @@ my $main_argument = 'main-configuration-file-path';
 my (
     $options,
     $usage,
-    $logger
+    $logger,
+    $scheduler
 );
 
 #-> sigtrap
@@ -44,9 +45,9 @@ use sigtrap (
                     $!
                 ]
             )
-        )->flush_queue() if blessed($logger) && $logger->isa('Navel::Logger');
+        )->notice('stopping the scheduler.')->flush_queue() if blessed($logger);
 
-        exit 0;
+        $scheduler->stop() if blessed($scheduler);
     },
     'normal-signals'
 );
@@ -192,7 +193,7 @@ if ($options->daemonize() && ! $options->validate_configuration()) {
     }
 }
 
-my $scheduler = eval {
+$scheduler = eval {
     Navel::Scheduler->new(
         main_configuration_file_path => $main_configuration_file_path
     )->prepare(
