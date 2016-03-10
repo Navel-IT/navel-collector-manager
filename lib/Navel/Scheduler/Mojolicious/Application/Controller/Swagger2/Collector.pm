@@ -63,12 +63,7 @@ sub new_collector {
     }
 
     $controller->$callback(
-        $controller->ok_ko(
-            {
-                ok => \@ok,
-                ko => \@ko
-            }
-        ),
+        $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 201
     );
 }
