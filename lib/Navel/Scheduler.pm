@@ -124,9 +124,13 @@ sub start {
 sub stop {
     my $self = shift;
 
-    $self->{web_server}->stop() if defined $self->{web_server};
+    local $@;
 
-    $self->{core}->send();
+    eval {
+        $self->{web_server}->stop() if defined $self->{web_server};
+
+        $self->{core}->send();
+    };
 
     $self;
 }
