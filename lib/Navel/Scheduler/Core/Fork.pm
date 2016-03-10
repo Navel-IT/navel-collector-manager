@@ -9,27 +9,10 @@ package Navel::Scheduler::Core::Fork 0.1;
 
 use Navel::Base;
 
-use constant {
-    SEREAL_SERIALISER => '
-use Sereal;
-
-(
-    sub {
-        Sereal::Encoder->new(
-            {
-                no_shared_hashkeys => 1
-            }
-        )->encode(\@_);
-    },
-    sub {
-        @{Sereal::Decoder->new()->decode(shift)};
-    }
-);
-'
-};
-
 use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
+
+use Navel::AnyEvent::Fork::RPC::Serializer::Sereal;
 
 use Navel::Utils qw/
     blessed
@@ -55,7 +38,7 @@ sub new {
 
     my $collector_basename = $self->{collector}->resolve_basename();
 
-    $collector_init_content .= 'require ' . $collector_basename . ';' if $self->{collector}->is_type_package();
+    $collector_init_content .= 'use ' . $collector_basename . ';' if $self->{collector}->is_type_package();
 
     $collector_init_content .= '
 BEGIN {
@@ -67,33 +50,40 @@ BEGIN {
 
     if ($self->{collector_execution_timeout}) {
         $collector_init_content .= '
-$SIG{ALRM} = sub {
+$SIG{ALRM}' . " = sub {
     AnyEvent::Fork::RPC::event(
         [
-            "warning",
-            "execution timeout after ' . $self->{collector_execution_timeout} . 's."
+            'warning',
+            'execution timeout after " . $self->{collector_execution_timeout} . "s.'
         ]
     );
 
     exit;
 };
 
-alarm ' . $self->{collector_execution_timeout} . ';
-';
+alarm '" . $self->{collector_execution_timeout} . "';
+";
     }
 
     $collector_init_content .= $self->{collector_content} unless $self->{collector}->is_type_package();
 
-    $self->{rpc} = $self->{ae_fork}->fork()->eval($collector_init_content . '
-sub __collector {
-    ' . ($self->{collector}->is_type_package() ? $collector_basename . '::' : '') . 'collector(@_);
+    $self->{rpc} = $self->{ae_fork}->fork()->eval($collector_init_content . "
+sub __collect {
+    AnyEvent::Fork::RPC::event(
+        [
+            'debug',
+            'collector " . $self->{collector}->{name} . " running with pid ' . \$\$ . '.'
+        ]
+    );
+
+    " . ($self->{collector}->is_type_package() ? $collector_basename . '::' : '') . 'collect(@_);
 }'
     )->AnyEvent::Fork::RPC::run(
-        '__collector',
+        '__collect',
         on_event => $options{on_event},
         on_error => $options{on_error},
         on_destroy => $options{on_destroy},
-        serialiser => SEREAL_SERIALISER
+        serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
 
     $self;
@@ -108,7 +98,7 @@ sub when_done {
             $options{callback}
         );
 
-        $self->{core}->{logger}->info('spawned a new process for collector ' . $self->{collector}->{name} . '.');
+        $self->{core}->{logger}->debug('spawned a new process for collector ' . $self->{collector}->{name} . '.');
 
         undef $self->{rpc};
     }
