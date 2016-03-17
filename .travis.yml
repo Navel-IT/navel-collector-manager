@@ -17,3 +17,6 @@ before_install:
   - f_install_navel_dep navel-base
   - f_install_navel_dep navel-api-blueprints
   - popd
+  - cpanm --quiet --notest Devel::Cover::Report::Coveralls
+after_success:
+  - cover -test -report coveralls
