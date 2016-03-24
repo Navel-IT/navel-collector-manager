@@ -30,15 +30,18 @@ sub save_all_configuration {
         );
     };
 
-    $controller->scheduler()->{core}->{collectors}->write(
-        file_path => $controller->scheduler()->{configuration}->{definition}->{collectors}->{definitions_from_file},
+    $controller->scheduler()->{core}->{$_}->write(
+        file_path => $controller->scheduler()->{configuration}->{definition}->{$_}->{definitions_from_file},
         async => 1,
         on_success => $save_configuration_on_success,
         on_error => $save_configuration_on_error
-    );
+    ) for qw/
+        collectors
+        publishers
+    /;
 
-    $controller->scheduler()->{core}->{publishers}->write(
-        file_path => $controller->scheduler()->{configuration}->{definition}->{publishers}->{definitions_from_file},
+    $controller->scheduler()->{webservices}->write(
+        file_path => $controller->scheduler()->{configuration}->{definition}->{webservices}->{definitions_from_file},
         async => 1,
         on_success => $save_configuration_on_success,
         on_error => $save_configuration_on_error

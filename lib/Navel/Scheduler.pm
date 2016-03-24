@@ -27,23 +27,21 @@ use Navel::Utils qw/
 sub new {
     my ($class, %options) = @_;
 
+    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger}) && $options{logger}->isa('Navel::Logger');
+
     die "main configuration file path is missing\n" unless defined $options{main_configuration_file_path};
 
-    bless {
+    my $self = bless {
         main_configuration_file_path => $options{main_configuration_file_path},
         configuration => Navel::Scheduler::Parser->new()->read(
             file_path => $options{main_configuration_file_path}
         ),
-        core => undef,
-        webservices => undef,
-        web_server => undef
+        webserver => undef
     }, ref $class || $class;
-}
 
-sub prepare {
-    my ($self, %options) = @_;
-
-    croak('logger option must be an object of the Navel::Logger class') unless blessed($options{logger}) && $options{logger}->isa('Navel::Logger');
+    $self->{webservices} = Navel::Definition::WebService::Parser->new()->read(
+        file_path => $self->{configuration}->{definition}->{webservices}->{definitions_from_file}
+    )->make();
 
     $self->{core} = Navel::Scheduler::Core->new(
         configuration => $self->{configuration},
@@ -60,53 +58,51 @@ sub prepare {
         logger => $options{logger}
     );
 
-    if ($options{enable_webservices}) {
-        $self->{webservices} = Navel::Definition::WebService::Parser->new()->read(
-            file_path => $self->{configuration}->{definition}->{webservices}->{definitions_from_file}
-        )->make();
+    if ($options{enable_webservices} && @{$self->{webservices}->{definitions}}) {
+        require Navel::Scheduler::Mojolicious::Application;
+        Navel::Scheduler::Mojolicious::Application->import();
 
-        if (@{$self->{webservices}->{definitions}}) {
-            require Navel::Scheduler::Mojolicious::Application;
-            Navel::Scheduler::Mojolicious::Application->import();
+        require Mojo::Server::Daemon;
+        Mojo::Server::Daemon->import();
 
-            require Mojo::Server::Daemon;
-            Mojo::Server::Daemon->import();
+        my $mojolicious_app = Navel::Scheduler::Mojolicious::Application->new($self);
 
-            my $mojolicious_app = Navel::Scheduler::Mojolicious::Application->new($self);
+        $mojolicious_app->mode('production');
 
-            $mojolicious_app->mode('production');
+        my $mojolicious_app_home = dist_dir('Navel-Scheduler') . '/mojolicious/home';
 
-            my $mojolicious_app_home = dist_dir('Navel-Scheduler') . '/mojolicious/home';
+        @{$mojolicious_app->renderer()->paths()} = ($mojolicious_app_home . '/templates');
+        @{$mojolicious_app->static()->paths()} = ($mojolicious_app_home . '/public');
 
-            @{$mojolicious_app->renderer()->paths()} = ($mojolicious_app_home . '/templates');
-            @{$mojolicious_app->static()->paths()} = ($mojolicious_app_home . '/public');
-
-            $self->{web_server} = Mojo::Server::Daemon->new(
-                app => $mojolicious_app,
-                listen => $self->{webservices}->url()
-            );
-        }
+        $self->{webserver} = Mojo::Server::Daemon->new(
+            app => $mojolicious_app,
+            listen => $self->{webservices}->url()
+        );
     }
 
     $self;
 }
 
+sub is_webserver_loaded {
+    my $self = shift;
+
+    blessed($self->{webserver}) && $self->{webserver}->isa('Mojo::Server::Daemon');
+}
+
 sub start {
     my $self = shift;
 
-    croak("scheduler isn't prepared") unless blessed($self->{core}) && $self->{core}->isa('Navel::Scheduler::Core');
-
-    if ($self->{web_server}) {
+    if ($self->is_webserver_loaded()) {
         local $@;
 
         $self->{core}->{logger}->notice('starting the webservices.')->flush_queue();
 
         eval {
             while (my ($method, $value) = each %{$self->{configuration}->{definition}->{webservices}->{mojo_server}}) {
-                $self->{web_server}->$method($value);
+                $self->{webserver}->$method($value);
             }
 
-            $self->{web_server}->silent(1)->start();
+            $self->{webserver}->silent(1)->start();
         };
 
         if ($@) {
@@ -127,7 +123,7 @@ sub stop {
     local $@;
 
     eval {
-        $self->{web_server}->stop() if defined $self->{web_server};
+        $self->{webserver}->stop() if $self->is_webserver_loaded();
 
         $self->{core}->send();
     };
