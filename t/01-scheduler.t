@@ -24,6 +24,10 @@ my $scheduler;
 
 lives_ok {
     $scheduler = Navel::Scheduler->new(
+        logger => Navel::Logger->new(
+            facility => 'local0',
+            severity => 'debug'
+        ),
         main_configuration_file_path => $main_configuration_file_path
     );
 } 'Navel::Scheduler->new(): loading and preparing main configuration from ' . $main_configuration_file_path;
