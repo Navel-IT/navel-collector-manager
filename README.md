@@ -43,25 +43,25 @@ max_requests | integer
 ```yaml
 ---
   -
-    name: "webservice-1"
-    interface_mask: "*"
+    name: webservice-1
+    interface_mask: '*'
     port: 22080
     tls: 0
-    ca: null
-    cert: null
-    ciphers: null
-    key: null
-    verify: null
+    ca: ~
+    cert: ~
+    ciphers: ~
+    key: ~
+    verify: ~
   -
-    name: "webservice-2"
-    interface_mask: "*"
+    name: webservice-2
+    interface_mask: '*'
     port: 22443
     tls: 1
-    ca: null
-    cert: null
-    ciphers: null
-    key: null
-    verify: null
+    ca: ~
+    cert: ~
+    ciphers: ~
+    key: ~
+    verify: ~
 ```
 
 - Others parts of the configuration of navel-scheduler must be done via the REST API.

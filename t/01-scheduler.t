@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 3;
 use Test::Exception;
 
 BEGIN {
@@ -26,16 +26,7 @@ lives_ok {
     $scheduler = Navel::Scheduler->new(
         main_configuration_file_path => $main_configuration_file_path
     );
-} 'Navel::Scheduler::new(): loading main configuration from ' . $main_configuration_file_path;
-
-lives_ok {
-    $scheduler->prepare(
-        logger => Navel::Logger->new(
-            facility => 'local0',
-            severity => 'debug'
-        )
-    );
-} 'Navel::Scheduler::prepare(): preparing configuration';
+} 'Navel::Scheduler->new(): loading and preparing main configuration from ' . $main_configuration_file_path;
 
 #-> END
 
