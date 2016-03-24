@@ -1,0 +1,17 @@
+---
+  -
+    name: "test-1"
+    collection: "test"
+    type: "package"
+    singleton: 1
+    scheduling: 5
+    source: "Navel::Collector::Test"
+    input: null
+  -
+    name: "test-2"
+    collection: "test"
+    type: "source"
+    singleton: 1
+    scheduling: 10
+    source: null
+    input: null

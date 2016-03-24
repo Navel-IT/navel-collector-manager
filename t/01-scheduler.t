@@ -18,7 +18,7 @@ BEGIN {
 
 #-> main
 
-my $main_configuration_file_path = 't/01-main.json';
+my $main_configuration_file_path = 't/01-main.yml';
 
 my $scheduler;
 

@@ -26,7 +26,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Prepare configuration
 ---------------------
 
-- *main.json* ([t/01-main.json](t/01-main.json)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
+- *main.yml* ([t/01-main.yml](t/01-main.yml)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
 
 List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Daemon#ATTRIBUTES)):
 
@@ -38,33 +38,30 @@ inactivity_timeout | integer
 max_clients | integer
 max_requests | integer
 
-- *webservices.json* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
+- *webservices.yml* contains the definitions of navel-scheduler's web services and can't be changed at runtime. It must look like this:
 
-```json
-[
-    {
-        "name": "webservice-1",
-        "interface_mask": "*",
-        "port": 22080,
-        "tls": 0,
-        "ca": null,
-        "cert": null,
-        "ciphers": null,
-        "key": null,
-        "verify": null
-    },
-    {
-        "name": "webservice-2",
-        "interface_mask": "*",
-        "port": 22443,
-        "tls": 1,
-        "ca": null,
-        "cert": null,
-        "ciphers": null,
-        "key": null,
-        "verify": null
-    }
-]
+```yaml
+---
+  -
+    name: "webservice-1"
+    interface_mask: "*"
+    port: 22080
+    tls: 0
+    ca: null
+    cert: null
+    ciphers: null
+    key: null
+    verify: null
+  -
+    name: "webservice-2"
+    interface_mask: "*"
+    port: 22443
+    tls: 1
+    ca: null
+    cert: null
+    ciphers: null
+    key: null
+    verify: null
 ```
 
 - Others parts of the configuration of navel-scheduler must be done via the REST API.
@@ -77,7 +74,7 @@ All the help is available with `navel-scheduler --help`.
 - Manually
 
 ```
-[root@navel-scheduler ~]# navel-scheduler /usr/local/etc/navel-scheduler/main.json --log-no-color --log-severity=info
+[root@navel-scheduler ~]# navel-scheduler /usr/local/etc/navel-scheduler/main.yml --log-no-color --log-severity=info
 2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): initialization.
 2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): starting the webservices.
 2016-01-16 17-00-51 +0000 navel-scheduler[2724] (notice): webservices started.
