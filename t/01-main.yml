@@ -10,7 +10,7 @@
     maximum: 0
     maximum_simultaneous_exec: 0
   webservices:
-    definitions_from_file: t/webservices.yml
+    definitions_from_file: t/01-webservices.yml
     credentials:
       login: admin
       password: password
