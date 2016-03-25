@@ -66,7 +66,7 @@ max_requests | integer
 
 The web services offers only a single "administrator level" user authentication mechanism.
 
-You could use a reverse proxy (with *main.yml*:`webservices/mojo_server/reverse_proxy` set to `1` or `true`) such as *nginx* if you want to have more control resources access.
+You could use a reverse proxy (with *main.yml*:`webservices/mojo_server/reverse_proxy` set to `1` or `true`) such as *nginx* if you want to have more control over access to resources.
 
 For example, a read-only access:
 
@@ -105,7 +105,7 @@ server {
 }
 ```
 
-- Others parts of the configuration of navel-scheduler must be done via the REST API.
+- Others parts of the configuration of navel-scheduler must be done over REST.
 
 Start
 -----
