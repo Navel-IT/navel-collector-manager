@@ -34,8 +34,6 @@ sub new {
         ae_fork => blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new()
     }, ref $class || $class;
 
-    my $collector_init_content;
-
     my $collector_basename = $self->{collector}->resolve_basename();
 
     my $collector_init_content .= '
