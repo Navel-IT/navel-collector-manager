@@ -38,15 +38,15 @@ sub new {
 
     my $collector_basename = $self->{collector}->resolve_basename();
 
-    $collector_init_content .= 'use ' . $collector_basename . ';' if $self->{collector}->is_type_package();
-
-    $collector_init_content .= '
+    my $collector_init_content .= '
 BEGIN {
     close STDIN;
     close STDOUT;
     close STDERR;
 }
 ';
+
+    $collector_init_content .= 'use ' . $collector_basename . ';' if $self->{collector}->is_type_package();
 
     if ($self->{collector_execution_timeout}) {
         $collector_init_content .= '
