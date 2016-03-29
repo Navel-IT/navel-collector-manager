@@ -38,9 +38,9 @@ sub new {
 
     my $collector_init_content .= '
 BEGIN {
-    close STDIN;
-    close STDOUT;
-    close STDERR;
+    open STDIN, "</dev/null";
+    open STDOUT, ">/dev/null";
+    open STDERR, ">&STDOUT";
 }
 ';
 

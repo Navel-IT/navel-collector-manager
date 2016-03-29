@@ -163,7 +163,7 @@ There are two types of collectors:
 
 - They must always contain a subroutine named `collect`.
 - The subroutine named `__collect` is reserved and therefore should never be used in a collector.
-- `STDIN`, `STDOUT` and `STDERR` are closed.
+- `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
 - The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
 A collector of type *package*:
