@@ -28,15 +28,14 @@ sub new {
 
     my $self = bless {
         core => $options{core},
-        collector_execution_timeout => $options{collector_execution_timeout} || 0,
-        collector => $options{collector},
-        collector_content => $options{collector_content},
-        ae_fork => blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new()
+        collector => $options{collector}
     }, ref $class || $class;
 
     my $collector_basename = $self->{collector}->resolve_basename();
 
-    my $collector_init_content .= '
+    $options{collector_content} = defined $options{collector_content} ? $options{collector_content} : '';
+
+    my $collector_content .= '
 BEGIN {
     open STDIN, "</dev/null";
     open STDOUT, ">/dev/null";
@@ -44,10 +43,10 @@ BEGIN {
 }
 ';
 
-    $collector_init_content .= 'use ' . $collector_basename . ';' if $self->{collector}->is_type_package();
+    $collector_content .= 'use ' . $collector_basename . ';' if $self->{collector}->is_type_pm();
 
-    if ($self->{collector_execution_timeout}) {
-        $collector_init_content .= '
+    if ($self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout}) {
+        $collector_content .= '
 $SIG{ALRM}' . " = sub {
     AnyEvent::Fork::RPC::event(
         [
@@ -59,13 +58,13 @@ $SIG{ALRM}' . " = sub {
     exit;
 };
 
-alarm '" . $self->{collector_execution_timeout} . "';
+alarm '" . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "';
 ";
     }
 
-    $collector_init_content .= $self->{collector_content} unless $self->{collector}->is_type_package();
+    $collector_content .= $options{collector_content} unless $self->{collector}->is_type_pm();
 
-    $self->{rpc} = $self->{ae_fork}->fork()->eval($collector_init_content . "
+    $collector_content .= "
 sub __collect {
     AnyEvent::Fork::RPC::event(
         [
@@ -74,9 +73,10 @@ sub __collect {
         ]
     );
 
-    " . ($self->{collector}->is_type_package() ? $collector_basename . '::' : '') . 'collect(@_);
-}'
-    )->AnyEvent::Fork::RPC::run(
+    " . ($self->{collector}->is_type_pm() ? $collector_basename . '::' : '') . 'collect(@_);
+}';
+
+    $self->{rpc} = (blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new())->fork()->eval($collector_content)->AnyEvent::Fork::RPC::run(
         '__collect',
         on_event => $options{on_event},
         on_error => $options{on_error},
@@ -92,6 +92,7 @@ sub when_done {
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
+            $self->{core}->{configuration}->{collectors},
             $self->{collector}->properties(),
             $options{callback}
         );

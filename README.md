@@ -156,8 +156,8 @@ Collectors
 
 There are two types of collectors:
 
-- Perl package (.pm).
-- Perl source (.pl).
+- Perl *package* (.pm).
+- Perl *script* (.pl).
 
 **Notes**:
 
@@ -178,7 +178,7 @@ use Navel::Event;
 use JIRA::REST;
 
 sub collect {
-    my $collector = shift;
+    my ($meta, $collector) = @_;
 
     my ($logger_severity, $logger_message, $event);
 

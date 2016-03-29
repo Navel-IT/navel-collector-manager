@@ -10,7 +10,7 @@
   -
     name: test-2
     collection: test
-    type: source
+    type: script
     singleton: 1
     scheduling: 10
     source: ~

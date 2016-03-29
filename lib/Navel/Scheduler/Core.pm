@@ -137,14 +137,10 @@ sub register_collector_by_name {
             my $collector_starting_time = time;
 
             my $fork_collector = sub {
-                my $collector_content = shift;
-
                 Navel::Scheduler::Core::Fork->new(
                     core => $self,
-                    collector_execution_timeout => $self->{configuration}->{definition}->{collectors}->{execution_timeout},
                     collector => $collector,
-                    collector_content => $collector_content,
-                    ae_fork => $self->{ae_fork},
+                    collector_content => shift,
                     on_event => sub {
                         my $ae_event = shift;
 
@@ -211,14 +207,14 @@ sub register_collector_by_name {
                 );
             };
 
-            if ($collector->is_type_package()) {
+            if ($collector->is_type_pm()) {
                 $fork_collector->();
             } else {
                 aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(),
                     sub {
                         my $collector_content = shift;
 
-                        if ($collector_content) {
+                        if (defined $collector_content) {
                             $fork_collector->($collector_content);
                         } else {
                             $self->{logger}->err(
@@ -236,7 +232,7 @@ sub register_collector_by_name {
                                     collector => $collector,
                                     starting_time => $collector_starting_time
                                 },
-                                status_method => 'set_status_to_ko_internal'
+                                status_method => 'set_status_to_internal_ko'
                             );
                         }
                     }
