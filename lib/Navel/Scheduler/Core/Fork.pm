@@ -41,19 +41,17 @@ sub new {
 
     my $collector_basename = $self->{collector}->resolve_basename();
 
-    $options{collector_content} = defined $options{collector_content} ? $options{collector_content} : '';
-
-    my $collector_content .= 'package Navel::Scheduler::Core::Fork::Worker;
+    my $collector_content .= "package Navel::Scheduler::Core::Fork::Worker;
 
 BEGIN {
-    open STDIN, "</dev/null";
-    open STDOUT, ">/dev/null";
-    open STDERR, ">&STDOUT";
+    CORE::open STDIN, '</dev/null';
+    CORE::open STDOUT, '>/dev/null';
+    CORE::open STDERR, '>&STDOUT';
 }
 
-sub event($$) {
+sub event(\$\$) {
     AnyEvent::Fork::RPC::event(
-        ' . EVENT_EVENT . ',
+        " . EVENT_EVENT . ',
         @_
     )
 }
@@ -65,9 +63,10 @@ sub log($$) {
     )
 }
 
-our $collect;
+sub collect {
+    local $@;
 
-sub collect { ' . ($self->{collector}->{async} ? '
+' . ($self->{collector}->{async} ? '
     my $done = $_[0];
 ' : '' ) . '
 ';
@@ -79,33 +78,71 @@ sub collect { ' . ($self->{collector}->{async} ? '
             'execution timeout after " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "s.'
         );
 
-        " . ($self->{collector}->{async} ? '$done->()' : 'exit') . ";
+        " . ($self->{collector}->{async} ? '$done->()' : 'CORE::exit') . ";
     };
 
-    alarm " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . ";
+    CORE::alarm " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . ";
 
 ";
     }
 
+    $collector_content .= "    Navel::Scheduler::Core::Fork::Worker::log(
+        'debug',
+        'running with pid ' . \$\$ . '.'
+    );
+
+    eval {
+";
+
     if ($self->{collector}->is_type_pm()) {
-        $collector_content .= '    require ' . $collector_basename . ';';
+        $collector_content .= '         require ' . $collector_basename . ';';
     } else {
-        $collector_content .= '    package main;
+        if (defined $options{collector_content}) {
+            $options{collector_content} =~ s/(^|\G)/            /gm;
+
+            chomp $options{collector_content};
+
+            $collector_content .= '        package main {
+            #-> slurped code
 
 ' . $options{collector_content} . '
-$Navel::Scheduler::Core::Fork::Worker::collect = \&collect;';
+
+            #-< slurped code
+        };';
+        } else {
+            $self->{core}->{logger}->warn('collector ' . $self->{collector}->{name} . ' is empty.');
+        }
     }
 
     chomp $collector_content;
 
-    $collector_content .= "
 
-    Navel::Scheduler::Core::Fork::Worker::log(
-        'debug',
-        'collector " . $self->{collector}->{name} . " running with pid ' . \$\$ . '.'
-    );
+    my $collect_namespace = $self->{collector}->is_type_pm() ? $collector_basename : 'main';
 
-    " . ($self->{collector}->is_type_pm() ? $collector_basename . '::collect' : '$Navel::Scheduler::Core::Fork::Worker::collect->') . '(@_);
+    $collector_content .= '
+    };
+
+    unless ($@) {
+        if (' . $collect_namespace . "->can('collect')) {
+            " . $collect_namespace . "::collect(\@_);
+        } else {
+            Navel::Scheduler::Core::Fork::Worker::log(
+                'err',
+                'the mandatory subroutine " . $collect_namespace  . "::collect() is not declared.'
+            );
+
+            " . ($self->{collector}->{async} ? '$done->()' : '') . ';
+        }
+    } else {
+        Navel::Scheduler::Core::Fork::Worker::log(
+            "err",
+            "an error occured while loading the collector : $@."
+        );
+
+        ' . ($self->{collector}->{async} ? '$done->()' : '') . ';
+    }
+
+    CORE::return;
 }';
 
     $self->{core}->{logger}->debug(

@@ -159,20 +159,21 @@ They can be a synchronous script or a more complex server using an event loop an
 
 There are two types of collectors:
 
-- Perl *package* (.pm).
-- Perl *script* (.pl).
+- Perl *package* (.pm, `Some::Package`).
+- Perl *script* (.pl, `main`).
 
 **Notes**:
 
-- They must always contain a subroutine named `collect`.
+- A subroutine named `collect` must be declared.
 - The data returned by `collect` aren't used.
 - There is two methods (based on `AnyEvent::Fork::RPC::event`) to interact with the master process:
  - `Navel::Scheduler::Core::Fork::Worker::event($status, $data)` which send an event to the publishers.
- - `Navel::Scheduler::Core::Fork::Worker::log($severity, $message)` which send a message to the logger.
+  - `$status` to `undef` mean '$status' to `Navel::Event::KO`.
+ - `Navel::Scheduler::Core::Fork::Worker::log($severity, $text)` which send a message to the logger.
 - There are differences between a synchronous and an asynchronous collector. The documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
  - They could be reopened. Unfortunately, the output won't be catch by the logger.
-- The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
+- Unless you want to use previously mentioned, don't mess with the `Navel::Scheduler::Core::Fork::Worker` namespace.
 
 A synchronous (`sync` set to `0` or `false`) collector of type *package*:
 
@@ -219,7 +220,7 @@ sub collect {
         ] for @{$search};
     }
 
-    Navel::Scheduler::Core::Fork::Worker::event($_) for @events;
+    Navel::Scheduler::Core::Fork::Worker::event(@{$_}) for @events;
 }
 
 1;

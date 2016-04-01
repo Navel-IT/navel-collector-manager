@@ -144,39 +144,45 @@ sub register_collector_by_name {
                     on_event => sub {
                         my $event_type = shift;
 
-                        local $@;
-
                         if (defined $event_type) {
+                            local $@;
+
                             $event_type = int $event_type;
 
                             if ($event_type == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
-                                $self->goto_collector_next_stage(
-                                    collector_name => $collector->{name},
-                                    status_method => Navel::Event::OK == int shift() ? undef : 'set_status_to_ko',
-                                    event_definition => {
-                                        collector => $collector,
-                                        starting_time => $collector_starting_time,
-                                        data => shift
-                                    }
-                                );
-                            } elsif ($event_type == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                                my ($status_method, $data) = @_;
+
                                 eval {
-                                    $self->{logger}->push_in_queue(
-                                        severity => shift,
-                                        text => shift
+                                    $self->goto_collector_next_stage(
+                                        collector_name => $collector->{name},
+                                        status_method => defined $status_method && int $status_method == Navel::Event::OK ? undef : 'set_status_to_ko',
+                                        event_definition => {
+                                            collector => $collector,
+                                            starting_time => $collector_starting_time,
+                                            data => $data
+                                        }
                                     );
                                 };
+                            } elsif ($event_type == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                                my ($severity, $text) = @_;
 
-                                $self->{logger}->err(
-                                    Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
-                                        [
-                                            $@
-                                        ]
-                                    )
-                                ) if $@;
+                                eval {
+                                    $self->{logger}->push_in_queue(
+                                        severity => $severity,
+                                        text => 'collector ' . $collector->{name} . ': ' . $text
+                                    ) if defined $text;
+                                };
                             } else {
                                 $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': unknown event_type');
                             }
+
+                            $self->{logger}->err(
+                                Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
+                                    [
+                                        $@
+                                    ]
+                                )
+                            ) if $@;
                         } else {
                             $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': event_type must be defined.');
                         }
