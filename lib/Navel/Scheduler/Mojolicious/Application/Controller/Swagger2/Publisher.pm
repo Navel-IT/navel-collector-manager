@@ -235,7 +235,7 @@ sub list_events_of_a_publisher {
     $controller->$callback(
         [
             map {
-                $_->serialized_datas()
+                $_->serialized_data()
             } @{$publisher->{queue}}
         ],
         200

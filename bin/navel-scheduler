@@ -241,7 +241,7 @@ navel-scheduler - Control and run Navel::Scheduler
 
 =head1 DESCRIPTION
 
-navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
+navel-scheduler's purpose is to get back data from collectors at scheduled time then encode and push it through RabbbitMQ to navel-storer.
 
 =head1 AUTHOR
 
