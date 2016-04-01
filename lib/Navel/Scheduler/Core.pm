@@ -152,7 +152,7 @@ sub register_collector_by_name {
                             if ($event_type == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
                                 $self->collector_next_step(
                                     collector_name => $collector->{name},
-                                    status_method => Navel::Event::OK == int shift ? undef : 'set_status_to_ko',
+                                    status_method => Navel::Event::OK == int shift() ? undef : 'set_status_to_ko',
                                     event_definition => {
                                         collector => $collector,
                                         starting_time => $collector_starting_time,
