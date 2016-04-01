@@ -3,6 +3,7 @@
     name: test-1
     collection: test
     type: package
+    async: 1
     singleton: 1
     scheduling: 5
     source: Navel::Collector::Test
@@ -11,6 +12,7 @@
     name: test-2
     collection: test
     type: script
+    async: 1
     singleton: 1
     scheduling: 10
     source: ~

@@ -68,13 +68,13 @@ sub new {
         logger => Navel::AnyEvent::Pool->new(),
         collector => Navel::AnyEvent::Pool->new(
             logger => $self->{logger},
-            maximum => $self->{configuration}->{collectors}->{maximum},
-            maximum_simultaneous_exec => $self->{configuration}->{collectors}->{maximum_simultaneous_exec}
+            maximum => $self->{configuration}->{definition}->{collectors}->{maximum},
+            maximum_simultaneous_exec => $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec}
         ),
         publisher => Navel::AnyEvent::Pool->new(
             logger => $self->{logger},
-            maximum => $self->{configuration}->{publishers}->{maximum},
-            maximum_simultaneous_exec => $self->{configuration}->{publishers}->{maximum_simultaneous_exec}
+            maximum => $self->{configuration}->{definition}->{publishers}->{maximum},
+            maximum_simultaneous_exec => $self->{configuration}->{definition}->{publishers}->{maximum_simultaneous_exec}
         )
     };
 
@@ -142,29 +142,49 @@ sub register_collector_by_name {
                     collector => $collector,
                     collector_content => shift,
                     on_event => sub {
-                        my $ae_event = shift;
+                        my $event_type = shift;
 
                         local $@;
 
-                        eval {
-                            $self->{logger}->push_in_queue(
-                                severity => $ae_event->[0],
-                                text => $ae_event->[1]
-                            );
-                        };
+                        if (defined $event_type) {
+                            $event_type = int $event_type;
 
-                        $self->{logger}->err(
-                            Navel::Logger::Message->stepped_message('incorrect event log format on collector ' . $collector->{name} . '.',
-                                [
-                                    $@
-                                ]
-                            )
-                        ) if $@;
+                            if ($event_type == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
+                                $self->collector_next_step(
+                                    collector_name => $collector->{name},
+                                    status_method => Navel::Event::OK == int shift ? undef : 'set_status_to_ko',
+                                    event_definition => {
+                                        collector => $collector,
+                                        starting_time => $collector_starting_time,
+                                        data => shift
+                                    }
+                                );
+                            } elsif ($event_type == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                                eval {
+                                    $self->{logger}->push_in_queue(
+                                        severity => shift,
+                                        text => shift
+                                    );
+                                };
+
+                                $self->{logger}->err(
+                                    Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
+                                        [
+                                            $@
+                                        ]
+                                    )
+                                ) if $@;
+                            } else {
+                                $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': unknown event_type');
+                            }
+                        } else {
+                            $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': event_type must be defined.');
+                        }
                     },
                     on_error => sub {
                         $self->{logger}->err('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
 
-                        $self->a_collector_stop(
+                        $self->collector_next_step(
                             job => $timer,
                             collector_name => $collector->{name},
                             event_definition => {
@@ -179,30 +199,9 @@ sub register_collector_by_name {
                     }
                 )->when_done(
                     callback => sub {
-                        my $collector_event = shift;
-
-                        if (ref $collector_event eq 'ARRAY' && @{$collector_event} >= 2 && defined $collector_event->[0]) {
-                            $self->a_collector_stop(
-                                job => $timer,
-                                collector_name => $collector->{name},
-                                event_definition => {
-                                    collector => $collector,
-                                    starting_time => $collector_starting_time,
-                                    datas => $collector_event->[1]
-                                },
-                                status_method => Navel::Event::OK == int $collector_event->[0] ? undef : 'set_status_to_ko'
-                            );
-                        } else {
-                            $self->a_collector_stop(
-                                job => $timer,
-                                collector_name => $collector->{name},
-                                event_definition => {
-                                    collector => $collector,
-                                    starting_time => $collector_starting_time
-                                },
-                                status_method => 'set_status_to_internal_ko'
-                            );
-                        }
+                        $self->collector_next_step(
+                            job => $timer
+                        );
                     }
                 );
             };
@@ -225,7 +224,7 @@ sub register_collector_by_name {
                                 )
                             );
 
-                            $self->a_collector_stop(
+                            $self->collector_next_step(
                                 job => $timer,
                                 collector_name => $collector->{name},
                                 event_definition => {
@@ -419,16 +418,16 @@ sub register_publisher_by_name {
                 unless ($publisher->{seems_connectable} && ! $publisher->is_connected()) {
                     local $@;
 
-                    $self->{logger}->info('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
+                    $self->{logger}->debug('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
 
                     $publisher->clear_queue();
 
                     eval {
                         for (@queue) {
-                            my $serialize_generic_message = 'serialize datas for collection ' . $_->{collection};
+                            my $serialize_generic_message = 'serialize data for collection ' . $_->{collection};
 
                             my $serialized = eval {
-                                $_->serialized_datas();
+                                $_->serialized_data();
                             };
 
                             unless ($@) {
@@ -474,7 +473,7 @@ sub register_publisher_by_name {
                     $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
                 }
             } else {
-                $self->{logger}->info('queue for ' . $generic_message . ' is empty.');
+                $self->{logger}->debug('queue for ' . $generic_message . ' is empty.');
             }
 
             $timer->end();
@@ -580,18 +579,22 @@ sub unregister_job_by_type_and_name {
     $job->DESTROY() if defined $job;
 }
 
-sub a_collector_stop {
+sub collector_next_step {
     my ($self, %options) = @_;
 
     my $collector_name = delete $options{collector_name};
 
-    croak('collector_name must be defined') unless defined $collector_name;
+    my $job = delete $options{job};
 
-    $self->{logger}->info('add an event from collector ' . $collector_name . ' in the queue of existing publishers.');
+    if (keys %options) {
+        croak('collector_name must be defined') unless defined $collector_name;
 
-    $_->push_in_queue(%options) for @{$self->{runtime_per_publisher}};
+        $self->{logger}->info('add an event from collector ' . $collector_name . ' in the queue of existing publishers.');
 
-    $options{job}->end() if defined $options{job};
+        $_->push_in_queue(%options) for @{$self->{runtime_per_publisher}};
+    }
+
+    $job->end() if defined $job;
 
     1;
 }

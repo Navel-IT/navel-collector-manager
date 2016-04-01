@@ -1,7 +1,7 @@
 navel-scheduler
 ===============
 
-navel-scheduler's purpose is to get back datas from collectors at scheduled time then encode and push it through a broker to navel-storer.
+navel-scheduler's purpose is to get back data from collectors at scheduled time then encode and push it through a broker to navel-storer.
 
 It is build on top of `Mojolicious`, `AnyEvent` (with `EV` (interface to `libev`) backend) and `AnyEvent::Fork::RPC` and must work on all Linux platforms.
 
@@ -154,6 +154,9 @@ Endpoint | Summary
 Collectors
 ----------
 
+They are meant to retrieve events.
+They can be a synchronous script or a more complex server using an event loop and generating events on external "calls" (SNMP traps for exemple).
+
 There are two types of collectors:
 
 - Perl *package* (.pm).
@@ -162,11 +165,16 @@ There are two types of collectors:
 **Notes**:
 
 - They must always contain a subroutine named `collect`.
-- The subroutine named `__collect` is reserved and therefore should never be used in a collector.
+- The data returned by `collect` aren't used.
+- There is two methods (based on `AnyEvent::Fork::RPC::event`) to interact with the master process:
+ - `Navel::Scheduler::Core::Fork::Worker::event($status, $data)` which send an event to the publishers.
+ - `Navel::Scheduler::Core::Fork::Worker::log($severity, $message)` which send a message to the logger.
+- There are differences between a synchronous and an asynchronous collector. The documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
+ - They could be reopened. Unfortunately, the output won't be catch by the logger.
 - The error messages (syntax error, `die`, ...) aren't accurate. Don't test your collectors with navel-scheduler.
 
-A collector of type *package*:
+A synchronous (`sync` set to `0` or `false`) collector of type *package*:
 
 ```perl
 package Navel::Collectors::JIRA::Issue;
@@ -180,7 +188,7 @@ use JIRA::REST;
 sub collect {
     my ($meta, $collector) = @_;
 
-    my ($logger_severity, $logger_message, $event);
+    my @events;
 
     my $search = eval {
         JIRA::REST->new(
@@ -196,33 +204,22 @@ sub collect {
     };
 
     if ($@) {
-        $logger_severity = 'warning';
+        Navel::Scheduler::Core::Fork::Worker::log('warning', $@);
 
-        $logger_message = $@;
-
-        $event = [
-            Navel::Event::OK,
+        push @events, [
+            Navel::Event::KO,
             $@
         ];
     } else {
-        $logger_severity = 'notice';
+        Navel::Scheduler::Core::Fork::Worker::log('notice', "I've found " . @{$search} . ' issues!');
 
-        $logger_message = "I've found " . @{$search} . ' issues!';
-
-        $event = [
-            Navel::Event::KO,
-            $search
-        ];
+        push @events, [
+            Navel::Event::OK,
+            $_
+        ] for @{$search};
     }
 
-    AnyEvent::Fork::RPC::event(
-        [
-            $logger_severity,
-            $logger_message
-        ]
-    ); # send a message the the logger
-
-    $event;
+    Navel::Scheduler::Core::Fork::Worker::event($_) for @events;
 }
 
 1;
