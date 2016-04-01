@@ -150,7 +150,7 @@ sub register_collector_by_name {
                             $event_type = int $event_type;
 
                             if ($event_type == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
-                                $self->collector_next_step(
+                                $self->goto_collector_next_stage(
                                     collector_name => $collector->{name},
                                     status_method => Navel::Event::OK == int shift() ? undef : 'set_status_to_ko',
                                     event_definition => {
@@ -184,7 +184,7 @@ sub register_collector_by_name {
                     on_error => sub {
                         $self->{logger}->err('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
 
-                        $self->collector_next_step(
+                        $self->goto_collector_next_stage(
                             job => $timer,
                             collector_name => $collector->{name},
                             event_definition => {
@@ -199,7 +199,7 @@ sub register_collector_by_name {
                     }
                 )->when_done(
                     callback => sub {
-                        $self->collector_next_step(
+                        $self->goto_collector_next_stage(
                             job => $timer
                         );
                     }
@@ -224,7 +224,7 @@ sub register_collector_by_name {
                                 )
                             );
 
-                            $self->collector_next_step(
+                            $self->goto_collector_next_stage(
                                 job => $timer,
                                 collector_name => $collector->{name},
                                 event_definition => {
@@ -579,7 +579,7 @@ sub unregister_job_by_type_and_name {
     $job->DESTROY() if defined $job;
 }
 
-sub collector_next_step {
+sub goto_collector_next_stage {
     my ($self, %options) = @_;
 
     my $collector_name = delete $options{collector_name};
