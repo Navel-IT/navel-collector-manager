@@ -36,12 +36,38 @@ sub new {
 
     my $self = bless {
         core => $options{core},
-        collector => $options{collector}
+        collector => $options{collector},
+        collector_content => $options{collector_content}
     }, ref $class || $class;
+
+    my $wrapped_code = $self->wrapped_code();
+
+    $self->{core}->{logger}->debug(
+        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $self->{collector}->{name} . '.',
+            [
+                split /\n/, $wrapped_code
+            ]
+        )
+    );
+
+    $self->{rpc} = (blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new())->fork()->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
+        'Navel::Scheduler::Core::Fork::Worker::collect',
+        async => $self->{collector}->{async},
+        on_event => $options{on_event},
+        on_error => $options{on_error},
+        on_destroy => $options{on_destroy},
+        serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
+    );
+
+    $self;
+}
+
+sub wrapped_code {
+    my $self = shift;
 
     my $collector_basename = $self->{collector}->resolve_basename();
 
-    my $collector_content .= "package Navel::Scheduler::Core::Fork::Worker;
+    my $wrapped_code .= "package Navel::Scheduler::Core::Fork::Worker;
 
 BEGIN {
     CORE::open STDIN, '</dev/null';
@@ -72,7 +98,7 @@ sub collect {
 ';
 
     if ($self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout}) {
-        $collector_content .= '    local $SIG{ALRM}' . " = sub {
+        $wrapped_code .= '    local $SIG{ALRM}' . " = sub {
         Navel::Scheduler::Core::Fork::Worker::log(
             'warning',
             'execution timeout after " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "s.'
@@ -86,7 +112,7 @@ sub collect {
 ";
     }
 
-    $collector_content .= "    Navel::Scheduler::Core::Fork::Worker::log(
+    $wrapped_code .= "    Navel::Scheduler::Core::Fork::Worker::log(
         'debug',
         'running with pid ' . \$\$ . '.'
     );
@@ -95,17 +121,17 @@ sub collect {
 ";
 
     if ($self->{collector}->is_type_pm()) {
-        $collector_content .= '         require ' . $collector_basename . ';';
+        $wrapped_code .= '         require ' . $collector_basename . ';';
     } else {
-        if (defined $options{collector_content}) {
-            $options{collector_content} =~ s/(^|\G)/            /gm;
+        if (defined (my $collector_content = $self->{collector_content})) {
+            $collector_content =~ s/(^|\G)/            /gm;
 
-            chomp $options{collector_content};
+            chomp $collector_content;
 
-            $collector_content .= '        package main {
+            $wrapped_code .= '        package main {
             #-> slurped code
 
-' . $options{collector_content} . '
+' . $collector_content . '
 
             #-< slurped code
         };';
@@ -114,21 +140,20 @@ sub collect {
         }
     }
 
-    chomp $collector_content;
+    chomp $wrapped_code;
 
+    my $collect_subroutine_namespace = $self->{collector}->is_type_pm() ? $collector_basename : 'main';
 
-    my $collect_namespace = $self->{collector}->is_type_pm() ? $collector_basename : 'main';
-
-    $collector_content .= '
+    $wrapped_code .= '
     };
 
     unless ($@) {
-        if (' . $collect_namespace . "->can('collect')) {
-            " . $collect_namespace . "::collect(\@_);
+        if (' . $collect_subroutine_namespace . "->can('collect')) {
+            " . $collect_subroutine_namespace . "::collect(\@_);
         } else {
             Navel::Scheduler::Core::Fork::Worker::log(
                 'err',
-                'the mandatory subroutine " . $collect_namespace  . "::collect() is not declared.'
+                'the mandatory subroutine " . $collect_subroutine_namespace  . "::collect() is not declared.'
             );
 
             " . ($self->{collector}->{async} ? '$done->()' : '') . ';
@@ -145,24 +170,7 @@ sub collect {
     CORE::return;
 }';
 
-    $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $self->{collector}->{name} . '.',
-            [
-                split /\n/, $collector_content
-            ]
-        )
-    );
-
-    $self->{rpc} = (blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new())->fork()->eval($collector_content)->AnyEvent::Fork::RPC::run(
-        'Navel::Scheduler::Core::Fork::Worker::collect',
-        async => $self->{collector}->{async},
-        on_event => $options{on_event},
-        on_error => $options{on_error},
-        on_destroy => $options{on_destroy},
-        serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
-    );
-
-    $self;
+    $wrapped_code;
 }
 
 sub when_done {
