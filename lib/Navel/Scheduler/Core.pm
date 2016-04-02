@@ -121,7 +121,7 @@ sub register_collector_by_name {
     croak('unknown collector') unless defined $collector;
 
     $self->unregister_job_by_type_and_name('collector', $collector->{name});
-    
+
     my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
 
     $self->pool_matching_job_type('collector')->attach_timer(
@@ -175,7 +175,7 @@ sub register_collector_by_name {
                                     }
 
                                     $self->{logger}->err(
-                                        Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
+                                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
                                             [
                                                 $@
                                             ]
