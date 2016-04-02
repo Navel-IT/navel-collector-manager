@@ -121,6 +121,8 @@ sub register_collector_by_name {
     croak('unknown collector') unless defined $collector;
 
     $self->unregister_job_by_type_and_name('collector', $collector->{name});
+    
+    my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
 
     $self->pool_matching_job_type('collector')->attach_timer(
         name => $collector->{name},
@@ -142,49 +144,49 @@ sub register_collector_by_name {
                     collector => $collector,
                     collector_content => shift,
                     on_event => sub {
-                        my $event_type = shift;
+                        for (@_) {
+                            if (ref $_ eq 'ARRAY') {
+                                if (defined $_->[0]) {
+                                    local $@;
 
-                        if (defined $event_type) {
-                            local $@;
+                                    $_->[0] = int $_->[0];
 
-                            $event_type = int $event_type;
+                                    if ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
+                                        eval {
+                                            $self->goto_collector_next_stage(
+                                                collector_name => $collector->{name},
+                                                status_method => defined $_->[1] && int $_->[1] == Navel::Event::OK ? undef : 'set_status_to_ko',
+                                                event_definition => {
+                                                    collector => $collector,
+                                                    starting_time => $collector_starting_time,
+                                                    data => $_->[2]
+                                                }
+                                            );
+                                        };
+                                    } elsif ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                                        eval {
+                                            $self->{logger}->push_in_queue(
+                                                severity => $_->[1],
+                                                text => 'collector ' . $collector->{name} . ': ' . $_->[2]
+                                            ) if defined $_->[2];
+                                        };
+                                    } else {
+                                        $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
+                                    }
 
-                            if ($event_type == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
-                                my ($status_method, $data) = @_;
-
-                                eval {
-                                    $self->goto_collector_next_stage(
-                                        collector_name => $collector->{name},
-                                        status_method => defined $status_method && int $status_method == Navel::Event::OK ? undef : 'set_status_to_ko',
-                                        event_definition => {
-                                            collector => $collector,
-                                            starting_time => $collector_starting_time,
-                                            data => $data
-                                        }
-                                    );
-                                };
-                            } elsif ($event_type == Navel::Scheduler::Core::Fork::EVENT_LOG) {
-                                my ($severity, $text) = @_;
-
-                                eval {
-                                    $self->{logger}->push_in_queue(
-                                        severity => $severity,
-                                        text => 'collector ' . $collector->{name} . ': ' . $text
-                                    ) if defined $text;
-                                };
+                                    $self->{logger}->err(
+                                        Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
+                                            [
+                                                $@
+                                            ]
+                                        )
+                                    ) if $@;
+                                } else {
+                                    $self->{logger}->err($on_event_error_message_prefix . ': event type must be defined.');
+                                }
                             } else {
-                                $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': unknown event_type');
+                                $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
                             }
-
-                            $self->{logger}->err(
-                                Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
-                                    [
-                                        $@
-                                    ]
-                                )
-                            ) if $@;
-                        } else {
-                            $self->{logger}->err('incorrect declaration in collector ' . $collector->{name} . ': event_type must be defined.');
                         }
                     },
                     on_error => sub {

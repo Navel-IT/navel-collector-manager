@@ -73,20 +73,28 @@ BEGIN {
     CORE::open STDIN, '</dev/null';
     CORE::open STDOUT, '>/dev/null';
     CORE::open STDERR, '>&STDOUT';
+}" . '
+
+sub event {
+    AnyEvent::Fork::RPC::event(
+        map {
+            [
+                ' . EVENT_EVENT . ',
+                @{$_}
+            ]
+        } @_
+    );
 }
 
-sub event(\$\$) {
+sub log {
     AnyEvent::Fork::RPC::event(
-        " . EVENT_EVENT . ',
-        @_
-    )
-}
-
-sub log($$) {
-    AnyEvent::Fork::RPC::event(
-        ' . EVENT_LOG . ',
-        @_
-    )
+        map {
+            [
+                ' . EVENT_LOG . ',
+                @{$_}
+            ]
+        } @_
+    );
 }
 
 sub collect {
@@ -100,8 +108,10 @@ sub collect {
     if ($self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout}) {
         $wrapped_code .= '    local $SIG{ALRM}' . " = sub {
         Navel::Scheduler::Core::Fork::Worker::log(
-            'warning',
-            'execution timeout after " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "s.'
+            [
+                'warning',
+                'execution timeout after " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "s.'
+            ]
         );
 
         " . ($self->{collector}->{async} ? '$done->()' : 'CORE::exit') . ";
@@ -113,8 +123,10 @@ sub collect {
     }
 
     $wrapped_code .= "    Navel::Scheduler::Core::Fork::Worker::log(
-        'debug',
-        'running with pid ' . \$\$ . '.'
+        [
+            'debug',
+            'running with pid ' . \$\$ . '.'
+        ]
     );
 
     eval {
@@ -152,19 +164,23 @@ sub collect {
             " . $collect_subroutine_namespace . "::collect(\@_);
         } else {
             Navel::Scheduler::Core::Fork::Worker::log(
-                'err',
-                'the mandatory subroutine " . $collect_subroutine_namespace  . "::collect() is not declared.'
+                [
+                    'err',
+                    'the mandatory subroutine " . $collect_subroutine_namespace  . "::collect() is not declared.'
+                ]
             );
 
-            " . ($self->{collector}->{async} ? '$done->()' : '') . ';
+            " . ($self->{collector}->{async} ? '$done->()' : '') . ";
         }
     } else {
         Navel::Scheduler::Core::Fork::Worker::log(
-            "err",
-            "an error occured while loading the collector : $@."
+            [
+                'err',
+                'an error occured while loading the collector : ' . $@ . '.'
+            ]
         );
 
-        ' . ($self->{collector}->{async} ? '$done->()' : '') . ';
+        " . ($self->{collector}->{async} ? '$done->()' : '') . ';
     }
 
     CORE::return;
