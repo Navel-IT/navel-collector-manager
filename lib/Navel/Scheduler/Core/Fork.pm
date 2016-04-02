@@ -176,7 +176,7 @@ sub collect {
         Navel::Scheduler::Core::Fork::Worker::log(
             [
                 'err',
-                'an error occured while loading the collector : ' . $@ . '.'
+                'an error occured while loading the collector : ' . \$@ . '.'
             ]
         );
 
