@@ -202,14 +202,24 @@ sub collect {
     };
 
     if ($@) {
-        Navel::Scheduler::Core::Fork::Worker::log(['warning', $@]);
+        Navel::Scheduler::Core::Fork::Worker::log(
+            [
+                'warning',
+                $@
+            ]
+        );
 
         push @events, [
             'KO',
             $@
         ];
     } else {
-        Navel::Scheduler::Core::Fork::Worker::log(['notice', "I've found " . @{$search} . ' issues!']);
+        Navel::Scheduler::Core::Fork::Worker::log(
+            [
+                'notice',
+                "I've found " . @{$search} . ' issues!'
+            ]
+        );
 
         push @events, [
             'OK',
