@@ -17,7 +17,6 @@ use AnyEvent::IO;
 use Navel::Logger::Message;
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
-use Navel::Event;
 use Navel::Broker::Publisher;
 use Navel::Utils 'croak';
 
@@ -155,12 +154,11 @@ sub register_collector_by_name {
                                         eval {
                                             $self->goto_collector_next_stage(
                                                 collector_name => $collector->{name},
-                                                status_method => defined $_->[1] && int $_->[1] == Navel::Event::OK ? undef : 'set_status_to_ko',
-                                                event_definition => {
-                                                    collector => $collector,
-                                                    starting_time => $collector_starting_time,
-                                                    data => $_->[2]
-                                                }
+                                                public_interface => 1,
+                                                collector => $collector,
+                                                status => $_->[1],
+                                                starting_time => $collector_starting_time,
+                                                data => $_->[2]
                                             );
                                         };
                                     } elsif ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_LOG) {
@@ -195,11 +193,9 @@ sub register_collector_by_name {
                         $self->goto_collector_next_stage(
                             job => $timer,
                             collector_name => $collector->{name},
-                            event_definition => {
-                                collector => $collector,
-                                starting_time => $collector_starting_time
-                            },
-                            status_method => 'set_status_to_internal_ko'
+                            collector => $collector,
+                            status => '__KO',
+                            starting_time => $collector_starting_time
                         );
                     },
                     on_destroy => sub {
@@ -235,11 +231,9 @@ sub register_collector_by_name {
                             $self->goto_collector_next_stage(
                                 job => $timer,
                                 collector_name => $collector->{name},
-                                event_definition => {
-                                    collector => $collector,
-                                    starting_time => $collector_starting_time
-                                },
-                                status_method => 'set_status_to_internal_ko'
+                                collector => $collector,
+                                status => '__KO',
+                                starting_time => $collector_starting_time
                             );
                         }
                     }
@@ -435,7 +429,7 @@ sub register_publisher_by_name {
                             my $serialize_generic_message = 'serialize data for collection ' . $_->{collection};
 
                             my $serialized = eval {
-                                $_->serialized_data();
+                                $_->serialize();
                             };
 
                             unless ($@) {
@@ -594,17 +588,19 @@ sub goto_collector_next_stage {
 
     my $job = delete $options{job};
 
-    if (keys %options) {
+    if (%options) {
         croak('collector_name must be defined') unless defined $collector_name;
 
-        $self->{logger}->info('add an event from collector ' . $collector_name . ' in the queue of existing publishers.');
+        for (@{$self->{runtime_per_publisher}}) {
+            $_->push_in_queue(\%options);
 
-        $_->push_in_queue(%options) for @{$self->{runtime_per_publisher}};
+            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $collector_name . '.');
+        }
     }
 
     $job->end() if defined $job;
 
-    1;
+    $self;
 }
 
 sub recv {

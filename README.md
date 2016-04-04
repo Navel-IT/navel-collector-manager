@@ -168,7 +168,6 @@ There are two types of collectors:
 - The data returned by `collect` aren't used.
 - There is two methods (based on `AnyEvent::Fork::RPC::event`) to interact with the master process:
  - `Navel::Scheduler::Core::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send an event to the publishers.
-  - `$status` to `undef` mean '$status' to `Navel::Event::KO`.
  - `Navel::Scheduler::Core::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send a message to the logger.
 - There are differences between a synchronous and an asynchronous collector. The documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
@@ -181,8 +180,6 @@ A synchronous (`sync` set to `0` or `false`) collector of type *package*:
 package Navel::Collectors::JIRA::Issue;
 
 use Navel::Base;
-
-use Navel::Event;
 
 use JIRA::REST;
 
@@ -208,14 +205,14 @@ sub collect {
         Navel::Scheduler::Core::Fork::Worker::log(['warning', $@]);
 
         push @events, [
-            Navel::Event::KO,
+            'KO',
             $@
         ];
     } else {
         Navel::Scheduler::Core::Fork::Worker::log(['notice', "I've found " . @{$search} . ' issues!']);
 
         push @events, [
-            Navel::Event::OK,
+            'OK',
             $_
         ] for @{$search};
     }

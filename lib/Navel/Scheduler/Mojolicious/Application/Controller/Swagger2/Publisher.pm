@@ -235,7 +235,7 @@ sub list_events_of_a_publisher {
     $controller->$callback(
         [
             map {
-                $_->serialized_data()
+                $_->serialize()
             } @{$publisher->{queue}}
         ],
         200
@@ -264,24 +264,23 @@ sub push_event_to_a_publisher {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            if (defined ($body->{status_method} = delete $body->{status})) {
-                if ($body->{status_method} eq 'ok' || $body->{status_method} eq 'ko') {
-                    $body->{status_method} = 'set_status_to_' . $body->{status_method};
-                } else {
-                    push @ko, 'event status is incorrect.';
-                }
-            }
+            eval {
+                $publisher->push_in_queue(
+                    {
+                        %{$body},
+                        %{
+                            {
+                                public_interface => 1
+                            }
+                        }
+                    }
+                );
+            };
 
-            unless (@ko) {
-                eval {
-                    $publisher->push_in_queue(%{$body});
-                };
-
-                unless ($@) {
-                    push @ok, 'pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . '.';
-                } else {
-                    push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@ . '.';
-                }
+            unless ($@) {
+                push @ok, 'pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . '.';
+            } else {
+                push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@ . '.';
             }
         } else {
             push @ko, 'the request payload must represent a hash.';

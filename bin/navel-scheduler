@@ -54,7 +54,7 @@ use sigtrap (
 
 #-> functions
 
-sub usage($) {
+sub usage {
     print $usage->text();
 
     exit shift;
