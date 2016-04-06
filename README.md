@@ -137,10 +137,10 @@ API
 
 - REST
 
-The documentation is available as POD through the Swagger spec:
+The documentation is available through the Swagger spec:
 
 ```bash
-perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->new()->pod()->to_string();' | pod2man | nroff -man | less
+mojo swagger2 edit $(perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->spec_file_location();') --listen http://*:8080
 ```
 
 - WebSocket
