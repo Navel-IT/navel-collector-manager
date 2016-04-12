@@ -58,6 +58,8 @@ sub new {
         on_destroy => $options{on_destroy},
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
+    
+    $self->{core}->{logger}->debug('spawned a new process for collector ' . $self->{collector}->{name} . '.');
 
     $self;
 }
@@ -191,6 +193,8 @@ sub collect {
 
 sub when_done {
     my ($self, %options) = @_;
+    
+    croak('callback must be a CODE reference') unless ref $options{callback} eq 'CODE';
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
@@ -198,8 +202,6 @@ sub when_done {
             $self->{collector}->properties(),
             $options{callback}
         );
-
-        $self->{core}->{logger}->debug('spawned a new process for collector ' . $self->{collector}->{name} . '.');
 
         undef $self->{rpc};
     }
