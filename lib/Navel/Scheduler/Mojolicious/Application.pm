@@ -70,7 +70,7 @@ sub startup {
 
             my $userinfo = $controller->req()->url()->to_abs()->userinfo();
 
-            unless (secure_compare($controller->req()->url()->to_abs()->userinfo(), $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{login} . ':' . $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{password})) {
+            unless (secure_compare(defined $userinfo ? $userinfo : '', $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{login} . ':' . $self->scheduler()->{configuration}->{definition}->{webservices}->{credentials}->{password})) {
                 $controller->res()->headers()->www_authenticate('Basic');
 
                 $controller->render(
