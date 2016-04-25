@@ -42,8 +42,10 @@ sub new {
 
     my $wrapped_code = $self->wrapped_code();
 
+    my $collector_basename = $self->{collector}->resolve_basename();
+
     $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $self->{collector}->{name} . '.',
+        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $collector_basename . '/' . $self->{collector}->{name} . '.',
             [
                 split /\n/, $wrapped_code
             ]
@@ -58,8 +60,26 @@ sub new {
         on_destroy => $options{on_destroy},
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
-    
-    $self->{core}->{logger}->debug('spawned a new process for collector ' . $self->{collector}->{name} . '.');
+
+    $self->{core}->{logger}->debug('spawned a new process for collector ' . $collector_basename . '/' . $self->{collector}->{name} . '.');
+
+    $self;
+}
+
+sub when_done {
+    my ($self, %options) = @_;
+
+    croak('callback must be a CODE reference') unless ref $options{callback} eq 'CODE';
+
+    if (defined $self->{rpc}) {
+        $self->{rpc}->(
+            $self->{core}->{configuration}->{definition}->{collectors},
+            $self->{collector}->properties(),
+            $options{callback}
+        );
+
+        undef $self->{rpc};
+    }
 
     $self;
 }
@@ -72,9 +92,9 @@ sub wrapped_code {
     my $wrapped_code .= "package Navel::Scheduler::Core::Fork::Worker;
 
 BEGIN {
-    CORE::open STDIN, '</dev/null';
-    CORE::open STDOUT, '>/dev/null';
-    CORE::open STDERR, '>&STDOUT';
+    open STDIN, '</dev/null';
+    open STDOUT, '>/dev/null';
+    open STDERR, '>&STDOUT';
 }" . '
 
 sub event {
@@ -116,23 +136,16 @@ sub collect {
             ]
         );
 
-        " . ($self->{collector}->{async} ? '$done->()' : 'CORE::exit') . ";
+        " . ($self->{collector}->{async} ? '$done->()' : 'exit') . ";
     };
 
-    CORE::alarm " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . ";
+    alarm " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . ";
 
 ";
     }
 
-    $wrapped_code .= "    Navel::Scheduler::Core::Fork::Worker::log(
-        [
-            'debug',
-            'running with pid ' . \$\$ . '.'
-        ]
-    );
-
-    eval {
-";
+    $wrapped_code .= '    eval {
+';
 
     if ($self->{collector}->is_type_pm()) {
         $wrapped_code .= '         require ' . $collector_basename . ';';
@@ -167,46 +180,30 @@ sub collect {
         } else {
             Navel::Scheduler::Core::Fork::Worker::log(
                 [
-                    'err',
+                    'emerg',
                     'the mandatory subroutine " . $collect_subroutine_namespace  . "::collect() is not declared.'
                 ]
             );
 
-            " . ($self->{collector}->{async} ? '$done->()' : '') . ";
+            " . ($self->{collector}->{async} ? '$done->();' : ';') . "
         }
     } else {
         Navel::Scheduler::Core::Fork::Worker::log(
             [
-                'err',
-                'an error occured while loading the collector : ' . \$@ . '.'
+                'emerg',
+                'an error occured while loading the collector: ' . \$@ . '.'
             ]
         );
 
-        " . ($self->{collector}->{async} ? '$done->()' : '') . ';
+        " . ($self->{collector}->{async} ? '$done->();' : ';') . '
     }
 
-    CORE::return;
-}';
-
-    $wrapped_code;
+    return;
 }
 
-sub when_done {
-    my ($self, %options) = @_;
-    
-    croak('callback must be a CODE reference') unless ref $options{callback} eq 'CODE';
+1;';
 
-    if (defined $self->{rpc}) {
-        $self->{rpc}->(
-            $self->{core}->{configuration}->{definition}->{collectors},
-            $self->{collector}->properties(),
-            $options{callback}
-        );
-
-        undef $self->{rpc};
-    }
-
-    $self;
+    $wrapped_code;
 }
 
 # sub AUTOLOAD {}

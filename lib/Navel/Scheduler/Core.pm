@@ -17,35 +17,8 @@ use AnyEvent::IO;
 use Navel::Logger::Message;
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Fork;
-use Navel::Broker::Publisher;
+use Navel::Broker::Client::Fork;
 use Navel::Utils 'croak';
-
-#-> functions
-
-my $publisher_logger = sub {
-    my ($self, $generic_message, $severity, $text) = @_;
-
-    local $@;
-
-    eval {
-        $self->{logger}->push_in_queue(
-            severity => $severity,
-            text => Navel::Logger::Message->stepped_message($generic_message . '.',
-                [
-                   $text
-                ]
-            )
-        ) if defined $text;
-    };
-
-    $self->{logger}->err(
-        Navel::Logger::Message->stepped_message($generic_message . '.',
-            [
-               $@
-            ]
-        )
-    ) if $@;
-};
 
 #-> methods
 
@@ -112,6 +85,83 @@ sub register_core_logger {
     $self;
 }
 
+my $register_collector_by_name_common_workflow = sub {
+    my ($self, %options) = @_;
+
+    my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $options{collector}->{name};
+
+    Navel::Scheduler::Core::Fork->new(
+        core => $self,
+        collector => $options{collector},
+        collector_content => $options{collector_content},
+        on_event => sub {
+            local $@;
+
+            for (@_) {
+                if (ref $_ eq 'ARRAY') {
+                    if (defined $_->[0]) {
+                        $_->[0] = int $_->[0];
+
+                        if ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
+                            eval {
+                                $self->goto_collector_next_stage(
+                                    public_interface => 1,
+                                    collector => $options{collector},
+                                    status => $_->[1],
+                                    starting_time => $options{collector_starting_time},
+                                    data => $_->[2]
+                                );
+                            };
+                        } elsif ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                            eval {
+                                $self->{logger}->push_in_queue(
+                                    severity => $_->[1],
+                                    text => 'collector ' . $options{collector}->{name} . ': ' . $_->[2]
+                                ) if defined $_->[2];
+                            };
+                        } else {
+                            $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
+                        }
+
+                        $self->{logger}->err(
+                            Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
+                                [
+                                    $@
+                                ]
+                            )
+                        ) if $@;
+                    } else {
+                        $self->{logger}->err($on_event_error_message_prefix . ': event type must be defined.');
+                    }
+                } else {
+                    $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
+                }
+            }
+        },
+        on_error => sub {
+            $self->{logger}->err('execution of collector ' . $options{collector}->{name} . ' failed (fatal error): ' . shift . '.');
+
+            $self->goto_collector_next_stage(
+                job => $options{job},
+                collector => $options{collector},
+                status => '__KO',
+                starting_time => $options{collector_starting_time}
+            );
+        },
+        on_destroy => sub {
+            $self->{logger}->notice('collector ' . $options{collector}->{name} . ' is destroyed.');
+        }
+    )->when_done(
+        callback => sub {
+            $self->goto_collector_next_stage(
+                job => $options{job}
+            );
+        }
+    );
+
+    $self;
+};
+
 sub register_collector_by_name {
     my $self = shift;
 
@@ -120,8 +170,6 @@ sub register_collector_by_name {
     croak('unknown collector') unless defined $collector;
 
     $self->unregister_job_by_type_and_name('collector', $collector->{name});
-
-    my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
 
     $self->pool_matching_job_type('collector')->attach_timer(
         name => $collector->{name},
@@ -137,88 +185,24 @@ sub register_collector_by_name {
 
             my $collector_starting_time = time;
 
-            my $fork_collector = sub {
-                Navel::Scheduler::Core::Fork->new(
-                    core => $self,
-                    collector => $collector,
-                    collector_content => shift,
-                    on_event => sub {
-                        for (@_) {
-                            if (ref $_ eq 'ARRAY') {
-                                if (defined $_->[0]) {
-                                    local $@;
-
-                                    $_->[0] = int $_->[0];
-
-                                    if ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
-                                        eval {
-                                            $self->goto_collector_next_stage(
-                                                collector_name => $collector->{name},
-                                                public_interface => 1,
-                                                collector => $collector,
-                                                status => $_->[1],
-                                                starting_time => $collector_starting_time,
-                                                data => $_->[2]
-                                            );
-                                        };
-                                    } elsif ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_LOG) {
-                                        eval {
-                                            $self->{logger}->push_in_queue(
-                                                severity => $_->[1],
-                                                text => 'collector ' . $collector->{name} . ': ' . $_->[2]
-                                            ) if defined $_->[2];
-                                        };
-                                    } else {
-                                        $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
-                                    }
-
-                                    $self->{logger}->err(
-                                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
-                                            [
-                                                $@
-                                            ]
-                                        )
-                                    ) if $@;
-                                } else {
-                                    $self->{logger}->err($on_event_error_message_prefix . ': event type must be defined.');
-                                }
-                            } else {
-                                $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
-                            }
-                        }
-                    },
-                    on_error => sub {
-                        $self->{logger}->err('execution of collector ' . $collector->{name} . ' failed (fatal error): ' . shift . '.');
-
-                        $self->goto_collector_next_stage(
-                            job => $timer,
-                            collector_name => $collector->{name},
-                            collector => $collector,
-                            status => '__KO',
-                            starting_time => $collector_starting_time
-                        );
-                    },
-                    on_destroy => sub {
-                        $self->{logger}->debug('DESTROY() called for collector ' . $collector->{name} . '.');
-                    }
-                )->when_done(
-                    callback => sub {
-                        $self->goto_collector_next_stage(
-                            job => $timer
-                        );
-                    }
-                );
-            };
-
             if ($collector->is_type_pm()) {
-                $fork_collector->();
+                $self->$register_collector_by_name_common_workflow(
+                    job => $timer,
+                    collector => $collector,
+                    collector_starting_time => $collector_starting_time
+                );
             } else {
                 aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(),
                     sub {
                         my $collector_content = shift;
 
                         if (defined $collector_content) {
-                            $fork_collector->($collector_content);
+                            $self->$register_collector_by_name_common_workflow(
+                                job => $timer,
+                                collector => $collector,
+                                collector_content => $collector_content,
+                                collector_starting_time => $collector_starting_time
+                            );
                         } else {
                             $self->{logger}->err(
                                 Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
@@ -262,8 +246,42 @@ sub init_publisher_by_name {
 
     $self->{logger}->notice('initialize publisher ' . $publisher_definition->{name} . '.');
 
-    push @{$self->{runtime_per_publisher}}, Navel::Broker::Publisher->new(
-        definition => $publisher_definition
+    my $on_event_error_message_prefix = 'incorrect declaration in publisher ' . $publisher_definition->{name};
+
+    push @{$self->{runtime_per_publisher}}, Navel::Broker::Client::Fork->new(
+        logger => $self->{logger},
+        definition => $publisher_definition,
+        ae_fork => $self->{ae_fork},
+        on_event => sub {
+            local $@;
+
+            for (@_) {
+                if (ref $_ eq 'ARRAY') {
+                    eval {
+                        $self->{logger}->push_in_queue(
+                            severity => $_->[0],
+                            text => 'publisher ' . $publisher_definition->{name} . ': ' . $_->[1]
+                        ) if defined $_->[1];
+                    };
+
+                    $self->{logger}->err(
+                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
+                            [
+                                $@
+                            ]
+                        )
+                    ) if $@;
+                } else {
+                    $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
+                }
+            }
+        },
+        on_error => sub {
+            $self->{logger}->err('execution of publisher ' . $publisher_definition->{name} . ' failed (fatal error): ' . shift . '.');
+        },
+        on_destroy => sub {
+            $self->{logger}->notice('publisher ' . $publisher_definition->{name} . ' is destroyed.');
+        }
     );
 
     $self;
@@ -284,42 +302,45 @@ sub connect_publisher_by_name {
 
     croak('unknown publisher') unless defined $publisher;
 
-    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
+    my $connect_generic_message = 'connect publisher ' . $publisher->{definition}->{name};
 
-    my $connect_generic_message = 'connect ' . $generic_message;
+    if ($publisher->{definition}->{connectable}) {
+        $publisher->rpc(
+            method => 'is_connected',
+            options => [
+                $publisher->{definition}
+            ],
+            callback => sub {
+                if (shift) {
+                    $self->{logger}->warning($connect_generic_message . ': already connected.');
+                } else {
+                    $publisher->rpc(
+                        method => 'is_connecting',
+                        options => [
+                            $publisher->{definition}
+                        ],
+                        callback => sub {
+                            if (shift) {
+                                $self->{logger}->warning($connect_generic_message . ': already trying to establish a connection.');
+                            } else {
+                                $self->{logger}->notice($connect_generic_message . '.');
 
-    if ($publisher->{seems_connectable}) {
-        unless ($publisher->is_connected()) {
-            unless ($publisher->is_connecting()) {
-                local $@;
-
-                eval {
-                    $publisher->connect(
-                        logger => sub {
-                            $self->$publisher_logger($connect_generic_message, @_);
+                                $publisher->rpc(
+                                    method => 'connect',
+                                    options => [
+                                        $publisher->{definition}
+                                    ],
+                                    callback => sub {
+                                    }
+                                );
+                            }
                         }
                     );
-                };
-
-                unless ($@) {
-                    $self->{logger}->notice($connect_generic_message . '.');
-                } else {
-                    $self->{logger}->err(
-                        Navel::Logger::Message->stepped_message($connect_generic_message . '.',
-                            [
-                                $@
-                            ]
-                        )
-                    );
                 }
-            } else {
-                $self->{logger}->warning($connect_generic_message . ': already trying to establish a connection.');
             }
-        } else {
-            $self->{logger}->warning($connect_generic_message . ': already connected.');
-        }
+        );
     } else {
-        $self->{logger}->debug($connect_generic_message . ': nothing to connect.')
+        $self->{logger}->debug($connect_generic_message . ': nothing to connect.');
     }
 
     $self;
@@ -340,42 +361,45 @@ sub disconnect_publisher_by_name {
 
     croak('unknown publisher') unless defined $publisher;
 
-    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
+    my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
 
-    my $disconnect_generic_message = 'disconnect ' . $generic_message;
+    if ($publisher->{definition}->{connectable}) {
+        $publisher->rpc(
+            method => 'is_disconnected',
+            options => [
+                $publisher->{definition}
+            ],
+            callback => sub {
+                if (shift) {
+                    $self->{logger}->warning($disconnect_generic_message . ': already disconnected.')
+                } else {
+                    $publisher->rpc(
+                        method => 'is_disconnecting',
+                        options => [
+                            $publisher->{definition}
+                        ],
+                        callback => sub {
+                            if (shift) {
+                                $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
+                            } else {
+                                $self->{logger}->notice($disconnect_generic_message . '.');
 
-    if ($publisher->{seems_connectable}) {
-        if ($publisher->is_connected() || $publisher->is_connecting()) {
-            unless ($publisher->is_disconnecting()) {
-                local $@;
-
-                eval {
-                    $publisher->disconnect(
-                        logger => sub {
-                            $self->$publisher_logger($disconnect_generic_message, @_);
+                                $publisher->rpc(
+                                    method => 'disconnect',
+                                    options => [
+                                        $publisher->{definition}
+                                    ],
+                                    callback => sub {
+                                    }
+                                );
+                            }
                         }
                     );
-                };
-
-                unless ($@) {
-                    $self->{logger}->notice($disconnect_generic_message . '.');
-                } else {
-                    $self->{logger}->err(
-                        Navel::Logger::Message->stepped_message($disconnect_generic_message . '.',
-                            [
-                                $@
-                            ]
-                        )
-                    );
                 }
-            } else {
-                $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
             }
-        } else {
-            $self->{logger}->warning($disconnect_generic_message . ': already disconnected.');
-        }
+        );
     } else {
-        $self->{logger}->debug($generic_message . ': nothing to disconnect');
+        $self->{logger}->debug($disconnect_generic_message . ': nothing to disconnect');
     }
 
     $self;
@@ -389,6 +413,51 @@ sub disconnect_publishers {
     $self;
 }
 
+my $register_publisher_by_name_common_workflow = sub {
+    my ($self, %options) = @_;
+
+    local $@;
+
+    my (@serialized_events, @serialization_errors);
+
+    for (@{$options{publisher}->{queue}}) {
+        eval {
+            push @serialized_events, $_->serialize();
+        };
+
+        push @serialization_errors, $@ if $@;
+    }
+
+    $self->{logger}->err(
+        Navel::Logger::Message->stepped_message('error(s) occurred while serializing the events currently in the queue of publisher ' . $options{publisher}->{definition}->{name} . '.', \@serialization_errors)
+    ) if @serialization_errors;
+
+    $self->{logger}->debug('clear queue for publisher ' . $options{publisher}->{definition}->{name} . '.');
+
+    $options{publisher}->clear_queue();
+
+    if (@serialized_events) {
+        $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': trying to publicate the events properly serialized.');
+
+        $options{publisher}->rpc(
+            method => 'publish',
+            options => [
+                $options{publisher}->{definition},
+                \@serialized_events
+            ],
+            callback => sub {
+                $options{job}->end();
+            }
+        );
+    } else {
+        $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': there are no events correctly serialized to publish.');
+
+        $options{job}->end();
+    }
+
+    $self;
+};
+
 sub register_publisher_by_name {
     my $self = shift;
 
@@ -397,6 +466,10 @@ sub register_publisher_by_name {
     croak('unknown publisher') unless defined $publisher;
 
     $self->unregister_job_by_type_and_name('publisher', $publisher->{definition}->{name});
+
+    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
+
+    my $publish_generic_message = 'publish events for ' . $generic_message;
 
     $self->pool_matching_job_type('publisher')->attach_timer(
         name => $publisher->{definition}->{name},
@@ -408,77 +481,59 @@ sub register_publisher_by_name {
 
             $timer->begin();
 
-            if ($publisher->{seems_connectable} && $publisher->{definition}->{auto_connect}) {
-                $self->connect_publisher_by_name($publisher->{definition}->{name}) unless $publisher->is_connected() || $publisher->is_connecting();
+            if ($publisher->{definition}->{connectable} && $publisher->{definition}->{auto_connect}) {
+                $publisher->rpc(
+                    method => 'is_connected',
+                    options => [
+                        $publisher->{definition}
+                    ],
+                    callback => sub {
+                        unless (shift) {
+                            $publisher->rpc(
+                                method => 'is_connecting',
+                                options => [
+                                    $publisher->{definition}
+                                ],
+                                callback => sub {
+                                    $self->connect_publisher_by_name($publisher->{definition}->{name}) unless shift;
+                                }
+                            );
+                        }
+                    }
+                );
             }
 
-            my $generic_message = 'publisher ' . $publisher->{definition}->{name};
-
-            if (my @queue = @{$publisher->{queue}}) {
-                my $publish_generic_message = 'publish events for ' . $generic_message;
-
-                unless ($publisher->{seems_connectable} && ! $publisher->is_connected()) {
-                    local $@;
-
-                    $self->{logger}->debug('clear queue for publisher ' . $publisher->{definition}->{name} . '.');
-
-                    $publisher->clear_queue();
-
-                    eval {
-                        for (@queue) {
-                            my $serialize_generic_message = 'serialize data for collection ' . $_->{collection};
-
-                            my $serialized = eval {
-                                $_->serialize();
-                            };
-
-                            unless ($@) {
-                                $self->{logger}->debug(
-                                    Navel::Logger::Message->stepped_message($serialize_generic_message . ': this serialized event will normally be send.',
-                                        [
-                                            $serialized
-                                        ]
-                                    )
+            if (@{$publisher->{queue}}) {
+                if ($publisher->{definition}->{connectable}) {
+                    $publisher->rpc(
+                        method => 'is_connected',
+                        options => [
+                            $publisher->{definition}
+                        ],
+                        callback => sub {
+                            if (shift) {
+                                $self->$register_publisher_by_name_common_workflow(
+                                    job => $timer,
+                                    publisher => $publisher
                                 );
-
-                                $publisher->publish(
-                                    event => $_,
-                                    serialized_event => $serialized,
-                                    logger =>  sub {
-                                        $self->$publisher_logger($publish_generic_message, @_);
-                                    }
-                                )
                             } else {
-                                $self->{logger}->err(
-                                    Navel::Logger::Message->stepped_message($serialize_generic_message . '.',
-                                        [
-                                            $@
-                                        ]
-                                    )
-                                );
+                                $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
+
+                                $timer->end();
                             }
                         }
-                    };
-
-                    unless ($@) {
-                        $self->{logger}->notice($publish_generic_message . '.');
-                    } else {
-                        $self->{logger}->err(
-                            Navel::Logger::Message->stepped_message($publish_generic_message . '.',
-                                [
-                                    $@
-                                ]
-                            )
-                        );
-                    }
+                    );
                 } else {
-                    $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
+                    $self->$register_publisher_by_name_common_workflow(
+                        job => $timer,
+                        publisher => $publisher
+                    );
                 }
             } else {
                 $self->{logger}->debug('queue for ' . $generic_message . ' is empty.');
-            }
 
-            $timer->end();
+                $timer->end();
+            }
         }
     );
 
@@ -505,6 +560,22 @@ sub publisher_runtime_by_name {
     undef;
 }
 
+my $delete_publisher_and_definition_associated_by_name_common_workflow = sub {
+    my ($self, %options) = @_;
+    
+    $self->unregister_job_by_type_and_name('publisher', $self->{runtime_per_publisher}->[$options{definition_to_delete_index}]->{definition}->{name});
+
+    $self->{runtime_per_publisher}->[$options{definition_to_delete_index}]->exit();
+
+    splice @{$self->{runtime_per_publisher}}, $options{definition_to_delete_index}, 1;
+
+    $self->{publishers}->delete_definition(
+        definition_name => $options{definition_name}
+    );
+
+    $self;
+};
+
 sub delete_publisher_and_definition_associated_by_name {
     my ($self, $name) = @_;
 
@@ -518,19 +589,27 @@ sub delete_publisher_and_definition_associated_by_name {
 
     die $self->{definition_class} . ': definition ' . $name . " does not exists\n" unless $finded;
 
-    local $@;
-
-    if ($self->{runtime_per_publisher}->[$definition_to_delete_index]->{seems_connectable}) {
-        eval {
-            $self->{runtime_per_publisher}->[$definition_to_delete_index]->disconnect(); # workaround, DESTROY with disconnect() inside does not work
-        };
+    if ($self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}->{connectable}) {
+        $self->{runtime_per_publisher}->[$definition_to_delete_index]->rpc(
+            method => 'disconnect',
+            options => [
+                $self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}
+            ],
+            callback => sub {
+                $self->$delete_publisher_and_definition_associated_by_name_common_workflow(
+                    definition_to_delete_index => $definition_to_delete_index,
+                    definition_name => $name
+                );
+            }
+        );
+    } else {
+        $self->$delete_publisher_and_definition_associated_by_name_common_workflow(
+            definition_to_delete_index => $definition_to_delete_index,
+            definition_name => $name
+        );
     }
 
-    splice @{$self->{runtime_per_publisher}}, $definition_to_delete_index, 1;
-
-    $self->{publishers}->delete_definition(
-        definition_name => $name
-    );
+    $self;
 }
 
 sub job_type_exists {
@@ -574,9 +653,7 @@ sub job_by_type_and_name {
 }
 
 sub unregister_job_by_type_and_name {
-    my $self = shift;
-
-    my $job = $self->job_by_type_and_name(@_);
+    my $job = shift->job_by_type_and_name(@_);
 
     $job->DESTROY() if defined $job;
 }
@@ -584,17 +661,13 @@ sub unregister_job_by_type_and_name {
 sub goto_collector_next_stage {
     my ($self, %options) = @_;
 
-    my $collector_name = delete $options{collector_name};
-
     my $job = delete $options{job};
 
     if (%options) {
-        croak('collector_name must be defined') unless defined $collector_name;
-
         for (@{$self->{runtime_per_publisher}}) {
             $_->push_in_queue(\%options);
 
-            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $collector_name . '.');
+            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.');
         }
     }
 

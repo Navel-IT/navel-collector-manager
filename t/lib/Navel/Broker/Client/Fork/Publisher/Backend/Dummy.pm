@@ -5,11 +5,15 @@
 
 #-> initialization
 
-package t::lib::Navel::Broker::Publisher::Backend::Dummy 0.1;
+package t::lib::Navel::Broker::Client::Fork::Publisher::Backend::Dummy 0.1;
 
 use Navel::Base;
 
-#-> functions
+#-> methods
+
+sub is_connectable {
+    1;
+}
 
 sub publish {
 }
@@ -30,7 +34,7 @@ __END__
 
 =head1 NAME
 
-t::lib::Navel::Broker::Publisher::Backend::Dummy
+t::lib::Navel::Broker::Client::Fork::Publisher::Backend::Dummy
 
 =head1 AUTHOR
 

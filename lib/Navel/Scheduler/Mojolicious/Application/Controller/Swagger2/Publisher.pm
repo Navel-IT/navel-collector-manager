@@ -115,9 +115,7 @@ sub modify_publisher {
                 %{$body}
             };
 
-            unless (
-                my @validation_errors = @{$publisher->{definition}->validate($body)}
-            ) {
+            unless (my @validation_errors = @{$publisher->{definition}->validate($body)}) {
                 eval {
                     $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($body->{name});
                 };
