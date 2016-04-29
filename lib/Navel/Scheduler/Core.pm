@@ -16,9 +16,12 @@ use AnyEvent::IO;
 
 use Navel::Logger::Message;
 use Navel::AnyEvent::Pool;
-use Navel::Scheduler::Core::Fork;
+use Navel::Scheduler::Core::Collector::Fork;
 use Navel::Broker::Client::Fork;
-use Navel::Utils 'croak';
+use Navel::Utils qw/
+    isint
+    croak
+/;
 
 #-> methods
 
@@ -28,8 +31,9 @@ sub new {
     my $self = {
         configuration => $options{configuration},
         collectors => $options{collectors},
+        runtime_per_collector => {},
         publishers => $options{publishers},
-        runtime_per_publisher => [],
+        runtime_per_publisher => {},
         logger => $options{logger},
         logger_callbacks => {},
         ae_condvar => AnyEvent->condvar(),
@@ -54,9 +58,7 @@ sub new {
 }
 
 sub register_core_logger {
-    my $self = shift;
-
-    my $job_name = 0;
+    my ($self, $job_name) = (shift, 0);
 
     $self->unregister_job_by_type_and_name('logger', $job_name);
 
@@ -90,19 +92,17 @@ my $register_collector_by_name_common_workflow = sub {
 
     my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $options{collector}->{name};
 
-    Navel::Scheduler::Core::Fork->new(
+    $self->{runtime_per_collector}->{$options{collector}->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
         core => $self,
-        collector => $options{collector},
+        definition => $options{collector},
         collector_content => $options{collector_content},
         on_event => sub {
             local $@;
 
             for (@_) {
                 if (ref $_ eq 'ARRAY') {
-                    if (defined $_->[0]) {
-                        $_->[0] = int $_->[0];
-
-                        if ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_EVENT) {
+                    if (isint($_->[0])) {
+                        if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
                             eval {
                                 $self->goto_collector_next_stage(
                                     public_interface => 1,
@@ -112,7 +112,7 @@ my $register_collector_by_name_common_workflow = sub {
                                     data => $_->[2]
                                 );
                             };
-                        } elsif ($_->[0] == Navel::Scheduler::Core::Fork::EVENT_LOG) {
+                        } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
                             eval {
                                 $self->{logger}->push_in_queue(
                                     severity => $_->[1],
@@ -131,7 +131,7 @@ my $register_collector_by_name_common_workflow = sub {
                             )
                         ) if $@;
                     } else {
-                        $self->{logger}->err($on_event_error_message_prefix . ': event type must be defined.');
+                        $self->{logger}->err($on_event_error_message_prefix . ': event type must be an integer.');
                     }
                 } else {
                     $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
@@ -139,7 +139,7 @@ my $register_collector_by_name_common_workflow = sub {
             }
         },
         on_error => sub {
-            $self->{logger}->err('execution of collector ' . $options{collector}->{name} . ' failed (fatal error): ' . shift . '.');
+            $self->{logger}->warning('execution of collector ' . $options{collector}->{name} . ' stopped (fatal): ' . shift . '.');
 
             $self->goto_collector_next_stage(
                 job => $options{job},
@@ -149,15 +149,17 @@ my $register_collector_by_name_common_workflow = sub {
             );
         },
         on_destroy => sub {
-            $self->{logger}->notice('collector ' . $options{collector}->{name} . ' is destroyed.');
+            $self->{logger}->info('collector ' . $options{collector}->{name} . ' is destroyed.');
         }
-    )->when_done(
+    )->rpc(
         callback => sub {
             $self->goto_collector_next_stage(
                 job => $options{job}
             );
         }
     );
+
+    undef $self->{runtime_per_collector}->{$options{collector}->{name}}->{rpc} unless $options{collector}->{async};
 
     $self;
 };
@@ -167,13 +169,13 @@ sub register_collector_by_name {
 
     my $collector = $self->{collectors}->definition_by_name(shift);
 
-    croak('unknown collector') unless defined $collector;
+    die "unknown collector definition\n" unless defined $collector;
 
     $self->unregister_job_by_type_and_name('collector', $collector->{name});
 
     $self->pool_matching_job_type('collector')->attach_timer(
         name => $collector->{name},
-        singleton => $collector->{singleton},
+        singleton => 1,
         interval => $collector->{scheduling},
         splay => 1,
         callback => sub {
@@ -204,7 +206,7 @@ sub register_collector_by_name {
                                 collector_starting_time => $collector_starting_time
                             );
                         } else {
-                            $self->{logger}->err(
+                            $self->{logger}->warning(
                                 Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
                                     [
                                         $!
@@ -237,20 +239,51 @@ sub register_collectors {
     $self;
 }
 
+sub delete_collector_and_definition_associated_by_name {
+    my $self = shift;
+
+    my $collector = $self->{collectors}->definition_by_name(shift);
+
+    die "unknown collector runtime\n" unless defined $collector;
+
+    if ($collector->{async}) {
+        local $@;
+
+        eval {
+            $self->{runtime_per_collector}->{$collector->{name}}->rpc(
+                exit => 1
+            );
+
+            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc};
+       };
+    }
+
+    $self->unregister_job_by_type_and_name('collector', $collector->{name});
+
+    $self->{collectors}->delete_definition(
+        definition_name => $collector->{name}
+    );
+
+    delete $self->{runtime_per_collector}->{$collector->{name}};
+
+    $self;
+}
+
 sub init_publisher_by_name {
     my $self = shift;
 
-    my $publisher_definition = $self->{publishers}->definition_by_name(shift);
+    my $publisher = $self->{publishers}->definition_by_name(shift);
 
-    croak('unknown publisher') unless defined $publisher_definition;
+    die "unknown publisher definition\n" unless defined $publisher;
 
-    $self->{logger}->notice('initialize publisher ' . $publisher_definition->{name} . '.');
+    $self->{logger}->notice('initialize publisher ' . $publisher->{name} . '.');
 
-    my $on_event_error_message_prefix = 'incorrect declaration in publisher ' . $publisher_definition->{name};
+    my $on_event_error_message_prefix = 'incorrect declaration in publisher ' . $publisher->{name};
 
-    push @{$self->{runtime_per_publisher}}, Navel::Broker::Client::Fork->new(
+    $self->{runtime_per_publisher}->{$publisher->{name}} = Navel::Broker::Client::Fork->new(
         logger => $self->{logger},
-        definition => $publisher_definition,
+        meta_configuration => $self->{configuration}->{definition}->{publishers},
+        definition => $publisher,
         ae_fork => $self->{ae_fork},
         on_event => sub {
             local $@;
@@ -260,7 +293,7 @@ sub init_publisher_by_name {
                     eval {
                         $self->{logger}->push_in_queue(
                             severity => $_->[0],
-                            text => 'publisher ' . $publisher_definition->{name} . ': ' . $_->[1]
+                            text => 'publisher ' . $publisher->{name} . ': ' . $_->[1]
                         ) if defined $_->[1];
                     };
 
@@ -277,10 +310,10 @@ sub init_publisher_by_name {
             }
         },
         on_error => sub {
-            $self->{logger}->err('execution of publisher ' . $publisher_definition->{name} . ' failed (fatal error): ' . shift . '.');
+            $self->{logger}->warning('execution of publisher ' . $publisher->{name} . ' stopped (fatal): ' . shift . '.');
         },
         on_destroy => sub {
-            $self->{logger}->notice('publisher ' . $publisher_definition->{name} . ' is destroyed.');
+            $self->{logger}->info('publisher ' . $publisher->{name} . ' is destroyed.');
         }
     );
 
@@ -298,27 +331,21 @@ sub init_publishers {
 sub connect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_runtime_by_name(shift);
+    my $publisher = $self->{runtime_per_publisher}->{+shift};
 
-    croak('unknown publisher') unless defined $publisher;
+    die "unknown publisher runtime\n" unless defined $publisher;
 
     my $connect_generic_message = 'connect publisher ' . $publisher->{definition}->{name};
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
             method => 'is_connected',
-            options => [
-                $publisher->{definition}
-            ],
             callback => sub {
                 if (shift) {
                     $self->{logger}->warning($connect_generic_message . ': already connected.');
                 } else {
                     $publisher->rpc(
                         method => 'is_connecting',
-                        options => [
-                            $publisher->{definition}
-                        ],
                         callback => sub {
                             if (shift) {
                                 $self->{logger}->warning($connect_generic_message . ': already trying to establish a connection.');
@@ -326,12 +353,7 @@ sub connect_publisher_by_name {
                                 $self->{logger}->notice($connect_generic_message . '.');
 
                                 $publisher->rpc(
-                                    method => 'connect',
-                                    options => [
-                                        $publisher->{definition}
-                                    ],
-                                    callback => sub {
-                                    }
+                                    method => 'connect'
                                 );
                             }
                         }
@@ -349,7 +371,9 @@ sub connect_publisher_by_name {
 sub connect_publishers {
     my $self = shift;
 
-    $self->connect_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
+    for (@{$self->{publishers}->{definitions}}) {
+        $self->connect_publisher_by_name($_->{name}) if defined $self->{runtime_per_publisher}->{$_->{name}};
+    }
 
     $self;
 }
@@ -357,27 +381,21 @@ sub connect_publishers {
 sub disconnect_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_runtime_by_name(shift);
+    my $publisher = $self->{runtime_per_publisher}->{+shift};
 
-    croak('unknown publisher') unless defined $publisher;
+    die "unknown publisher runtime\n" unless defined $publisher;
 
     my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
             method => 'is_disconnected',
-            options => [
-                $publisher->{definition}
-            ],
             callback => sub {
                 if (shift) {
                     $self->{logger}->warning($disconnect_generic_message . ': already disconnected.')
                 } else {
                     $publisher->rpc(
                         method => 'is_disconnecting',
-                        options => [
-                            $publisher->{definition}
-                        ],
                         callback => sub {
                             if (shift) {
                                 $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
@@ -385,12 +403,7 @@ sub disconnect_publisher_by_name {
                                 $self->{logger}->notice($disconnect_generic_message . '.');
 
                                 $publisher->rpc(
-                                    method => 'disconnect',
-                                    options => [
-                                        $publisher->{definition}
-                                    ],
-                                    callback => sub {
-                                    }
+                                    method => 'disconnect'
                                 );
                             }
                         }
@@ -408,7 +421,9 @@ sub disconnect_publisher_by_name {
 sub disconnect_publishers {
     my $self = shift;
 
-    $self->disconnect_publisher_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
+    for (@{$self->{publishers}->{definitions}}) {
+        $self->disconnect_publisher_by_name($_->{name}) if defined $self->{runtime_per_publisher}->{$_->{name}};
+    }
 
     $self;
 }
@@ -442,7 +457,6 @@ my $register_publisher_by_name_common_workflow = sub {
         $options{publisher}->rpc(
             method => 'publish',
             options => [
-                $options{publisher}->{definition},
                 \@serialized_events
             ],
             callback => sub {
@@ -461,9 +475,9 @@ my $register_publisher_by_name_common_workflow = sub {
 sub register_publisher_by_name {
     my $self = shift;
 
-    my $publisher = $self->publisher_runtime_by_name(shift);
+    my $publisher = $self->{runtime_per_publisher}->{+shift};
 
-    croak('unknown publisher') unless defined $publisher;
+    die "unknown publisher runtime\n" unless defined $publisher;
 
     $self->unregister_job_by_type_and_name('publisher', $publisher->{definition}->{name});
 
@@ -484,16 +498,10 @@ sub register_publisher_by_name {
             if ($publisher->{definition}->{connectable} && $publisher->{definition}->{auto_connect}) {
                 $publisher->rpc(
                     method => 'is_connected',
-                    options => [
-                        $publisher->{definition}
-                    ],
                     callback => sub {
                         unless (shift) {
                             $publisher->rpc(
                                 method => 'is_connecting',
-                                options => [
-                                    $publisher->{definition}
-                                ],
                                 callback => sub {
                                     $self->connect_publisher_by_name($publisher->{definition}->{name}) unless shift;
                                 }
@@ -507,9 +515,6 @@ sub register_publisher_by_name {
                 if ($publisher->{definition}->{connectable}) {
                     $publisher->rpc(
                         method => 'is_connected',
-                        options => [
-                            $publisher->{definition}
-                        ],
                         callback => sub {
                             if (shift) {
                                 $self->$register_publisher_by_name_common_workflow(
@@ -548,66 +553,32 @@ sub register_publishers {
     $self;
 }
 
-sub publisher_runtime_by_name {
-    my ($self, $name) = @_;
+sub delete_publisher_and_definition_associated_by_name {
+    my $self = shift;
 
-    croak('name must be defined') unless defined $name;
+    my $publisher = $self->{publishers}->definition_by_name(shift);
 
-    for (@{$self->{runtime_per_publisher}}) {
-        return $_ if $_->{definition}->{name} eq $name;
-    }
+    die "unknown publisher\n" unless defined $publisher;
 
-    undef;
-}
+    local $@;
 
-my $delete_publisher_and_definition_associated_by_name_common_workflow = sub {
-    my ($self, %options) = @_;
-    
-    $self->unregister_job_by_type_and_name('publisher', $self->{runtime_per_publisher}->[$options{definition_to_delete_index}]->{definition}->{name});
+    eval {
+        $self->{runtime_per_publisher}->{$publisher->{name}}->rpc(
+            exit => 1
+        );
+    };
 
-    $self->{runtime_per_publisher}->[$options{definition_to_delete_index}]->exit();
-
-    splice @{$self->{runtime_per_publisher}}, $options{definition_to_delete_index}, 1;
+    $self->unregister_job_by_type_and_name('publisher', $publisher->{name});
 
     $self->{publishers}->delete_definition(
-        definition_name => $options{definition_name}
+        definition_name => $publisher->{name}
     );
 
-    $self;
-};
+    eval {
+        undef $self->{runtime_per_publisher}->{$publisher->{name}}->{rpc};
 
-sub delete_publisher_and_definition_associated_by_name {
-    my ($self, $name) = @_;
-
-    croak('name must be defined') unless defined $name;
-
-    my $finded;
-
-    my $definition_to_delete_index = 0;
-
-    $definition_to_delete_index++ until $finded = $self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}->{name} eq $name;
-
-    die $self->{definition_class} . ': definition ' . $name . " does not exists\n" unless $finded;
-
-    if ($self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}->{connectable}) {
-        $self->{runtime_per_publisher}->[$definition_to_delete_index]->rpc(
-            method => 'disconnect',
-            options => [
-                $self->{runtime_per_publisher}->[$definition_to_delete_index]->{definition}
-            ],
-            callback => sub {
-                $self->$delete_publisher_and_definition_associated_by_name_common_workflow(
-                    definition_to_delete_index => $definition_to_delete_index,
-                    definition_name => $name
-                );
-            }
-        );
-    } else {
-        $self->$delete_publisher_and_definition_associated_by_name_common_workflow(
-            definition_to_delete_index => $definition_to_delete_index,
-            definition_name => $name
-        );
-    }
+        delete $self->{runtime_per_publisher}->{$publisher->{name}};
+    };
 
     $self;
 }
@@ -664,7 +635,7 @@ sub goto_collector_next_stage {
     my $job = delete $options{job};
 
     if (%options) {
-        for (@{$self->{runtime_per_publisher}}) {
+        for (values %{$self->{runtime_per_publisher}}) {
             $_->push_in_queue(\%options);
 
             $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.');

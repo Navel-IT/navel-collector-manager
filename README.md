@@ -167,12 +167,12 @@ There are two types of collectors:
 - A subroutine named `collect` must be declared.
 - The data returned by `collect` aren't used.
 - There is two methods (based on `AnyEvent::Fork::RPC::event`) to interact with the master process:
- - `Navel::Scheduler::Core::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send an event to the publishers.
- - `Navel::Scheduler::Core::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send a message to the logger.
+ - `Navel::Scheduler::Core::Collector::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send an event to the publishers.
+ - `Navel::Scheduler::Core::Collector::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send a message to the logger.
 - There are differences between a synchronous and an asynchronous collector. The documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
  - They could be reopened. Unfortunately, the output won't be catch by the logger.
-- Unless you want to use previously mentioned, don't mess with the `Navel::Scheduler::Core::Fork::Worker` namespace.
+- Unless you want to use previously mentioned, don't mess with the `Navel::Scheduler::Core::Collector::Fork::Worker` namespace.
 
 A synchronous (`sync` set to `0` or `false`) collector of type *package*:
 
@@ -184,25 +184,25 @@ use Navel::Base;
 use JIRA::REST;
 
 sub collect {
-    my ($meta, $collector) = @_;
+    my ($meta, $definition) = @_;
 
     my @events;
 
     my $search = eval {
         JIRA::REST->new(
-            $collector->{input}->{url},
-            $collector->{input}->{user},
-            $collector->{input}->{password},
-            $collector->{input}->{rest_client}
+            $definition->{input}->{url},
+            $definition->{input}->{user},
+            $definition->{input}->{password},
+            $definition->{input}->{rest_client}
         )->POST(
             '/search',
             undef,
-            $collector->{input}->{headers}
+            $definition->{input}->{headers}
         );
     };
 
     if ($@) {
-        Navel::Scheduler::Core::Fork::Worker::log(
+        Navel::Scheduler::Core::Collector::Fork::Worker::log(
             [
                 'warning',
                 $@
@@ -214,7 +214,7 @@ sub collect {
             $@
         ];
     } else {
-        Navel::Scheduler::Core::Fork::Worker::log(
+        Navel::Scheduler::Core::Collector::Fork::Worker::log(
             [
                 'notice',
                 "I've found " . @{$search} . ' issues!'
@@ -227,7 +227,7 @@ sub collect {
         ] for @{$search};
     }
 
-    Navel::Scheduler::Core::Fork::Worker::event(@events);
+    Navel::Scheduler::Core::Collector::Fork::Worker::event(@events);
 }
 
 1;

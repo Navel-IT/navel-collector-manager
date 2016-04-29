@@ -11,7 +11,10 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Navel::Utils 'decode_json';
+use Navel::Utils qw/
+    decode_json
+    isint
+/;
 
 #-> methods
 
@@ -42,7 +45,7 @@ sub new_publisher {
                     callback => $callback,
                     resource_name => $body->{name}
                 }
-            ) if defined $controller->scheduler()->{core}->{publishers}->definition_properties_by_name($body->{name});
+            ) if defined $controller->scheduler()->{core}->{publishers}->definition_by_name($body->{name});
 
             my $publisher = eval {
                 $controller->scheduler()->{core}->{publishers}->add_definition($body);
@@ -76,7 +79,7 @@ sub show_publisher {
     return $controller->resource_not_found(
         {
             callback => $callback,
-            resource_name => $arguments->{publisheName}
+            resource_name => $arguments->{publisherName}
         }
     ) unless defined $publisher;
 
@@ -99,7 +102,7 @@ sub modify_publisher {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+            my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
             return $controller->resource_not_found(
                 {
@@ -111,11 +114,11 @@ sub modify_publisher {
             delete $body->{name};
 
             $body = {
-                %{$publisher->{definition}->properties()},
+                %{$publisher->properties()},
                 %{$body}
             };
 
-            unless (my @validation_errors = @{$publisher->{definition}->validate($body)}) {
+            unless (my @validation_errors = @{$publisher->validate($body)}) {
                 eval {
                     $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($body->{name});
                 };
@@ -128,12 +131,12 @@ sub modify_publisher {
                     unless ($@) {
                         $controller->scheduler()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-                        push @ok, 'recreating publisher ' . $publisher->{name} . '.';
+                        push @ok, 'modifying publisher ' . $publisher->{name} . '.';
                     } else {
                         push @ko, $@;
                     }
                 } else {
-                    push @ko, 'an unknown eror occurred while modifying publisher.';
+                    push @ko, 'an unknown eror occurred while modifying the publisher.';
                 }
             } else {
                 push @ko, 'error(s) occurred while modifying publisher ' . $body->{name} . ':', \@validation_errors;
@@ -154,25 +157,25 @@ sub modify_publisher {
 sub delete_publisher {
     my ($controller, $arguments, $callback) = @_;
 
+    local $@;
+
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+
     return $controller->resource_not_found(
         {
             callback => $callback,
             resource_name => $arguments->{publisherName}
         }
-    ) unless $controller->scheduler()->{core}->unregister_job_by_type_and_name('publisher', $arguments->{publisherName});
+    ) unless defined $publisher;
 
     my (@ok, @ko);
 
-    push @ok, 'unregistering publisher ' . $arguments->{publisherName} . '.';
-
-    local $@;
-
     eval {
-        $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{publisherName});
+        $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($publisher->{name});
     };
 
     unless ($@) {
-        push @ok, 'deleting publisher ' . $arguments->{publisherName} . '.';
+        push @ok, 'killing, unregistering and deleting publisher ' . $arguments->{publisherName} . '.';
     } else {
         push @ko, $@;
     }
@@ -183,10 +186,10 @@ sub delete_publisher {
     );
 }
 
-sub show_publisher_runtime {
+sub show_publisher_connection_status {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -195,33 +198,61 @@ sub show_publisher_runtime {
         }
     ) unless defined $publisher;
 
-    my %status;
+    my %status = (
+        name => $publisher->{name}
+    );
 
-    $status{name} = $publisher->{definition}->{name};
+    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
-    if ($status{seems_connectable} = $publisher->{seems_connectable}) {
-        for (qw/
+    if ($status{connectable} = $publisher->{connectable}) {
+        $controller->render_later();
+
+        my @base_keys = keys %status;
+
+        my @connectable_properties = qw/
             connecting
             connected
             disconnecting
             disconnected
-        /) {
-            my $method = 'is_' . $_;
+        /;
 
-            $status{$_} = int $publisher->$method();
-        };
+        for my $connectable_property (@connectable_properties) {
+            my $method = 'is_' . $connectable_property;
+
+            if (defined $publisher_runtime) {
+                $publisher_runtime->rpc(
+                    method => $method,
+                    callback => sub {
+                        $status{$connectable_property} = shift ? 1 : 0;
+                    }
+                );
+            } else {
+                $status{$connectable_property} = 0;
+            }
+        }
+
+        Mojo::IOLoop->recurring(
+            0.1 => sub {
+                if (keys %status == @base_keys + @connectable_properties) {
+                    return $controller->$callback(
+                        \%status,
+                        200
+                    );
+                }
+            }
+        );
+    } else {
+        $controller->$callback(
+            \%status,
+            200
+        );
     }
-
-    $controller->$callback(
-        \%status,
-        200
-    );
 }
 
 sub list_events_of_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -230,20 +261,35 @@ sub list_events_of_a_publisher {
         }
     ) unless defined $publisher;
 
-    $controller->$callback(
-        [
-            map {
-                $_->serialize()
-            } @{$publisher->{queue}}
-        ],
-        200
-    );
+    my (@ok, @ko, @serialized_queue);
+
+    if (defined (my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}})) {
+        @serialized_queue = map {
+            $_->serialize()
+        } @{$publisher_runtime->{queue}};
+    } else {
+        push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
+    }
+
+    if (@ko) {
+        $controller->$callback(
+            $controller->ok_ko(\@ok, \@ko),
+            400
+        );
+    } else {
+        $controller->$callback(
+            \@serialized_queue,
+            200
+        );
+    }
 }
 
 sub push_event_to_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    local $@;
+
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -252,9 +298,9 @@ sub push_event_to_a_publisher {
         }
     ) unless defined $publisher;
 
-    my (@ok, @ko);
+    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
-    local $@;
+    my (@ok, @ko);
 
     my $body = eval {
         decode_json($controller->req()->body());
@@ -262,23 +308,27 @@ sub push_event_to_a_publisher {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            eval {
-                $publisher->push_in_queue(
-                    {
-                        %{$body},
-                        %{
-                            {
-                                public_interface => 1
+            if (defined $publisher_runtime) {
+                eval {
+                    $publisher_runtime->push_in_queue(
+                        {
+                            %{$body},
+                            %{
+                                {
+                                    public_interface => 1
+                                }
                             }
                         }
-                    }
-                );
-            };
+                    );
+                };
 
-            unless ($@) {
-                push @ok, 'pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . '.';
+                unless ($@) {
+                    push @ok, 'pushing an event to the queue of publisher ' . $publisher->{name} . '.';
+                } else {
+                    push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{name} . ': ' . $@ . '.';
+                }
             } else {
-                push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{definition}->{name} . ': ' . $@ . '.';
+                push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
             }
         } else {
             push @ko, 'the request payload must represent a hash.';
@@ -296,7 +346,7 @@ sub push_event_to_a_publisher {
 sub delete_all_events_from_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -305,22 +355,28 @@ sub delete_all_events_from_a_publisher {
         }
     ) unless defined $publisher;
 
+    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
+
     my (@ok, @ko);
 
-    $publisher->clear_queue();
+    if (defined $publisher_runtime) {
+        $publisher_runtime->clear_queue();
 
-    push @ok, 'clearing queue for publisher ' . $publisher->{definition}->{name} . '.';
+        push @ok, 'clearing queue for publisher ' . $publisher->{name} . '.';
+    } else {
+        push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
+    }
 
     $controller->$callback(
         $controller->ok_ko(\@ok, \@ko),
-        200
+        @ko ? 400 : 200
     );
 }
 
 sub connect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{runtime_per_publisher}->{$arguments->{publisherName}};
 
     return $controller->resource_not_found(
         {
@@ -331,20 +387,28 @@ sub connect_publisher {
 
     my (@ok, @ko);
 
-    push @ok, 'connecting publisher ' . $publisher->{definition}->{name} . '.';
+    local $@;
 
-    $controller->scheduler()->{core}->connect_publisher_by_name($publisher->{definition}->{name});
+    eval {
+        $controller->scheduler()->{core}->connect_publisher_by_name($publisher->{name});
+    };
+
+    unless ($@) {
+        push @ok, 'connecting publisher ' . $publisher->{name} . '.';
+    } else {
+        push @ko, 'connecting publisher ' . $publisher->{name} . ': the runtime of the publisher is not yet initialized: ' . $@ . '.';
+    }
 
     $controller->$callback(
         $controller->ok_ko(\@ok, \@ko),
-        200
+        @ko ? 400 : 200
     );
 }
 
 sub disconnect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->publisher_runtime_by_name($arguments->{publisherName});
+    my $publisher = $controller->scheduler()->{core}->{runtime_per_publisher}->{$arguments->{publisherName}};
 
     return $controller->resource_not_found(
         {
@@ -355,13 +419,21 @@ sub disconnect_publisher {
 
     my (@ok, @ko);
 
-    push @ok, 'disconnecting publisher ' . $publisher->{definition}->{name} . '.';
+    local $@;
 
-    $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{definition}->{name});
+    eval {
+        $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{name});
+    };
+
+    unless ($@) {
+        push @ok, 'disconnecting publisher ' . $publisher->{name} . '.';
+    } else {
+        push @ko, 'disconnecting publisher ' . $publisher->{name} . ': the runtime of the publisher is not yet initialized: ' . $@ . '.';
+    }
 
     $controller->$callback(
         $controller->ok_ko(\@ok, \@ko),
-        200
+        @ko ? 400 : 200
     );
 }
 
