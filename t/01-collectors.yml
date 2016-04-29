@@ -4,7 +4,6 @@
     collection: test
     type: package
     async: 1
-    singleton: 1
     scheduling: 5
     source: Navel::Collector::Test
     input: ~
@@ -13,7 +12,6 @@
     collection: test
     type: script
     async: 1
-    singleton: 1
     scheduling: 10
     source: ~
     input: ~
