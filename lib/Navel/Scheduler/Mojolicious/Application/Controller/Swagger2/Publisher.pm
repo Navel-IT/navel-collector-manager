@@ -157,8 +157,6 @@ sub modify_publisher {
 sub delete_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    local $@;
-
     my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
@@ -169,6 +167,8 @@ sub delete_publisher {
     ) unless defined $publisher;
 
     my (@ok, @ko);
+
+    local $@;
 
     eval {
         $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($publisher->{name});
@@ -287,8 +287,6 @@ sub list_events_of_a_publisher {
 sub push_event_to_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    local $@;
-
     my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
@@ -301,6 +299,8 @@ sub push_event_to_a_publisher {
     my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
     my (@ok, @ko);
+
+    local $@;
 
     my $body = eval {
         decode_json($controller->req()->body());
@@ -376,7 +376,7 @@ sub delete_all_events_from_a_publisher {
 sub connect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{runtime_per_publisher}->{$arguments->{publisherName}};
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -408,7 +408,7 @@ sub connect_publisher {
 sub disconnect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{runtime_per_publisher}->{$arguments->{publisherName}};
+    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
