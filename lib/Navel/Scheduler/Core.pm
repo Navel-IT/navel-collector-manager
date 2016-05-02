@@ -329,9 +329,11 @@ sub init_publishers {
 }
 
 sub connect_publisher_by_name {
-    my $self = shift;
+    my ($self, $name) = @_;
 
-    my $publisher = $self->{runtime_per_publisher}->{+shift};
+    croak('name must be defined') unless defined $name;
+
+    my $publisher = $self->{runtime_per_publisher}->{$name};
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
@@ -379,9 +381,11 @@ sub connect_publishers {
 }
 
 sub disconnect_publisher_by_name {
-    my $self = shift;
+    my ($self, $name) = @_;
 
-    my $publisher = $self->{runtime_per_publisher}->{+shift};
+    croak('name must be defined') unless defined $name;
+
+    my $publisher = $self->{runtime_per_publisher}->{$name};
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
@@ -473,9 +477,11 @@ my $register_publisher_by_name_common_workflow = sub {
 };
 
 sub register_publisher_by_name {
-    my $self = shift;
+    my ($self, $name) = @_;
 
-    my $publisher = $self->{runtime_per_publisher}->{+shift};
+    croak('name must be defined') unless defined $name;
+
+    my $publisher = $self->{runtime_per_publisher}->{$name};
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
