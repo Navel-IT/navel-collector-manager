@@ -12,8 +12,6 @@ use Getopt::Long::Descriptive;
 
 use Sys::Hostname;
 
-use Cwd;
-
 use Navel::Logger;
 use Navel::Logger::Message;
 use Navel::Scheduler;
@@ -66,9 +64,9 @@ sub usage {
     $binary_default_name . ' %o <' . $main_argument . '>',
     [
         'log-datetime-format=s',
-        'set datetime format (default: %b  %d %H-%M-%S)',
+        'set datetime format (default: %b  %d %H:%M:%S)',
         {
-            default => '%b  %d %H-%M-%S'
+            default => '%b  %d %H:%M:%S'
         }
     ],
     [
@@ -99,8 +97,16 @@ sub usage {
     ],
     [],
     [
-        'validate-configuration',
-        'validate the configuration and exit with the proper code'
+        'daemonize',
+        'run as a standalone daemon'
+    ],
+    [
+        'daemonize-pid-file=s',
+        'write pid to a file'
+    ],
+    [
+        'daemonize-chdir=s',
+        'daeminize will chdir'
     ],
     [],
     [
@@ -109,12 +115,8 @@ sub usage {
     ],
     [],
     [
-        'pid-file=s',
-        'write pid to a file'
-    ],
-    [
-        'daemonize',
-        'run as a standalone daemon'
+        'validate-configuration',
+        'validate the configuration and exit with the proper code'
     ],
     [],
     [
@@ -171,8 +173,8 @@ if ($options->daemonize() && ! $options->validate_configuration()) {
 
     eval {
         daemonize(
-            work_dir => cwd(),
-            pid_file => $options->pid_file()
+            work_dir => $options->daemonize_chdir(),
+            pid_file => $options->daemonize_pid_file()
         );
     };
 
