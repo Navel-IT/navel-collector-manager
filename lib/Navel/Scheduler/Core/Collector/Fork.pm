@@ -1,5 +1,5 @@
-# Copyright 2015 Navel-IT
-# navel-scheduler is developed by Yoann Le Garff, Nicolas Boquet and Yann Le Bras under GNU GPL v3
+# Copyright (C) 2015 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+# navel-scheduler is licensed under the Apache License, Version 2.0
 
 #-> BEGIN
 
@@ -255,12 +255,12 @@ __END__
 
 Navel::Scheduler::Core::Collector::Fork
 
-=head1 AUTHOR
+=head1 COPYRIGHT
 
-Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+Copyright (C) 2015 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 
 =head1 LICENSE
 
-GNU GPL v3
+navel-scheduler is licensed under the Apache License, Version 2.0
 
 =cut
