@@ -21,13 +21,11 @@ sub stream {
     my $tx_id = sprintf '%s', $tx;
 
     $controller->scheduler()->{core}->{logger_callbacks}->{$tx_id} = sub {
-        my $logger = shift;
-
         $tx->send(
             {
                 json => $_->constructor_properties()
             }
-        ) for @{$logger->{queue}};
+        ) for @{shift->{queue}};
     };
 
     $controller->on(
