@@ -609,12 +609,8 @@ sub jobs_by_type {
     my ($self, $type) = @_;
 
     croak('a job type must be defined') unless defined $type;
-
-    my @jobs;
-
-    push @jobs, $_ for @{$self->pool_matching_job_type($type)->timers()};
-
-    \@jobs;
+    
+    $self->pool_matching_job_type($type)->timers();
 }
 
 sub job_by_type_and_name {
