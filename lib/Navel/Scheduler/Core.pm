@@ -65,7 +65,7 @@ sub register_core_logger {
     $self->pool_matching_job_type('logger')->attach_timer(
         name => $job_name,
         singleton => 1,
-        interval => 0.1,
+        interval => 0.5,
         on_disabled => sub {
             $self->{logger}->clear_queue()
         },
