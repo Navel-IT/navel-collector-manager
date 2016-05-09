@@ -103,11 +103,11 @@ sub usage {
     ],
     [
         'daemonize-pid-file=s',
-        'write pid to a file'
+        'write the PID to a file'
     ],
     [
         'daemonize-chdir=s',
-        'daeminize will chdir'
+        'change the current working directory to another'
     ],
     [],
     [
