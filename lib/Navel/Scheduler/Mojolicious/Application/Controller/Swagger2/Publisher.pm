@@ -12,7 +12,7 @@ use Navel::Base;
 use Mojo::Base 'Mojolicious::Controller';
 
 use Navel::Utils qw/
-    decode_json
+    json_constructor
     isint
 /;
 
@@ -35,7 +35,7 @@ sub new_publisher {
     local $@;
 
     my $body = eval {
-        decode_json($controller->req()->body());
+        json_constructor()->decode($controller->req()->body());
     };
 
     unless ($@) {
@@ -97,7 +97,7 @@ sub modify_publisher {
     local $@;
 
     my $body = eval {
-        decode_json($controller->req()->body());
+        json_constructor()->decode($controller->req()->body());
     };
 
     unless ($@) {
@@ -303,7 +303,7 @@ sub push_event_to_a_publisher {
     local $@;
 
     my $body = eval {
-        decode_json($controller->req()->body());
+        json_constructor()->decode($controller->req()->body());
     };
 
     unless ($@) {
