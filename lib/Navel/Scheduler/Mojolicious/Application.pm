@@ -16,6 +16,7 @@ use Navel::API::Swagger2::Scheduler;
 use Navel::Utils qw/
     croak
     blessed
+    json_constructor
 /;
 
 #-> methods
@@ -32,6 +33,8 @@ sub new {
             $scheduler;
         }
     );
+
+    $self->plugin('Mojolicious::Plugin::JSON::XS');
 
     $self->plugin('Navel::Mojolicious::Plugin::Logger',
         {
@@ -91,7 +94,7 @@ sub startup {
     my $swagger_spec = Navel::API::Swagger2::Scheduler->new();
 
     $self->plugin(
-        'Swagger2' => {
+        'Mojolicious::Plugin::Swagger2' => {
             swagger => $swagger_spec,
             route => $authenticated
         }
@@ -131,10 +134,6 @@ sub startup {
     $self->defaults(
         swagger_spec => $swagger_spec->api_spec()
     );
-
-    eval {
-        $self->plugin('MojoX::JSON::XS');
-    };
 
     $self->log()->debug($@) if $@;
 
