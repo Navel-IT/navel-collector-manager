@@ -70,9 +70,7 @@ sub register_core_logger {
             $self->{logger}->clear_queue()
         },
         callback => sub {
-            my $timer = shift;
-
-            $timer->begin();
+            my $timer = shift->begin();
 
             $_->($self->{logger}) for values %{$self->{logger_callbacks}};
 
@@ -179,9 +177,7 @@ sub register_collector_by_name {
         interval => $collector->{scheduling},
         splay => 1,
         callback => sub {
-            my $timer = shift;
-
-            $timer->begin();
+            my $timer = shift->begin();
 
             local $!;
 
@@ -497,9 +493,7 @@ sub register_publisher_by_name {
         interval => $publisher->{definition}->{scheduling},
         splay => 1,
         callback => sub {
-            my $timer = shift;
-
-            $timer->begin();
+            my $timer = shift->begin();
 
             if ($publisher->{definition}->{connectable} && $publisher->{definition}->{auto_connect}) {
                 $publisher->rpc(
