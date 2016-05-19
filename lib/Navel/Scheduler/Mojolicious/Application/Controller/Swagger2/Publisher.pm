@@ -249,7 +249,7 @@ sub show_publisher_connection_status {
     }
 }
 
-sub list_events_of_a_publisher {
+sub show_publisher_amount_of_events {
     my ($controller, $arguments, $callback) = @_;
 
     my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
@@ -261,25 +261,22 @@ sub list_events_of_a_publisher {
         }
     ) unless defined $publisher;
 
-    my (@ok, @ko, @serialized_queue);
-
     if (defined (my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}})) {
-        @serialized_queue = map {
-            $_->serialize()
-        } @{$publisher_runtime->{queue}};
-    } else {
-        push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
-    }
-
-    if (@ko) {
         $controller->$callback(
-            $controller->ok_ko(\@ok, \@ko),
-            400
+            {
+                amount_of_events_in_queue => scalar @{$publisher_runtime->{queue}}
+            },
+            200
         );
     } else {
         $controller->$callback(
-            \@serialized_queue,
-            200
+            $controller->ok_ko(
+                [
+                    'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.'
+                ],
+                []
+            ),
+            400
         );
     }
 }

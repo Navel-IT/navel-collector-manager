@@ -18,6 +18,7 @@ use Navel::Logger::Message;
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Collector::Fork;
 use Navel::Broker::Client::Fork;
+use Navel::Event;
 use Navel::Utils qw/
     isint
     croak
@@ -431,43 +432,21 @@ sub disconnect_publishers {
 my $register_publisher_by_name_common_workflow = sub {
     my ($self, %options) = @_;
 
-    local $@;
+    $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': trying to publicate the events.');
 
-    my (@serialized_events, @serialization_errors);
+    $options{publisher}->rpc(
+        method => 'publish',
+        options => [
+            $options{publisher}->{queue}
+        ],
+        callback => sub {
+            $self->{logger}->debug('clear queue for publisher ' . $options{publisher}->{definition}->{name} . '.');
 
-    for (@{$options{publisher}->{queue}}) {
-        eval {
-            push @serialized_events, $_->serialize();
-        };
+            $options{publisher}->clear_queue();
 
-        push @serialization_errors, $@ if $@;
-    }
-
-    $self->{logger}->err(
-        Navel::Logger::Message->stepped_message('error(s) occurred while serializing the events currently in the queue of publisher ' . $options{publisher}->{definition}->{name} . '.', \@serialization_errors)
-    ) if @serialization_errors;
-
-    $self->{logger}->debug('clear queue for publisher ' . $options{publisher}->{definition}->{name} . '.');
-
-    $options{publisher}->clear_queue();
-
-    if (@serialized_events) {
-        $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': trying to publicate the events properly serialized.');
-
-        $options{publisher}->rpc(
-            method => 'publish',
-            options => [
-                \@serialized_events
-            ],
-            callback => sub {
-                $options{job}->end();
-            }
-        );
-    } else {
-        $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': there are no events correctly serialized to publish.');
-
-        $options{job}->end();
-    }
+            $options{job}->end();
+        }
+    );
 
     $self;
 };
@@ -603,7 +582,7 @@ sub jobs_by_type {
     my ($self, $type) = @_;
 
     croak('a job type must be defined') unless defined $type;
-    
+
     $self->pool_matching_job_type($type)->timers();
 }
 
@@ -631,8 +610,10 @@ sub goto_collector_next_stage {
     my $job = delete $options{job};
 
     if (%options) {
+        my $event = Navel::Event->new(%options);
+
         for (values %{$self->{runtime_per_publisher}}) {
-            $_->push_in_queue(\%options);
+            $_->push_in_queue($event);
 
             $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.');
         }
