@@ -613,9 +613,7 @@ sub goto_collector_next_stage {
         my $event = Navel::Event->new(%options);
 
         for (values %{$self->{runtime_per_publisher}}) {
-            $_->push_in_queue($event);
-
-            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.');
+            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.') if $_->push_in_queue($event);
         }
     }
 

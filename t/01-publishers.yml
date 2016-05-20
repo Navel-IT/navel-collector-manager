@@ -7,3 +7,4 @@
     auto_clean: 0
     connectable: 1
     auto_connect: 1
+    except_collections: []
