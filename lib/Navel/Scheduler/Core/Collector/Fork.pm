@@ -75,15 +75,12 @@ sub new {
 sub rpc {
     my ($self, %options) = @_;
 
-    $options{callback} = sub {
-    } unless ref $options{callback} eq 'CODE';
-
     if (defined $self->{rpc}) {
         $self->{rpc}->(
             $options{exit},
             $self->{core}->{configuration}->{definition}->{collectors},
             $self->{definition}->properties(),
-            $options{callback}
+            ref $options{callback} eq 'CODE' ? $options{callback} : sub {}
         );
     }
 
