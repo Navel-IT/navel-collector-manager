@@ -16,7 +16,6 @@ use Navel::API::Swagger2::Scheduler;
 use Navel::Utils qw/
     croak
     blessed
-    json_constructor
 /;
 
 #-> methods
@@ -33,14 +32,16 @@ sub new {
             $scheduler;
         }
     );
-
-    $self->plugin('Mojolicious::Plugin::JSON::XS');
+    
+    $self->plugin('Navel::Mojolicious::Plugin::JSON::XS');
 
     $self->plugin('Navel::Mojolicious::Plugin::Logger',
         {
             logger => $self->scheduler()->{core}->{logger}
         }
     );
+    
+    $self->plugin('Navel::Mojolicious::Plugin::Swagger2::StdResponses');
 
     $self->log()->level('debug')->unsubscribe('message')->on(
         message => sub {
@@ -59,8 +60,6 @@ sub startup {
     my $self = shift;
 
     local $@;
-
-    $self->plugin('Navel::Mojolicious::Plugin::Swagger2::StdResponses');
 
     $self->secrets(rand);
 
