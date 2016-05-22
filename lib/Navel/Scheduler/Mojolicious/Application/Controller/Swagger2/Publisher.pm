@@ -11,10 +11,9 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Navel::Utils qw/
-    json_constructor
-    isint
-/;
+use Mojo::JSON 'decode_json';
+
+use Navel::Utils 'isint';
 
 #-> methods
 
@@ -35,7 +34,7 @@ sub new_publisher {
     local $@;
 
     my $body = eval {
-        json_constructor()->decode($controller->req()->body());
+        decode_json($controller->req()->body());
     };
 
     unless ($@) {
@@ -97,7 +96,7 @@ sub modify_publisher {
     local $@;
 
     my $body = eval {
-        json_constructor()->decode($controller->req()->body());
+        decode_json($controller->req()->body());
     };
 
     unless ($@) {
@@ -300,7 +299,7 @@ sub push_event_to_a_publisher {
     local $@;
 
     my $body = eval {
-        json_constructor()->decode($controller->req()->body());
+        decode_json($controller->req()->body());
     };
 
     unless ($@) {

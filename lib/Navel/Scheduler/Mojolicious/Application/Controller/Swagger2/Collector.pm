@@ -11,7 +11,7 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Navel::Utils 'json_constructor';
+use Mojo::JSON 'decode_json';
 
 #-> methods
 
@@ -32,7 +32,7 @@ sub new_collector {
     local $@;
 
     my $body = eval {
-        json_constructor()->decode($controller->req()->body());
+        decode_json($controller->req()->body());
     };
 
     unless ($@) {
@@ -94,7 +94,7 @@ sub modify_collector {
     local $@;
 
     my $body = eval {
-        json_constructor()->decode($controller->req()->body());
+        decode_json($controller->req()->body());
     };
 
     unless ($@) {
