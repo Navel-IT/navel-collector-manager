@@ -1,10 +1,8 @@
 ---
   collectors:
     definitions_from_file: t/01-collectors.yml
-    collectors_exec_directory: t/collectors
     maximum: 0
     maximum_simultaneous_exec: 0
-    execution_timeout: 0
   publishers:
     definitions_from_file: t/01-publishers.yml
     maximum: 0

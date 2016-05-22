@@ -41,17 +41,14 @@ sub new {
 
         $self = bless {
             core => $options{core},
-            definition => $options{definition},
-            collector_content => $options{collector_content}
+            definition => $options{definition}
         }, $class;
     }
 
     my $wrapped_code = $self->wrapped_code();
 
-    my $collector_basename = $self->{definition}->resolve_basename();
-
     $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $collector_basename . '/' . $self->{definition}->{name} . '.',
+        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $self->{definition}->{backend} . '/' . $self->{definition}->{name} . '.',
             [
                 split /\n/, $wrapped_code
             ]
@@ -89,8 +86,6 @@ sub rpc {
 
 sub wrapped_code {
     my $self = shift;
-
-    my $collector_basename = $self->{definition}->resolve_basename();
 
     my $wrapped_code .= "package Navel::Scheduler::Core::Collector::Fork::Worker;
 
@@ -154,61 +149,36 @@ sub wrapped_code {
 ';
     }
 
-    if ($self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} && ! $self->{definition}->{async}) {
+    if ($self->{definition}->{execution_timeout}) {
         $wrapped_code .= '        local $SIG{ALRM}' . " = sub {
             Navel::Scheduler::Core::Collector::Fork::Worker::log(
                 [
                     'warning',
-                    'execution timeout after " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . "s.'
+                    'execution timeout after " . $self->{definition}->{execution_timeout} . "s.'
                 ]
-            );
+            );" . ($self->{definition}->{async} ? '
+            $done->();' : '') . '
 
-            exit;';
+            exit;
         };
 
-        alarm " . $self->{core}->{configuration}->{definition}->{collectors}->{execution_timeout} . ";
+        alarm ' . $self->{definition}->{execution_timeout} . ";
 
 ";
     }
 
     $wrapped_code .= '        eval {
-';
-
-    if ($self->{definition}->is_type_pm()) {
-        $wrapped_code .= '            require ' . $collector_basename . ';';
-    } else {
-        if (defined (my $collector_content = $self->{collector_content})) {
-            $collector_content =~ s/(^|\G)/                /gm;
-
-            chomp $collector_content;
-
-            $wrapped_code .= '            package main {
-                #-> slurped code
-
-' . $collector_content . '
-
-                #-< slurped code
-            };';
-        } else {
-            $self->{core}->{logger}->warn('collector ' . $self->{definition}->{name} . ' is empty.');
-        }
-    }
-
-    chomp $wrapped_code;
-
-    my $collect_subroutine_namespace = $self->{definition}->is_type_pm() ? $collector_basename : 'main';
-
-    $wrapped_code .= '
+            require ' . $self->{definition}->{backend} . ';
         };
 
         unless ($@) {
-            if (' . $collect_subroutine_namespace . "->can('collect')) {
-                " . $collect_subroutine_namespace . '::collect(' . ($self->{definition}->{async} ? '$done, ' : '') . "\@_);
+            if (' . $self->{definition}->{backend} . "->can('collect')) {
+                " . $self->{definition}->{backend} . '::collect(' . ($self->{definition}->{async} ? '$done, ' : '') . "\@_);
             } else {
                 Navel::Scheduler::Core::Collector::Fork::Worker::log(
                     [
                         'emerg',
-                        'the mandatory subroutine " . $collect_subroutine_namespace  . "::collect() is not declared.'
+                        'the mandatory subroutine " . $self->{definition}->{backend}  . "::collect() is not declared.'
                     ]
                 ); " . ($self->{definition}->{async} ? '
 

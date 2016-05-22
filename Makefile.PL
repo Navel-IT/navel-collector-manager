@@ -49,8 +49,7 @@ WriteMakefile(
         'Getopt::Long::Descriptive' => 0,
         'Sys::Hostname' => 0,
         'File::ShareDir' => 0,
-        'Mojolicious' => 0,
-        'Mojolicious::Plugin::JSON::XS' => 0
+        'Mojolicious' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,

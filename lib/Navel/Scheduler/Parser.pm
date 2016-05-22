@@ -48,23 +48,12 @@ sub validate {
                     required => [
                         qw/
                             definitions_from_file
-                            collectors_exec_directory
                             maximum
                             maximum_simultaneous_exec
-                            execution_timeout
                         /
                     ],
                     properties => {
                         definitions_from_file => {
-                            type => [
-                                qw/
-                                    string
-                                    integer
-                                    number
-                                /
-                            ]
-                        },
-                        collectors_exec_directory => {
                             type => [
                                 qw/
                                     string
@@ -81,10 +70,6 @@ sub validate {
                             type => 'integer',
                             minimum => 0
                         },
-                        execution_timeout => {
-                            type => 'integer',
-                            minimum => 0
-                        }
                     }
                 },
                 publishers => {

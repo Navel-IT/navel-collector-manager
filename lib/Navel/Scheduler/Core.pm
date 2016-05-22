@@ -86,83 +86,6 @@ sub register_core_logger {
     $self;
 }
 
-my $register_collector_by_name_common_workflow = sub {
-    my ($self, %options) = @_;
-
-    my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $options{collector}->{name};
-
-    $self->{runtime_per_collector}->{$options{collector}->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
-        core => $self,
-        definition => $options{collector},
-        collector_content => $options{collector_content},
-        on_event => sub {
-            local $@;
-
-            for (@_) {
-                if (ref $_ eq 'ARRAY') {
-                    if (isint($_->[0])) {
-                        if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
-                            eval {
-                                $self->goto_collector_next_stage(
-                                    public_interface => 1,
-                                    collector => $options{collector},
-                                    status => $_->[1],
-                                    starting_time => $options{collector_starting_time},
-                                    data => $_->[2]
-                                );
-                            };
-                        } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
-                            eval {
-                                $self->{logger}->push_in_queue(
-                                    severity => $_->[1],
-                                    text => 'collector ' . $options{collector}->{name} . ': ' . $_->[2]
-                                ) if defined $_->[2];
-                            };
-                        } else {
-                            $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
-                        }
-
-                        $self->{logger}->err(
-                            Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
-                                [
-                                    $@
-                                ]
-                            )
-                        ) if $@;
-                    } else {
-                        $self->{logger}->err($on_event_error_message_prefix . ': event type must be an integer.');
-                    }
-                } else {
-                    $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
-                }
-            }
-        },
-        on_error => sub {
-            $self->{logger}->warning('execution of collector ' . $options{collector}->{name} . ' stopped (fatal): ' . shift . '.');
-
-            $self->goto_collector_next_stage(
-                job => $options{job},
-                collector => $options{collector},
-                status => '__KO',
-                starting_time => $options{collector_starting_time}
-            );
-        },
-        on_destroy => sub {
-            $self->{logger}->info('collector ' . $options{collector}->{name} . ' is destroyed.');
-        }
-    )->rpc(
-        callback => sub {
-            $self->goto_collector_next_stage(
-                job => $options{job}
-            );
-        }
-    );
-
-    undef $self->{runtime_per_collector}->{$options{collector}->{name}}->{rpc} unless $options{collector}->{async};
-
-    $self;
-};
-
 sub register_collector_by_name {
     my $self = shift;
 
@@ -180,48 +103,84 @@ sub register_collector_by_name {
         callback => sub {
             my $timer = shift->begin();
 
-            local $!;
-
             my $collector_starting_time = time;
+            
+            my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
 
-            if ($collector->is_type_pm()) {
-                $self->$register_collector_by_name_common_workflow(
-                    job => $timer,
-                    collector => $collector,
-                    collector_starting_time => $collector_starting_time
-                );
-            } else {
-                aio_load($self->{configuration}->{definition}->{collectors}->{collectors_exec_directory} . '/' . $collector->resolve_basename(),
-                    sub {
-                        my $collector_content = shift;
+            $self->{runtime_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
+                core => $self,
+                definition => $collector,
+                on_event => sub {
+                    local $@;
 
-                        if (defined $collector_content) {
-                            $self->$register_collector_by_name_common_workflow(
-                                job => $timer,
-                                collector => $collector,
-                                collector_content => $collector_content,
-                                collector_starting_time => $collector_starting_time
-                            );
+                    for (@_) {
+                        if (ref $_ eq 'ARRAY') {
+                            if (isint($_->[0])) {
+                                if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
+                                    eval {
+                                        $self->goto_collector_next_stage(
+                                            public_interface => 1,
+                                            collector => $collector,
+                                            status => $_->[1],
+                                            starting_time => $collector_starting_time,
+                                            data => $_->[2]
+                                        );
+                                    };
+                                } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
+                                    eval {
+                                        $self->{logger}->push_in_queue(
+                                            severity => $_->[1],
+                                            text => 'collector ' . $collector->{name} . ': ' . $_->[2]
+                                        ) if defined $_->[2];
+                                    };
+                                } else {
+                                    $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
+                                }
+
+                                $self->{logger}->err(
+                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
+                                        [
+                                            $@
+                                        ]
+                                    )
+                                ) if $@;
+                            } else {
+                                $self->{logger}->err($on_event_error_message_prefix . ': event type must be an integer.');
+                            }
                         } else {
-                            $self->{logger}->warning(
-                                Navel::Logger::Message->stepped_message('collector ' . $collector->{name} . '.',
-                                    [
-                                        $!
-                                    ]
-                                )
-                            );
-
-                            $self->goto_collector_next_stage(
-                                job => $timer,
-                                collector_name => $collector->{name},
-                                collector => $collector,
-                                status => '__KO',
-                                starting_time => $collector_starting_time
-                            );
+                            $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
                         }
                     }
-                );
-            }
+                },
+                on_error => sub {
+                    $self->{logger}->warning('execution of collector ' . $collector->{name} . ' stopped (fatal): ' . shift . '.');
+
+                    $self->goto_collector_next_stage(
+                        job => $timer,
+                        collector => $collector,
+                        status => '__KO',
+                        starting_time => $collector_starting_time
+                    );
+                },
+                on_destroy => sub {
+                    $self->{logger}->info('collector ' . $collector->{name} . ' is destroyed.');
+                }
+            )->rpc(
+                callback => sub {
+                    $self->goto_collector_next_stage(
+                        job => $timer
+                    );
+                }
+            );
+
+            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc} unless $collector->{async};
+            
+
+            # $self->$register_collector_by_name_common_workflow(
+                # job => $timer,
+                # collector => $collector,
+                # collector_starting_time => $collector_starting_time
+            # );
         }
     );
 

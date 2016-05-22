@@ -3,8 +3,6 @@ navel-scheduler
 
 navel-scheduler's purpose is to get back data from collectors at scheduled time then encode and push it through a broker to navel-storer.
 
-It is build on top of `Mojolicious`, `AnyEvent` (with `EV` (interface to `libev`) backend) and `AnyEvent::Fork::RPC` and must work on all Linux platforms.
-
 Status
 ------
 
@@ -154,27 +152,17 @@ Endpoint | Summary
 Collectors
 ----------
 
-They are meant to retrieve events.
-They can be a synchronous script or a more complex server using an event loop and generating events on external "calls" (SNMP traps for exemple).
-
-There are two types of collectors:
-
-- Perl *package* (.pm, `Some::Package`).
-- Perl *script* (.pl, `main`).
-
-**Notes**:
-
+- They are meant to retrieve events.
+- They can be a synchronous task (`sync` set to `0` or `false`) or a more complex server using an event loop and generating events on external "calls" (`sync` set to `1` or `true`).
+ - Documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
+- They are Perl packages (`backend`).
 - A subroutine named `collect` must be declared.
-- The data returned by `collect` aren't used.
-- There is two methods (based on `AnyEvent::Fork::RPC::event`) to interact with the master process:
- - `Navel::Scheduler::Core::Collector::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send an event to the publishers.
- - `Navel::Scheduler::Core::Collector::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send a message to the logger.
-- There are differences between a synchronous and an asynchronous collector. The documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
+- The data returned by this subroutine are not used by the master process, instead there are two methods to do this:
+ - `Navel::Scheduler::Core::Collector::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send event(s) to the publishers.
+ - `Navel::Scheduler::Core::Collector::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send message(s) to the logger.
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
- - They could be reopened. Unfortunately, the output won't be catch by the logger.
-- Unless you want to use previously mentioned, don't mess with the `Navel::Scheduler::Core::Collector::Fork::Worker` namespace.
 
-A synchronous (`sync` set to `0` or `false`) collector of type *package*:
+A synchronous (`sync` set to `0` or `false`):
 
 ```perl
 package Navel::Collectors::JIRA::Issue;
@@ -190,14 +178,14 @@ sub collect {
 
     my $search = eval {
         JIRA::REST->new(
-            $definition->{input}->{url},
-            $definition->{input}->{user},
-            $definition->{input}->{password},
-            $definition->{input}->{rest_client}
+            $definition->{backend_input}->{url},
+            $definition->{backend_input}->{user},
+            $definition->{backend_input}->{password},
+            $definition->{backend_input}->{rest_client}
         )->POST(
             '/search',
             undef,
-            $definition->{input}->{headers}
+            $definition->{backend_input}->{headers}
         );
     };
 

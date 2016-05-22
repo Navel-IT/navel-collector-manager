@@ -2,16 +2,8 @@
   -
     name: test-1
     collection: test
-    type: package
     async: 1
     scheduling: 5
-    source: Navel::Collector::Test
-    input: ~
-  -
-    name: test-2
-    collection: test
-    type: script
-    async: 1
-    scheduling: 10
-    source: ~
-    input: ~
+    execution_timeout: 0
+    backend: Navel::Collector::Test
+    backend_input: ~
