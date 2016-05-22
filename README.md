@@ -155,14 +155,14 @@ Collectors
 - They are meant to retrieve events.
 - They can be a synchronous task (`sync` set to `0` or `false`) or a more complex server using an event loop and generating events on external "calls" (`sync` set to `1` or `true`).
  - Documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
-- They are Perl packages (`backend`).
+- They are Perl packages.
 - A subroutine named `collect` must be declared.
 - The data returned by this subroutine are not used by the master process, instead there are two methods to do this:
  - `Navel::Scheduler::Core::Collector::Fork::Worker::event([$status, $data], [$status, $data], ...)` which send event(s) to the publishers.
  - `Navel::Scheduler::Core::Collector::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send message(s) to the logger.
 - `STDIN`, `STDOUT` and `STDERR` are redirected to `/dev/null`.
 
-A synchronous (`sync` set to `0` or `false`):
+A synchronous (`sync` set to `0` or `false`) collector:
 
 ```perl
 package Navel::Collectors::JIRA::Issue;
