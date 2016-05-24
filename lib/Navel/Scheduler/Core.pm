@@ -119,11 +119,9 @@ sub register_collector_by_name {
                                 if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
                                     eval {
                                         $self->goto_collector_next_stage(
-                                            public_interface => 1,
                                             collector => $collector,
-                                            status => $_->[1],
                                             starting_time => $collector_starting_time,
-                                            data => $_->[2]
+                                            data => $_->[1]
                                         );
                                     };
                                 } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
@@ -134,7 +132,7 @@ sub register_collector_by_name {
                                         ) if defined $_->[2];
                                     };
                                 } else {
-                                    $self->{logger}->err($on_event_error_message_prefix . ': unknown event type');
+                                    $self->{logger}->err($on_event_error_message_prefix . ': unknown event type.');
                                 }
 
                                 $self->{logger}->err(
@@ -158,7 +156,7 @@ sub register_collector_by_name {
                     $self->goto_collector_next_stage(
                         job => $timer,
                         collector => $collector,
-                        status => '__KO',
+                        status => 'itl',
                         starting_time => $collector_starting_time
                     );
                 },
@@ -174,13 +172,6 @@ sub register_collector_by_name {
             );
 
             undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc} unless $collector->{async};
-            
-
-            # $self->$register_collector_by_name_common_workflow(
-                # job => $timer,
-                # collector => $collector,
-                # collector_starting_time => $collector_starting_time
-            # );
         }
     );
 
@@ -372,7 +363,7 @@ sub disconnect_publisher_by_name {
             }
         );
     } else {
-        $self->{logger}->debug($disconnect_generic_message . ': nothing to disconnect');
+        $self->{logger}->debug($disconnect_generic_message . ': nothing to disconnect.');
     }
 
     $self;

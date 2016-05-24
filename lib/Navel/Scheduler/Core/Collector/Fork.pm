@@ -103,7 +103,7 @@ sub wrapped_code {
             map {
                 [
                     ' . EVENT_EVENT . ',
-                    @{$_}
+                    $_
                 ]
             } @_
         );

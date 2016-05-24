@@ -311,7 +311,7 @@ sub push_event_to_a_publisher {
                             %{$body},
                             %{
                                 {
-                                    public_interface => 1
+                                    status => 'std'
                                 }
                             }
                         }
