@@ -22,7 +22,8 @@ sub new {
     my $class = shift;
 
     bless {
-        definition => {}
+        definition => {},
+        file_path => undef
     }, ref $class || $class;
 }
 
