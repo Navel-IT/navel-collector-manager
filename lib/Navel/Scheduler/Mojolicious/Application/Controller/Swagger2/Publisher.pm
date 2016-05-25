@@ -230,10 +230,12 @@ sub show_publisher_connection_status {
             }
         }
 
-        Mojo::IOLoop->recurring(
-            0.1 => sub {
-                if (keys %status == @base_keys + @connectable_properties) {
-                    return $controller->$callback(
+        my $id; $id = Mojo::IOLoop->recurring(
+            0.5 => sub {
+                if (keys %status >= @base_keys + @connectable_properties) {
+                    shift->remove($id);
+
+                    $controller->$callback(
                         \%status,
                         200
                     );
