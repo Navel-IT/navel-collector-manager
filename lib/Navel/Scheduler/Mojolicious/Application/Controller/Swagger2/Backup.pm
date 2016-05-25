@@ -11,58 +11,53 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Navel::Logger::Message;
-
 #-> methods
 
 sub save_all_configuration {
     my ($controller, $arguments, $callback) = @_;
 
+    $controller->render_later();
+
     my (@ok, @ko);
 
-    my $save_configuration_on_success = sub {
-        $controller->scheduler()->{core}->{logger}->notice(shift . ': runtime configuration successfully saved.');
-    };
+    my $done_counter = my $done_limit = 0;
 
-    my $save_configuration_on_error = sub {
-        $controller->scheduler()->{core}->{logger}->err(
-            Navel::Logger::Message->stepped_message('an error occurred while saving the runtime configuration.',
-                [
-                    shift
-                ]
-            )
+    for (
+        (
+            $controller->scheduler()->{core}->{collectors},
+            $controller->scheduler()->{core}->{publishers},
+            $controller->scheduler()->{webservices},
+            $controller->scheduler()->{configuration}
+        )
+    ) {
+        $_->write(
+            async => 1,
+            on_success => sub {
+                push @ok, shift . ': runtime configuration successfully saved.';
+
+                $done_counter++;
+            },
+            on_error => sub {
+                push @ko, shift;
+
+                $done_counter++;
+            }
         );
-    };
 
-    $controller->scheduler()->{core}->{$_}->write(
-        file_path => $controller->scheduler()->{configuration}->{definition}->{$_}->{definitions_from_file},
-        async => 1,
-        on_success => $save_configuration_on_success,
-        on_error => $save_configuration_on_error
-    ) for qw/
-        collectors
-        publishers
-    /;
+        $done_limit++;
+    }
 
-    $controller->scheduler()->{webservices}->write(
-        file_path => $controller->scheduler()->{configuration}->{definition}->{webservices}->{definitions_from_file},
-        async => 1,
-        on_success => $save_configuration_on_success,
-        on_error => $save_configuration_on_error
-    );
+    my $id; $id = Mojo::IOLoop->recurring(
+        0.5 => sub {
+            if ($done_counter >= $done_limit) {
+                shift->remove($id);
 
-    $controller->scheduler()->{configuration}->write(
-        file_path => $controller->scheduler()->{main_configuration_file_path},
-        async => 1,
-        on_success => $save_configuration_on_success,
-        on_error => $save_configuration_on_error
-    );
-
-    push @ok, 'saving the runtime configuration.';
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        200
+                $controller->$callback(
+                    $controller->ok_ko(\@ok, \@ko),
+                    200
+                );
+            }
+        }
     );
 }
 
