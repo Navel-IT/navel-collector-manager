@@ -23,12 +23,10 @@ sub save_all_configuration {
     my $done_counter = my $done_limit = 0;
 
     for (
-        (
-            $controller->scheduler()->{core}->{collectors},
-            $controller->scheduler()->{core}->{publishers},
-            $controller->scheduler()->{webservices},
-            $controller->scheduler()->{configuration}
-        )
+        $controller->scheduler()->{core}->{collectors},
+        $controller->scheduler()->{core}->{publishers},
+        $controller->scheduler()->{webservices},
+        $controller->scheduler()->{configuration}
     ) {
         $_->write(
             async => 1,
