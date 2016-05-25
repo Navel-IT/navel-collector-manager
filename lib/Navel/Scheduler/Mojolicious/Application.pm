@@ -49,7 +49,9 @@ sub new {
 
             my $method = $level eq 'debug' ? $level : 'info';
 
-            $self->scheduler()->{core}->{logger}->$method('Mojolicious: ' . Navel::Logger::Message->stepped_message(\@lines));
+            $self->scheduler()->{core}->{logger}->$method(
+                Navel::Logger::Message->stepped_message('Mojolicious:', \@lines)
+            );
         }
     );
 

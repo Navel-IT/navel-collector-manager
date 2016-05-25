@@ -25,8 +25,12 @@ sub save_all_configuration {
     };
 
     my $save_configuration_on_error = sub {
-        $controller->scheduler()->{core}->{logger}->err('an error occurred while saving the runtime configuration.',
-            Navel::Logger::Message->stepped_message(shift)
+        $controller->scheduler()->{core}->{logger}->err(
+            Navel::Logger::Message->stepped_message('an error occurred while saving the runtime configuration.',
+                [
+                    shift
+                ]
+            )
         );
     };
 
