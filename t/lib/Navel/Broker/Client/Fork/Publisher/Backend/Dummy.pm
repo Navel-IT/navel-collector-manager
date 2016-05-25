@@ -11,10 +11,6 @@ use Navel::Base;
 
 #-> methods
 
-sub is_connectable {
-    1;
-}
-
 sub publish {
 }
 
