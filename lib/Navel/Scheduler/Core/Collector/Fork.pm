@@ -206,7 +206,23 @@ sub wrapped_code {
 
 # sub AUTOLOAD {}
 
-# sub DESTROY {}
+sub DESTROY {
+    my $self = shift;
+
+    local $@;
+
+    eval {
+        if ($self->{definition}->{async}) {
+            $self->rpc(
+                exit => 1
+            );
+
+            undef $self->{rpc};
+        }
+    };
+
+    $self;
+}
 
 1;
 
