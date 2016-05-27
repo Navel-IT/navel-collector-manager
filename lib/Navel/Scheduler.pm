@@ -125,7 +125,7 @@ sub stop {
     eval {
         $self->{webserver}->stop() if $self->is_webserver_loaded();
 
-        $self->{core}->send();
+        $self->{core}->delete_collectors()->delete_publishers()->send();
     };
 
     $self;
