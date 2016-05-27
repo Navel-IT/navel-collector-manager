@@ -104,7 +104,7 @@ sub register_collector_by_name {
             my $timer = shift->begin();
 
             my $collector_starting_time = time;
-            
+
             my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
 
             $self->{runtime_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
@@ -193,18 +193,6 @@ sub delete_collector_and_definition_associated_by_name {
 
     die "unknown collector runtime\n" unless defined $collector;
 
-    if ($collector->{async}) {
-        local $@;
-
-        eval {
-            $self->{runtime_per_collector}->{$collector->{name}}->rpc(
-                exit => 1
-            );
-
-            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc};
-       };
-    }
-
     $self->unregister_job_by_type_and_name('collector', $collector->{name});
 
     $self->{collectors}->delete_definition(
@@ -212,6 +200,14 @@ sub delete_collector_and_definition_associated_by_name {
     );
 
     delete $self->{runtime_per_collector}->{$collector->{name}};
+
+    $self;
+}
+
+sub delete_collectors {
+    my $self = shift;
+
+    $self->delete_collector_and_definition_associated_by_name($_->{name}) for @{$self->{collectors}->{definitions}};
 
     $self;
 }
@@ -489,25 +485,21 @@ sub delete_publisher_and_definition_associated_by_name {
 
     die "unknown publisher\n" unless defined $publisher;
 
-    local $@;
-
-    eval {
-        $self->{runtime_per_publisher}->{$publisher->{name}}->rpc(
-            exit => 1
-        );
-    };
-
     $self->unregister_job_by_type_and_name('publisher', $publisher->{name});
 
     $self->{publishers}->delete_definition(
         definition_name => $publisher->{name}
     );
 
-    eval {
-        undef $self->{runtime_per_publisher}->{$publisher->{name}}->{rpc};
+    delete $self->{runtime_per_publisher}->{$publisher->{name}};
 
-        delete $self->{runtime_per_publisher}->{$publisher->{name}};
-    };
+    $self;
+}
+
+sub delete_publishers {
+    my $self = shift;
+
+    $self->delete_publisher_and_definition_associated_by_name($_->{name}) for @{$self->{publishers}->{definitions}};
 
     $self;
 }
