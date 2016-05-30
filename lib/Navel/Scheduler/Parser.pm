@@ -50,7 +50,6 @@ sub validate {
                         qw/
                             definitions_from_file
                             maximum
-                            maximum_simultaneous_exec
                         /
                     ],
                     properties => {
@@ -66,11 +65,7 @@ sub validate {
                         maximum => {
                             type => 'integer',
                             minimum => 0
-                        },
-                        maximum_simultaneous_exec => {
-                            type => 'integer',
-                            minimum => 0
-                        },
+                        }
                     }
                 },
                 publishers => {
@@ -80,7 +75,6 @@ sub validate {
                         qw/
                             definitions_from_file
                             maximum
-                            maximum_simultaneous_exec
                         /
                     ],
                     properties => {
@@ -94,10 +88,6 @@ sub validate {
                             ]
                         },
                         maximum => {
-                            type => 'integer',
-                            minimum => 0
-                        },
-                        maximum_simultaneous_exec => {
                             type => 'integer',
                             minimum => 0
                         }

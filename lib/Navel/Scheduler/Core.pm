@@ -45,13 +45,11 @@ sub new {
         logger => Navel::AnyEvent::Pool->new(),
         collector => Navel::AnyEvent::Pool->new(
             logger => $self->{logger},
-            maximum => $self->{configuration}->{definition}->{collectors}->{maximum},
-            maximum_simultaneous_exec => $self->{configuration}->{definition}->{collectors}->{maximum_simultaneous_exec}
+            maximum => $self->{configuration}->{definition}->{collectors}->{maximum}
         ),
         publisher => Navel::AnyEvent::Pool->new(
             logger => $self->{logger},
-            maximum => $self->{configuration}->{definition}->{publishers}->{maximum},
-            maximum_simultaneous_exec => $self->{configuration}->{definition}->{publishers}->{maximum_simultaneous_exec}
+            maximum => $self->{configuration}->{definition}->{publishers}->{maximum}
         )
     };
 
