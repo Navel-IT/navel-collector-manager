@@ -65,9 +65,9 @@ sub usage {
     $binary_default_name . ' %o <' . $main_argument . '>',
     [
         'log-datetime-format=s',
-        'set datetime format (default: %b  %d %H:%M:%S)',
+        'set datetime format (default: %b %d %H:%M:%S)',
         {
-            default => '%b  %d %H:%M:%S'
+            default => '%b %d %H:%M:%S'
         }
     ],
     [
