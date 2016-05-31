@@ -114,13 +114,13 @@ All the help is available with `navel-scheduler --help`.
 
 ```
 [root@tbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/main.yml
-May  29 15:07:23 tbox navel-scheduler[2753] 133 initialization.
-May  29 15:07:23 tbox navel-scheduler[2753] 133 starting the webservices.
-May  29 15:07:23 tbox navel-scheduler[2753] 133 webservices started.
-May  29 15:07:23 tbox navel-scheduler[2753] 133 initialize publisher publisher-1.
-May  29 15:07:24 tbox navel-scheduler[2753] 133 connect publisher publisher-1.
-May  29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-1: successfully connected.
-May  29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-1: channel opened.
+May 29 15:07:23 tbox navel-scheduler[2753] 133 initialization.
+May 29 15:07:23 tbox navel-scheduler[2753] 133 starting the webservices.
+May 29 15:07:23 tbox navel-scheduler[2753] 133 webservices started.
+May 29 15:07:23 tbox navel-scheduler[2753] 133 initialize publisher publisher-rabbitmq-1.
+May 29 15:07:24 tbox navel-scheduler[2753] 133 connect publisher publisher-rabbitmq-1.
+May 29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-rabbitmq-1: successfully connected.
+May 29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-rabbitmq-1: channel opened.
 ```
 
 - As a service
