@@ -15,6 +15,8 @@ use AnyEvent::Fork;
 use AnyEvent::IO;
 
 use Navel::Logger::Message;
+use Navel::Definition::Collector::Parser;
+use Navel::Definition::Publisher::Parser;
 use Navel::AnyEvent::Pool;
 use Navel::Scheduler::Core::Collector::Fork;
 use Navel::Broker::Client::Fork;
@@ -31,26 +33,33 @@ sub new {
 
     my $self = {
         configuration => $options{configuration},
-        collectors => $options{collectors},
-        runtime_per_collector => {},
-        publishers => $options{publishers},
-        runtime_per_publisher => {},
         logger => $options{logger},
         logger_callbacks => {},
+        collectors => Navel::Definition::Collector::Parser->new(
+            maximum => $options{configuration}->{definition}->{collectors}->{maximum}
+        )->read(
+            file_path => $options{configuration}->{definition}->{collectors}->{definitions_from_file}
+        )->make(),
+        runtime_per_collector => {},
+        publishers => Navel::Definition::Publisher::Parser->new(
+            maximum => $options{configuration}->{definition}->{publishers}->{maximum}
+        )->read(
+            file_path => $options{configuration}->{definition}->{publishers}->{definitions_from_file}
+        )->make(),
+        runtime_per_publisher => {},
+        job_types => {
+            logger => Navel::AnyEvent::Pool->new(),
+            collector => Navel::AnyEvent::Pool->new(
+                logger => $options{logger},
+                maximum => $options{configuration}->{definition}->{collectors}->{maximum}
+            ),
+            publisher => Navel::AnyEvent::Pool->new(
+                logger => $options{logger},
+                maximum => $options{configuration}->{definition}->{publishers}->{maximum}
+            )
+        },
         ae_condvar => AnyEvent->condvar(),
         ae_fork => AnyEvent::Fork->new()
-    };
-
-    $self->{job_types} = {
-        logger => Navel::AnyEvent::Pool->new(),
-        collector => Navel::AnyEvent::Pool->new(
-            logger => $self->{logger},
-            maximum => $self->{configuration}->{definition}->{collectors}->{maximum}
-        ),
-        publisher => Navel::AnyEvent::Pool->new(
-            logger => $self->{logger},
-            maximum => $self->{configuration}->{definition}->{publishers}->{maximum}
-        )
     };
 
     bless $self, ref $class || $class;

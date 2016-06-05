@@ -19,7 +19,7 @@ sub show_main {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->scheduler()->{configuration}->{definition},
+        $controller->daemon()->{configuration}->{definition},
         200
     );
 }
@@ -37,10 +37,10 @@ sub modify_webservices_credentials {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            my $scheduler_definition = $controller->scheduler()->{configuration}->{definition};
+            my $scheduler_definition = $controller->daemon()->{configuration}->{definition};
 
             eval {
-                $controller->scheduler()->{configuration}->set_definition(
+                $controller->daemon()->{configuration}->set_definition(
                     {
                         %{$scheduler_definition},
                         %{

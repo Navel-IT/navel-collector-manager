@@ -18,7 +18,7 @@ sub show_status {
 
     $controller->$callback(
         {
-            version => $controller->scheduler()->VERSION(),
+            version => $controller->daemon()->VERSION(),
             api_version => $controller->app()->defaults()->{swagger_spec}->get('/info/version')
         },
         200

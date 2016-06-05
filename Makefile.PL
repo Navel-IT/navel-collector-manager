@@ -46,10 +46,7 @@ WriteMakefile(
         'IO::AIO' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
-        'Getopt::Long::Descriptive' => 0,
-        'Sys::Hostname' => 0,
-        'File::ShareDir' => 0,
-        'Mojolicious' => 0
+        'File::ShareDir' => 0
     },
     TEST_REQUIRES => {
         'Test::More' => 0,

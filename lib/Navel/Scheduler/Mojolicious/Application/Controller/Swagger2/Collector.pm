@@ -19,7 +19,7 @@ sub list_collectors {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->scheduler()->{core}->{collectors}->name(),
+        $controller->daemon()->{core}->{collectors}->name(),
         200
     );
 }
@@ -42,14 +42,14 @@ sub new_collector {
                     callback => $callback,
                     resource_name => $body->{name}
                 }
-            ) if defined $controller->scheduler()->{core}->{collectors}->definition_by_name($body->{name});
+            ) if defined $controller->daemon()->{core}->{collectors}->definition_by_name($body->{name});
 
             my $collector = eval {
-                $controller->scheduler()->{core}->{collectors}->add_definition($body);
+                $controller->daemon()->{core}->{collectors}->add_definition($body);
             };
 
             unless ($@) {
-                $controller->scheduler()->{core}->register_collector_by_name($collector->{name});
+                $controller->daemon()->{core}->register_collector_by_name($collector->{name});
 
                 push @ok, 'adding and registering collector ' . $collector->{name} . '.';
             } else {
@@ -71,7 +71,7 @@ sub new_collector {
 sub show_collector {
     my ($controller, $arguments, $callback) = @_;
 
-    my $collector = $controller->scheduler()->{core}->{collectors}->definition_properties_by_name($arguments->{collectorName});
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_properties_by_name($arguments->{collectorName});
 
     return $controller->resource_not_found(
         {
@@ -99,7 +99,7 @@ sub modify_collector {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            my $collector = $controller->scheduler()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+            my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
 
             return $controller->resource_not_found(
                 {
@@ -117,16 +117,16 @@ sub modify_collector {
 
             unless (my @validation_errors = @{$collector->validate($body)}) {
                 eval {
-                    $controller->scheduler()->{core}->delete_collector_and_definition_associated_by_name($body->{name});
+                    $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($body->{name});
                 };
 
                 unless ($@) {
                     my $collector = eval {
-                        $controller->scheduler()->{core}->{collectors}->add_definition($body);
+                        $controller->daemon()->{core}->{collectors}->add_definition($body);
                     };
 
                     unless ($@) {
-                        $controller->scheduler()->{core}->register_collector_by_name($collector->{name});
+                        $controller->daemon()->{core}->register_collector_by_name($collector->{name});
 
                         push @ok, 'modifying collector ' . $collector->{name} . '.';
                     } else {
@@ -156,7 +156,7 @@ sub delete_collector {
 
     local $@;
 
-    my $collector = $controller->scheduler()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
 
     return $controller->resource_not_found(
         {
@@ -168,7 +168,7 @@ sub delete_collector {
     my (@ok, @ko);
 
     eval {
-        $controller->scheduler()->{core}->delete_collector_and_definition_associated_by_name($collector->{name});
+        $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($collector->{name});
     };
 
     unless ($@) {

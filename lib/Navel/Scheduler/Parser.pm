@@ -9,29 +9,15 @@ package Navel::Scheduler::Parser 0.1;
 
 use Navel::Base;
 
-use parent qw/
-    Navel::Base::Definition::Parser::Reader
-    Navel::Base::Definition::Parser::Writer
-/;
-
-use Navel::Base::Definition;
+use parent 'Navel::Base::Daemon::Parser';
 
 #-> methods
-
-sub new {
-    my $class = shift;
-
-    bless {
-        definition => {},
-        file_path => undef
-    }, ref $class || $class;
-}
 
 sub validate {
     my ($class, $raw_definition) = @_;
 
-    Navel::Base::Definition->validate(
-        definition_class => __PACKAGE__,
+    $class->SUPER::validate(
+        @_,
         validator => {
             type => 'object',
             additionalProperties => 0,
@@ -172,37 +158,6 @@ sub validate {
         },
         raw_definition => $raw_definition
     );
-}
-
-sub set_definition {
-    my ($self, $value) = @_;
-
-    my $errors = $self->validate($value);
-
-    die $errors if @{$errors};
-
-    $self->{definition} = $value;
-
-    $self;
-}
-
-sub read {
-    my $self = shift;
-
-    $self->set_definition($self->SUPER::read(@_));
-
-    $self;
-}
-
-sub write {
-    my $self = shift;
-
-    $self->SUPER::write(
-        definitions => $self->{definition},
-        @_
-    );
-
-    $self;
 }
 
 # sub AUTOLOAD {}

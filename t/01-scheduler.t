@@ -8,14 +8,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::Mojo;
 
 BEGIN {
     use_ok('Navel::Scheduler');
     use_ok('Navel::Logger');
-    use_ok('Navel::Scheduler::Mojolicious::Application');
 }
 
 #-> main
@@ -30,13 +29,14 @@ lives_ok {
             facility => 'local0',
             severity => 'debug'
         ),
-        main_configuration_file_path => $main_configuration_file_path
+        main_configuration_file_path => $main_configuration_file_path,
+        enable_webservices => 1
     );
 } 'Navel::Scheduler->new(): loading and preparing main configuration from ' . $main_configuration_file_path;
 
 lives_ok {
     $mojolicious_tester = Test::Mojo->new(
-        Navel::Scheduler::Mojolicious::Application->new($scheduler)
+        $scheduler->{webserver}->app()
     );
 }
 

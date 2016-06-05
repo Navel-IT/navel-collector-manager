@@ -20,7 +20,7 @@ sub stream {
 
     my $tx_id = sprintf '%s', $tx;
 
-    $controller->scheduler()->{core}->{logger_callbacks}->{$tx_id} = sub {
+    $controller->daemon()->{core}->{logger_callbacks}->{$tx_id} = sub {
         $tx->send(
             {
                 json => $_->constructor_properties()
@@ -30,7 +30,7 @@ sub stream {
 
     $controller->on(
         finish => sub {
-            delete $controller->scheduler()->{core}->{logger_callbacks}->{$tx_id};
+            delete $controller->daemon()->{core}->{logger_callbacks}->{$tx_id};
         }
     );
 }

@@ -20,9 +20,9 @@ my $action_on_job_by_type_and_name = sub {
         {
             callback => $callback
         }
-    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+    ) unless $controller->daemon()->{core}->job_type_exists($arguments->{jobType});
 
-    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+    my $job = $controller->daemon()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
 
     return $controller->resource_not_found(
         {
@@ -60,7 +60,7 @@ sub list_job_types {
 
     $controller->$callback(
         [
-            keys %{$controller->scheduler()->{core}->{job_types}}
+            keys %{$controller->daemon()->{core}->{job_types}}
         ],
         200
     );
@@ -73,13 +73,13 @@ sub list_jobs_by_type {
         {
             callback => $callback
         }
-    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+    ) unless $controller->daemon()->{core}->job_type_exists($arguments->{jobType});
 
     $controller->$callback(
         [
             map {
                 $_->{name}
-            } @{$controller->scheduler()->{core}->jobs_by_type($arguments->{jobType})}
+            } @{$controller->daemon()->{core}->jobs_by_type($arguments->{jobType})}
         ],
         200
     );
@@ -92,9 +92,9 @@ sub show_job_by_type_and_name {
         {
             callback => $callback
         }
-    ) unless $controller->scheduler()->{core}->job_type_exists($arguments->{jobType});
+    ) unless $controller->daemon()->{core}->job_type_exists($arguments->{jobType});
 
-    my $job = $controller->scheduler()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
+    my $job = $controller->daemon()->{core}->job_by_type_and_name($arguments->{jobType}, $arguments->{jobName});
 
     return $controller->resource_not_found(
         {

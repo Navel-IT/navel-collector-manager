@@ -21,7 +21,7 @@ sub list_publishers {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->scheduler()->{core}->{publishers}->name(),
+        $controller->daemon()->{core}->{publishers}->name(),
         200
     );
 }
@@ -44,14 +44,14 @@ sub new_publisher {
                     callback => $callback,
                     resource_name => $body->{name}
                 }
-            ) if defined $controller->scheduler()->{core}->{publishers}->definition_by_name($body->{name});
+            ) if defined $controller->daemon()->{core}->{publishers}->definition_by_name($body->{name});
 
             my $publisher = eval {
-                $controller->scheduler()->{core}->{publishers}->add_definition($body);
+                $controller->daemon()->{core}->{publishers}->add_definition($body);
             };
 
             unless ($@) {
-                $controller->scheduler()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
+                $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
                 push @ok, 'adding publisher ' . $publisher->{name} . '.';
             } else {
@@ -73,7 +73,7 @@ sub new_publisher {
 sub show_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_properties_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_properties_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -101,7 +101,7 @@ sub modify_publisher {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+            my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
             return $controller->resource_not_found(
                 {
@@ -119,16 +119,16 @@ sub modify_publisher {
 
             unless (my @validation_errors = @{$publisher->validate($body)}) {
                 eval {
-                    $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($body->{name});
+                    $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($body->{name});
                 };
 
                 unless ($@) {
                     my $publisher = eval {
-                        $controller->scheduler()->{core}->{publishers}->add_definition($body);
+                        $controller->daemon()->{core}->{publishers}->add_definition($body);
                     };
 
                     unless ($@) {
-                        $controller->scheduler()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
+                        $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
                         push @ok, 'modifying publisher ' . $publisher->{name} . '.';
                     } else {
@@ -156,7 +156,7 @@ sub modify_publisher {
 sub delete_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -170,7 +170,7 @@ sub delete_publisher {
     local $@;
 
     eval {
-        $controller->scheduler()->{core}->delete_publisher_and_definition_associated_by_name($publisher->{name});
+        $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($publisher->{name});
     };
 
     unless ($@) {
@@ -188,7 +188,7 @@ sub delete_publisher {
 sub show_publisher_connection_status {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -201,7 +201,7 @@ sub show_publisher_connection_status {
         name => $publisher->{name}
     );
 
-    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
+    my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
     if ($status{connectable} = $publisher->{connectable}) {
         $controller->render_later();
@@ -253,7 +253,7 @@ sub show_publisher_connection_status {
 sub show_publisher_amount_of_events {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -262,7 +262,7 @@ sub show_publisher_amount_of_events {
         }
     ) unless defined $publisher;
 
-    if (defined (my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}})) {
+    if (defined (my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}})) {
         $controller->$callback(
             {
                 amount_of_events_in_queue => scalar @{$publisher_runtime->{queue}}
@@ -285,7 +285,7 @@ sub show_publisher_amount_of_events {
 sub push_event_to_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -294,7 +294,7 @@ sub push_event_to_a_publisher {
         }
     ) unless defined $publisher;
 
-    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
+    my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
     my (@ok, @ko);
 
@@ -344,7 +344,7 @@ sub push_event_to_a_publisher {
 sub delete_all_events_from_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -353,7 +353,7 @@ sub delete_all_events_from_a_publisher {
         }
     ) unless defined $publisher;
 
-    my $publisher_runtime = $controller->scheduler()->{core}->{runtime_per_publisher}->{$publisher->{name}};
+    my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
     my (@ok, @ko);
 
@@ -374,7 +374,7 @@ sub delete_all_events_from_a_publisher {
 sub connect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -388,7 +388,7 @@ sub connect_publisher {
     local $@;
 
     eval {
-        $controller->scheduler()->{core}->connect_publisher_by_name($publisher->{name});
+        $controller->daemon()->{core}->connect_publisher_by_name($publisher->{name});
     };
 
     unless ($@) {
@@ -406,7 +406,7 @@ sub connect_publisher {
 sub disconnect_publisher {
     my ($controller, $arguments, $callback) = @_;
 
-    my $publisher = $controller->scheduler()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
     return $controller->resource_not_found(
         {
@@ -420,7 +420,7 @@ sub disconnect_publisher {
     local $@;
 
     eval {
-        $controller->scheduler()->{core}->disconnect_publisher_by_name($publisher->{name});
+        $controller->daemon()->{core}->disconnect_publisher_by_name($publisher->{name});
     };
 
     unless ($@) {
