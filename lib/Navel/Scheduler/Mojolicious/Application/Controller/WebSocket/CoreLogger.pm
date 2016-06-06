@@ -9,31 +9,9 @@ package Navel::Scheduler::Mojolicious::Application::Controller::WebSocket::CoreL
 
 use Navel::Base;
 
-use Mojo::Base 'Mojolicious::Controller';
+use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::WebSocket::CoreLogger';
 
 #-> methods
-
-sub stream {
-    my $controller = shift;
-
-    my $tx = $controller->tx();
-
-    my $tx_id = sprintf '%s', $tx;
-
-    $controller->daemon()->{core}->{logger_callbacks}->{$tx_id} = sub {
-        $tx->send(
-            {
-                json => $_->constructor_properties()
-            }
-        ) for @{shift->{queue}};
-    };
-
-    $controller->on(
-        finish => sub {
-            delete $controller->daemon()->{core}->{logger_callbacks}->{$tx_id};
-        }
-    );
-}
 
 # sub AUTOLOAD {}
 
