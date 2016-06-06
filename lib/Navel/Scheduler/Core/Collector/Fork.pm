@@ -75,7 +75,7 @@ sub rpc {
     if (defined $self->{rpc}) {
         $self->{rpc}->(
             $options{exit},
-            $self->{core}->{configuration}->{definition}->{collectors},
+            $self->{core}->{meta}->{definition}->{collectors},
             $self->{definition}->properties(),
             ref $options{callback} eq 'CODE' ? $options{callback} : sub {}
         );

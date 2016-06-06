@@ -19,7 +19,7 @@ BEGIN {
 
 #-> main
 
-my $main_configuration_file_path = 't/01-main.yml';
+my $meta_configuration_file_path = 't/01-meta.yml';
 
 my ($scheduler, $mojolicious_tester);
 
@@ -29,10 +29,10 @@ lives_ok {
             facility => 'local0',
             severity => 'debug'
         ),
-        main_configuration_file_path => $main_configuration_file_path,
+        meta_configuration_file_path => $meta_configuration_file_path,
         enable_webservices => 1
     );
-} 'Navel::Scheduler->new(): loading and preparing main configuration from ' . $main_configuration_file_path;
+} 'Navel::Scheduler->new(): loading and preparing meta configuration from ' . $meta_configuration_file_path;
 
 lives_ok {
     $mojolicious_tester = Test::Mojo->new(

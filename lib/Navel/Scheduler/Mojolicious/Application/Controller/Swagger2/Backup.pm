@@ -26,7 +26,7 @@ sub save_all_configuration {
         $controller->daemon()->{core}->{collectors},
         $controller->daemon()->{core}->{publishers},
         $controller->daemon()->{webservices},
-        $controller->daemon()->{configuration}
+        $controller->daemon()->{core}->{meta}
     ) {
         $_->write(
             async => 1,

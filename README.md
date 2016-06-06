@@ -24,7 +24,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Prepare configuration
 ---------------------
 
-- *main.yml* ([t/01-main.yml](t/01-main.yml)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
+- *meta.yml* ([t/01-meta.yml](t/01-meta.yml)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
 
 List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Daemon#ATTRIBUTES)):
 
@@ -64,7 +64,7 @@ max_requests | integer
 
 The web services offers only a single "administrator level" user authentication mechanism.
 
-You could use a reverse proxy (with *main.yml*:`webservices/mojo_server/reverse_proxy` set to `1` or `true`) such as *nginx* if you want to have more control over access to resources.
+You could use a reverse proxy (with *meta.yml*:`webservices/mojo_server/reverse_proxy` set to `1` or `true`) such as *nginx* if you want to have more control over access to resources.
 
 For example, a read-only access:
 
@@ -113,7 +113,7 @@ All the help is available with `navel-scheduler --help`.
 - Manually
 
 ```
-[root@tbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/main.yml
+[root@tbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.yml
 May 29 15:07:23 tbox navel-scheduler[2753] 133 initialization.
 May 29 15:07:23 tbox navel-scheduler[2753] 133 starting the webservices.
 May 29 15:07:23 tbox navel-scheduler[2753] 133 webservices started.

@@ -5,7 +5,7 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Main 0.1;
+package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Meta 0.1;
 
 use Navel::Base;
 
@@ -15,11 +15,11 @@ use Mojo::JSON 'decode_json';
 
 #-> methods
 
-sub show_main {
+sub show_meta {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->daemon()->{configuration}->{definition},
+        $controller->daemon()->{core}->{meta}->{definition},
         200
     );
 }
@@ -37,10 +37,10 @@ sub modify_webservices_credentials {
 
     unless ($@) {
         if (ref $body eq 'HASH') {
-            my $scheduler_definition = $controller->daemon()->{configuration}->{definition};
+            my $scheduler_definition = $controller->daemon()->{core}->{meta}->{definition};
 
             eval {
-                $controller->daemon()->{configuration}->set_definition(
+                $controller->daemon()->{core}->{meta}->set_definition(
                     {
                         %{$scheduler_definition},
                         %{
@@ -92,7 +92,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Main
+Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Meta
 
 =head1 COPYRIGHT
 

@@ -33,14 +33,14 @@ sub new {
 
     state $self = $class->SUPER::new(
         %options,
-        parser => Navel::Scheduler::Parser->new(),
+        meta => Navel::Scheduler::Parser->new(),
         core_class => 'Navel::Scheduler::Core',
         mojolicious_application_class => 'Navel::Scheduler::Mojolicious::Application',
         swagger => Navel::API::Swagger2::Scheduler->new()
     );
 
     sub sigtrap_handler {
-        $self->{logger}->notice(
+        $self->{core}->{logger}->notice(
             Navel::Logger::Message->stepped_message('catch a signal.',
                 [
                     $!
