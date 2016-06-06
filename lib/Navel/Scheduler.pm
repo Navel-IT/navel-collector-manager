@@ -25,7 +25,9 @@ use Navel::Logger::Message;
 #-> methods
 
 sub run {
-    shift->SUPER::run('navel-scheduler');
+    shift->SUPER::run(
+        program_name => 'navel-scheduler'
+    );
 }
 
 sub new {
