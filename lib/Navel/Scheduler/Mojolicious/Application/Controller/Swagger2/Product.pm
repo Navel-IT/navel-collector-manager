@@ -9,21 +9,9 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Produc
 
 use Navel::Base;
 
-use Mojo::Base 'Mojolicious::Controller';
+use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::Swagger2::Product';
 
 #-> methods
-
-sub show_status {
-    my ($controller, $arguments, $callback) = @_;
-
-    $controller->$callback(
-        {
-            version => $controller->daemon()->VERSION(),
-            api_version => $controller->app()->defaults()->{swagger_spec}->get('/info/version')
-        },
-        200
-    );
-}
 
 # sub AUTOLOAD {}
 

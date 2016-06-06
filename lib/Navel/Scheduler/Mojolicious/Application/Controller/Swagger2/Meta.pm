@@ -9,72 +9,9 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Meta 0
 
 use Navel::Base;
 
-use Mojo::Base 'Mojolicious::Controller';
-
-use Mojo::JSON 'decode_json';
+use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::Swagger2::Meta';
 
 #-> methods
-
-sub show_meta {
-    my ($controller, $arguments, $callback) = @_;
-
-    $controller->$callback(
-        $controller->daemon()->{core}->{meta}->{definition},
-        200
-    );
-}
-
-sub modify_webservices_credentials {
-    my ($controller, $arguments, $callback) = @_;
-
-    my (@ok, @ko);
-
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
-    unless ($@) {
-        if (ref $body eq 'HASH') {
-            my $scheduler_definition = $controller->daemon()->{core}->{meta}->{definition};
-
-            eval {
-                $controller->daemon()->{core}->{meta}->set_definition(
-                    {
-                        %{$scheduler_definition},
-                        %{
-                            {
-                                webservices => {
-                                    %{$scheduler_definition->{webservices}},
-                                    credentials => {
-                                        %{$scheduler_definition->{webservices}->{credentials}},
-                                        %{$body}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                );
-            };
-
-            unless ($@) {
-                push @ok, 'changing credentials of webservices.';
-            } else {
-                push @ko, $@;
-            }
-        } else {
-            push @ko, 'body need to represent a hashtable.';
-        }
-    } else {
-        push @ko, $@;
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        @ko ? 400 : 200
-    );
-}
 
 # sub AUTOLOAD {}
 

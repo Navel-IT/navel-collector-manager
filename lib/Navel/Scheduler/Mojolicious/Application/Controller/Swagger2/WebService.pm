@@ -9,36 +9,9 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::WebSer
 
 use Navel::Base;
 
-use Mojo::Base 'Mojolicious::Controller';
+use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::Swagger2::WebService';
 
 #-> methods
-
-sub list_webservices {
-    my ($controller, $arguments, $callback) = @_;
-
-    $controller->$callback(
-        $controller->daemon()->{webservices}->name(),
-        200
-    );
-}
-
-sub show_webservice {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $webservice = $controller->daemon()->{webservices}->definition_properties_by_name($arguments->{webServiceName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{webServiceName}
-        }
-    ) unless defined $webservice;
-
-    $controller->$callback(
-        $webservice,
-        200
-    );
-}
 
 # sub AUTOLOAD {}
 
