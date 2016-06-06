@@ -9,10 +9,9 @@ package Navel::Scheduler::Core 0.1;
 
 use Navel::Base;
 
-use AnyEvent;
-use EV;
+use parent 'Navel::Base::Daemon::Core';
+
 use AnyEvent::Fork;
-use AnyEvent::IO;
 
 use Navel::Logger::Message;
 use Navel::Definition::Collector::Parser;
@@ -31,66 +30,43 @@ use Navel::Utils qw/
 sub new {
     my ($class, %options) = @_;
 
-    my $self = {
-        configuration => $options{configuration},
-        logger => $options{logger},
-        logger_callbacks => {},
-        collectors => Navel::Definition::Collector::Parser->new(
-            maximum => $options{configuration}->{definition}->{collectors}->{maximum}
-        )->read(
-            file_path => $options{configuration}->{definition}->{collectors}->{definitions_from_file}
-        )->make(),
-        runtime_per_collector => {},
-        publishers => Navel::Definition::Publisher::Parser->new(
-            maximum => $options{configuration}->{definition}->{publishers}->{maximum}
-        )->read(
-            file_path => $options{configuration}->{definition}->{publishers}->{definitions_from_file}
-        )->make(),
-        runtime_per_publisher => {},
-        job_types => {
-            logger => Navel::AnyEvent::Pool->new(),
-            collector => Navel::AnyEvent::Pool->new(
-                logger => $options{logger},
-                maximum => $options{configuration}->{definition}->{collectors}->{maximum}
-            ),
-            publisher => Navel::AnyEvent::Pool->new(
-                logger => $options{logger},
-                maximum => $options{configuration}->{definition}->{publishers}->{maximum}
-            )
-        },
-        ae_condvar => AnyEvent->condvar(),
-        ae_fork => AnyEvent::Fork->new()
+    my $self = $class->SUPER::new(%options);
+
+    $self->{collectors} = Navel::Definition::Collector::Parser->new(
+        maximum => $self->{meta}->{definition}->{collectors}->{maximum}
+    )->read(
+        file_path => $self->{meta}->{definition}->{collectors}->{definitions_from_file}
+    )->make();
+
+    $self->{runtime_per_collector} = {};
+
+    $self->{publishers} = Navel::Definition::Publisher::Parser->new(
+        maximum => $self->{meta}->{definition}->{publishers}->{maximum}
+    )->read(
+        file_path => $self->{meta}->{definition}->{publishers}->{definitions_from_file}
+    )->make();
+
+    $self->{runtime_per_publisher} = {};
+
+    $self->{job_types} = {
+        %{$self->{job_types}},
+        %{
+            {
+                collector => Navel::AnyEvent::Pool->new(
+                    logger => $options{logger},
+                    maximum => $self->{meta}->{definition}->{collectors}->{maximum}
+                ),
+                publisher => Navel::AnyEvent::Pool->new(
+                    logger => $options{logger},
+                    maximum => $self->{meta}->{definition}->{publishers}->{maximum}
+                )
+            }
+        }
     };
 
+    $self->{ae_fork} = AnyEvent::Fork->new();
+
     bless $self, ref $class || $class;
-}
-
-sub register_core_logger {
-    my ($self, $job_name) = (shift, 0);
-
-    $self->unregister_job_by_type_and_name('logger', $job_name);
-
-    $self->pool_matching_job_type('logger')->attach_timer(
-        name => $job_name,
-        singleton => 1,
-        interval => 0.5,
-        on_disabled => sub {
-            $self->{logger}->clear_queue()
-        },
-        callback => sub {
-            my $timer = shift->begin();
-
-            $_->($self->{logger}) for values %{$self->{logger_callbacks}};
-
-            $self->{logger}->flush_queue(
-                async => 1
-            );
-
-            $timer->end();
-        }
-    );
-
-    $self;
 }
 
 sub register_collector_by_name {
@@ -232,7 +208,7 @@ sub init_publisher_by_name {
 
     $self->{runtime_per_publisher}->{$publisher->{name}} = Navel::Broker::Client::Fork->new(
         logger => $self->{logger},
-        meta_configuration => $self->{configuration}->{definition}->{publishers},
+        meta_configuration => $self->{meta}->{definition}->{publishers},
         definition => $publisher,
         ae_fork => $self->{ae_fork},
         on_event => sub {
@@ -567,22 +543,6 @@ sub goto_collector_next_stage {
     }
 
     $job->end() if defined $job;
-
-    $self;
-}
-
-sub recv {
-    my $self = shift;
-
-    $self->{ae_condvar}->recv();
-
-    $self;
-}
-
-sub send {
-    my $self = shift;
-
-    $self->{ae_condvar}->send();
 
     $self;
 }
