@@ -42,15 +42,17 @@ sub new {
     );
 
     sub sigtrap_handler {
-        $self->{core}->{logger}->notice(
-            Navel::Logger::Message->stepped_message('catch a signal.',
-                [
-                    $!
-                ]
-            )
-        )->notice('stopping the scheduler.')->flush_queue();
+        eval {
+            $self->{core}->{logger}->notice(
+                Navel::Logger::Message->stepped_message('catch a signal.',
+                    [
+                        $!
+                    ]
+                )
+            )->notice('stopping the scheduler.')->flush_queue();
 
-        $self->stop();
+            $self->stop();
+        };
     }
 
     if ($self->webserver()) {
