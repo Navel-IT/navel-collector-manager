@@ -4,7 +4,7 @@ perl:
   - '5.22'
   - '5.20'
   - '5.18'
-sudo: false
+sudo: required
 before_install:
   - |
       f_install_navel_dep() {

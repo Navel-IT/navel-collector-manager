@@ -16,13 +16,13 @@ Status
 [![Build Status](https://travis-ci.org/Navel-IT/navel-scheduler.svg?branch=devel)](https://travis-ci.org/Navel-IT/navel-scheduler?branch=devel)
 [![Coverage Status](https://coveralls.io/repos/github/Navel-IT/navel-scheduler/badge.svg?branch=devel)](https://coveralls.io/github/Navel-IT/navel-scheduler?branch=devel)
 
-Install
--------
+Installation
+------------
 
 Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 
-Prepare configuration
----------------------
+Configuration
+-------------
 
 - *meta.yml* ([t/01-meta.yml](t/01-meta.yml)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
 
@@ -105,7 +105,7 @@ server {
 
 - Others parts of the configuration of navel-scheduler must be done over REST.
 
-Start
+Usage
 -----
 
 All the help is available with `navel-scheduler --help`.
