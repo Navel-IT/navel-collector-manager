@@ -24,7 +24,7 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Configuration
 -------------
 
-- *meta.yml* ([t/01-meta.yml](t/01-meta.yml)) is the entrypoint for the configuration of navel-scheduler. Most of this properties can't be changed at runtime.
+- *meta.yml* ([t/01-meta.yml](t/01-meta.yml)) is the entrypoint for the configuration of navel-scheduler.
 
 List of the availables properties for *webservices/mojo_server* (more details [here](http://mojolicio.us/perldoc/Mojo/Server/Daemon#ATTRIBUTES)):
 
