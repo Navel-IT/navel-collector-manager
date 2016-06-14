@@ -51,7 +51,7 @@ sub new_collector {
             unless ($@) {
                 $controller->daemon()->{core}->register_collector_by_name($collector->{name});
 
-                push @ok, 'adding and registering collector ' . $collector->{name} . '.';
+                push @ok, $collector->full_name() . ' added.';
             } else {
                 push @ko, $@;
             }
@@ -128,12 +128,12 @@ sub modify_collector {
                     unless ($@) {
                         $controller->daemon()->{core}->register_collector_by_name($collector->{name});
 
-                        push @ok, 'modifying collector ' . $collector->{name} . '.';
+                        push @ok, $collector->full_name() . ' modified.';
                     } else {
                         push @ko, $@;
                     }
                 } else {
-                    push @ko, 'an unknown eror occurred while modifying the collector.';
+                    push @ko, 'an unknown eror occurred while modifying the collector ' . $body->{name} . '.';
                 }
             } else {
                 push @ko, 'error(s) occurred while modifying collector ' . $body->{name} . ':', \@validation_errors;
@@ -172,7 +172,7 @@ sub delete_collector {
     };
 
     unless ($@) {
-        push @ok, ($collector->{async} ? 'killing, ' : '') . 'unregistering and deleting collector ' . $arguments->{collectorName} . '.';
+        push @ok, $collector->full_name() . ': ' . ($collector->{async} ? 'killed, ' : '') . 'unregistered and deleted.';
     } else {
         push @ko, $@;
     }

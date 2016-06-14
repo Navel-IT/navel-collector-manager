@@ -48,7 +48,7 @@ sub new {
     my $wrapped_code = $self->wrapped_code();
 
     $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message('dump of the source of the collector wrapper for ' . $self->{definition}->{backend} . '/' . $self->{definition}->{name} . '.',
+        Navel::Logger::Message->stepped_message($self->{definition}->full_name() . ': dump of the source.',
             [
                 split /\n/, $wrapped_code
             ]
@@ -64,7 +64,7 @@ sub new {
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
 
-    $self->{core}->{logger}->info('spawned a new process for collector ' . (ref $options{definition}) . '.' . $self->{definition}->{name} . '.');
+    $self->{core}->{logger}->info($self->{definition}->full_name() . ': spawned a new process.');
 
     $self;
 }

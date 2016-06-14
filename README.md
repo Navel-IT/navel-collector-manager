@@ -113,14 +113,13 @@ All the help is available with `navel-scheduler --help`.
 - Manually
 
 ```
-[root@tbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.yml
-May 29 15:07:23 tbox navel-scheduler[2753] 133 initialization.
-May 29 15:07:23 tbox navel-scheduler[2753] 133 starting the webservices.
-May 29 15:07:23 tbox navel-scheduler[2753] 133 webservices started.
-May 29 15:07:23 tbox navel-scheduler[2753] 133 initialize publisher publisher-rabbitmq-1.
-May 29 15:07:24 tbox navel-scheduler[2753] 133 connect publisher publisher-rabbitmq-1.
-May 29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-rabbitmq-1: successfully connected.
-May 29 15:07:26 tbox navel-scheduler[2753] 133 publisher publisher-rabbitmq-1: channel opened.
+[root@vmbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.yml
+June 14 18:52:04 vmbox navel-scheduler[5211] 133 initialization done.
+June 14 18:52:04 vmbox navel-scheduler[5211] 133 starting the webservices.
+June 14 18:52:04 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: initialization.
+June 14 18:52:07 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: connecting.
+June 14 18:52:09 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: successfully connected.
+June 14 18:52:09 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: channel opened.
 ```
 
 - As a service

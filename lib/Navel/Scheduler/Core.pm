@@ -88,7 +88,7 @@ sub register_collector_by_name {
 
             my $collector_starting_time = time;
 
-            my $on_event_error_message_prefix = 'incorrect declaration in collector ' . $collector->{name};
+            my $on_event_error_message_prefix = $collector->full_name() . ': incorrect behavior/declaration.';
 
             $self->{runtime_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
                 core => $self,
@@ -111,30 +111,48 @@ sub register_collector_by_name {
                                     eval {
                                         $self->{logger}->push_in_queue(
                                             severity => $_->[1],
-                                            text => 'collector ' . $collector->{name} . ': ' . $_->[2]
+                                            text => $collector->full_name() . ': ' . $_->[2]
                                         ) if defined $_->[2];
                                     };
                                 } else {
-                                    $self->{logger}->err($on_event_error_message_prefix . ': unknown event type.');
+                                    $self->{logger}->err(
+                                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                                            [
+                                                ' unknown event type.'
+                                            ]
+                                        )
+                                    );
                                 }
 
                                 $self->{logger}->err(
-                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
+                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
                                         [
                                             $@
                                         ]
                                     )
                                 ) if $@;
                             } else {
-                                $self->{logger}->err($on_event_error_message_prefix . ': event type must be an integer.');
+                                $self->{logger}->err(
+                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                                        [
+                                            'event type must be an integer.'
+                                        ]
+                                    )
+                                );
                             }
                         } else {
-                            $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
+                            $self->{logger}->err(
+                                Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                                    [
+                                        'event must be a ARRAY reference.'
+                                    ]
+                                )
+                            );
                         }
                     }
                 },
                 on_error => sub {
-                    $self->{logger}->warning('execution of collector ' . $collector->{name} . ' stopped (fatal): ' . shift . '.');
+                    $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
 
                     $self->goto_collector_next_stage(
                         job => $timer,
@@ -144,7 +162,7 @@ sub register_collector_by_name {
                     );
                 },
                 on_destroy => sub {
-                    $self->{logger}->info('collector ' . $collector->{name} . ' is destroyed.');
+                    $self->{logger}->info($collector->full_name() . ': destroyed.');
                 }
             )->rpc(
                 callback => sub {
@@ -202,9 +220,9 @@ sub init_publisher_by_name {
 
     die "unknown publisher definition\n" unless defined $publisher;
 
-    $self->{logger}->notice('initialize publisher ' . $publisher->{name} . '.');
+    $self->{logger}->notice($publisher->full_name() . ': initialization.');
 
-    my $on_event_error_message_prefix = 'incorrect declaration in publisher ' . $publisher->{name};
+    my $on_event_error_message_prefix = $publisher->full_name() . ': incorrect behavior/declaration.';
 
     $self->{runtime_per_publisher}->{$publisher->{name}} = Navel::Broker::Client::Fork->new(
         logger => $self->{logger},
@@ -219,27 +237,33 @@ sub init_publisher_by_name {
                     eval {
                         $self->{logger}->push_in_queue(
                             severity => $_->[0],
-                            text => 'publisher ' . $publisher->{name} . ': ' . $_->[1]
+                            text => $publisher->full_name() . ': ' . $_->[1]
                         ) if defined $_->[1];
                     };
 
                     $self->{logger}->err(
-                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix . '.',
+                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
                             [
                                 $@
                             ]
                         )
                     ) if $@;
                 } else {
-                    $self->{logger}->err($on_event_error_message_prefix . ': event must be a ARRAY reference.');
+                    $self->{logger}->err(
+                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                            [
+                                'event must be a ARRAY reference.'
+                            ]
+                        )
+                    );
                 }
             }
         },
         on_error => sub {
-            $self->{logger}->warning('execution of publisher ' . $publisher->{name} . ' stopped (fatal): ' . shift . '.');
+            $self->{logger}->warning($publisher->full_name() . ': execution stopped (fatal): ' . shift . '.');
         },
         on_destroy => sub {
-            $self->{logger}->info('publisher ' . $publisher->{name} . ' is destroyed.');
+            $self->{logger}->info($publisher->full_name() . ': destroyed.');
         }
     );
 
@@ -263,22 +287,34 @@ sub connect_publisher_by_name {
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
-    my $connect_generic_message = 'connect publisher ' . $publisher->{definition}->{name};
+    my $connect_generic_message = $publisher->{definition}->full_name() . ': connecting.';
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
             method => 'is_connected',
             callback => sub {
                 if (shift) {
-                    $self->{logger}->warning($connect_generic_message . ': already connected.');
+                    $self->{logger}->warning(
+                        Navel::Logger::Message->stepped_message($connect_generic_message,
+                            [
+                                'already connected.'
+                            ]
+                        )
+                    );
                 } else {
                     $publisher->rpc(
                         method => 'is_connecting',
                         callback => sub {
                             if (shift) {
-                                $self->{logger}->warning($connect_generic_message . ': already trying to establish a connection.');
+                                $self->{logger}->warning(
+                                    Navel::Logger::Message->stepped_message($connect_generic_message,
+                                        [
+                                            'already trying to establish a connection.'
+                                        ]
+                                    )
+                                );
                             } else {
-                                $self->{logger}->notice($connect_generic_message . '.');
+                                $self->{logger}->notice($connect_generic_message);
 
                                 $publisher->rpc(
                                     method => 'connect'
@@ -290,7 +326,13 @@ sub connect_publisher_by_name {
             }
         );
     } else {
-        $self->{logger}->debug($connect_generic_message . ': nothing to connect.');
+        $self->{logger}->debug(
+            Navel::Logger::Message->stepped_message($connect_generic_message,
+                [
+                    'nothing to connect.'
+                ]
+            )
+        );
     }
 
     $self;
@@ -315,22 +357,34 @@ sub disconnect_publisher_by_name {
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
-    my $disconnect_generic_message = 'disconnect publisher ' . $publisher->{definition}->{name};
+    my $disconnect_generic_message = $publisher->{definition}->full_name() . ': disconnecting.';
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
             method => 'is_disconnected',
             callback => sub {
                 if (shift) {
-                    $self->{logger}->warning($disconnect_generic_message . ': already disconnected.')
+                    $self->{logger}->warning(
+                        Navel::Logger::Message->stepped_message($disconnect_generic_message,
+                            [
+                                'already disconnected.'
+                            ]
+                        )
+                    );
                 } else {
                     $publisher->rpc(
                         method => 'is_disconnecting',
                         callback => sub {
                             if (shift) {
-                                $self->{logger}->warning($disconnect_generic_message . ': already trying to disconnect.');
+                                $self->{logger}->warning(
+                                    Navel::Logger::Message->stepped_message($disconnect_generic_message,
+                                        [
+                                            'already trying to disconnect.'
+                                        ]
+                                    )
+                                );
                             } else {
-                                $self->{logger}->notice($disconnect_generic_message . '.');
+                                $self->{logger}->notice($disconnect_generic_message);
 
                                 $publisher->rpc(
                                     method => 'disconnect'
@@ -342,7 +396,13 @@ sub disconnect_publisher_by_name {
             }
         );
     } else {
-        $self->{logger}->debug($disconnect_generic_message . ': nothing to disconnect.');
+        $self->{logger}->debug(
+            Navel::Logger::Message->stepped_message($disconnect_generic_message,
+                [
+                    'nothing to disconnect.'
+                ]
+            )
+        );
     }
 
     $self;
@@ -361,7 +421,7 @@ sub disconnect_publishers {
 my $register_publisher_by_name_common_workflow = sub {
     my ($self, %options) = @_;
 
-    $self->{logger}->debug('publisher ' . $options{publisher}->{definition}->{name} . ': trying to publicate the events.');
+    $self->{logger}->debug($options{publisher}->{definition}->full_name() . ': trying to publicate the events.');
 
     $options{publisher}->rpc(
         method => 'publish',
@@ -369,7 +429,7 @@ my $register_publisher_by_name_common_workflow = sub {
             $options{publisher}->{queue}
         ],
         callback => sub {
-            $self->{logger}->debug('clear queue for publisher ' . $options{publisher}->{definition}->{name} . '.');
+            $self->{logger}->debug($options{publisher}->{definition}->full_name() . ': clear queue.');
 
             $options{publisher}->clear_queue();
 
@@ -390,10 +450,6 @@ sub register_publisher_by_name {
     die "unknown publisher runtime\n" unless defined $publisher;
 
     $self->unregister_job_by_type_and_name('publisher', $publisher->{definition}->{name});
-
-    my $generic_message = 'publisher ' . $publisher->{definition}->{name};
-
-    my $publish_generic_message = 'publish events for ' . $generic_message;
 
     $self->pool_matching_job_type('publisher')->attach_timer(
         name => $publisher->{definition}->{name},
@@ -430,7 +486,7 @@ sub register_publisher_by_name {
                                     publisher => $publisher
                                 );
                             } else {
-                                $self->{logger}->notice($publish_generic_message . ": publisher isn't connected.");
+                                $self->{logger}->notice($publisher->{definition}->full_name() . ": isn't connected.");
 
                                 $timer->end();
                             }
@@ -443,7 +499,7 @@ sub register_publisher_by_name {
                     );
                 }
             } else {
-                $self->{logger}->debug('queue for ' . $generic_message . ' is empty.');
+                $self->{logger}->debug($publisher->{definition}->full_name() . ': queue is empty.');
 
                 $timer->end();
             }
@@ -538,7 +594,7 @@ sub goto_collector_next_stage {
         my $event = Navel::Event->new(%options);
 
         for (values %{$self->{runtime_per_publisher}}) {
-            $self->{logger}->info('publisher ' . $_->{definition}->{name} . ': add an event from collector ' . $options{collector}->{name} . '.') if $_->push_in_queue($event);
+            $self->{logger}->info($_->{definition}->full_name() . ': add an event from collector ' . $options{collector}->{name} . '.') if $_->push_in_queue($event);
         }
     }
 

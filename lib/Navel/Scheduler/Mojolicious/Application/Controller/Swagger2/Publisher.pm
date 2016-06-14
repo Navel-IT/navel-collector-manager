@@ -53,7 +53,7 @@ sub new_publisher {
             unless ($@) {
                 $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-                push @ok, 'adding publisher ' . $publisher->{name} . '.';
+                push @ok, $publisher->full_name() . ' added.';
             } else {
                 push @ko, $@;
             }
@@ -130,12 +130,12 @@ sub modify_publisher {
                     unless ($@) {
                         $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-                        push @ok, 'modifying publisher ' . $publisher->{name} . '.';
+                        push @ok, $publisher->full_name() . ' modified.';
                     } else {
                         push @ko, $@;
                     }
                 } else {
-                    push @ko, 'an unknown eror occurred while modifying the publisher.';
+                    push @ko, 'an unknown eror occurred while modifying the publisher ' . $body->{name} . '.';
                 }
             } else {
                 push @ko, 'error(s) occurred while modifying publisher ' . $body->{name} . ':', \@validation_errors;
@@ -165,6 +165,8 @@ sub delete_publisher {
         }
     ) unless defined $publisher;
 
+    my $publisher_full_name = $publisher->full_name();
+
     my (@ok, @ko);
 
     local $@;
@@ -174,7 +176,7 @@ sub delete_publisher {
     };
 
     unless ($@) {
-        push @ok, 'killing, unregistering and deleting publisher ' . $arguments->{publisherName} . '.';
+        push @ok, $publisher . ': killed, unregistered and deleted.';
     } else {
         push @ko, $@;
     }
@@ -273,7 +275,7 @@ sub show_publisher_amount_of_events {
         $controller->$callback(
             $controller->ok_ko(
                 [
-                    'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.'
+                    $publisher->full_name() . ': the runtime is not yet initialized.'
                 ],
                 []
             ),
@@ -321,12 +323,12 @@ sub push_event_to_a_publisher {
                 };
 
                 unless ($@) {
-                    push @ok, 'pushing an event to the queue of publisher ' . $publisher->{name} . '.';
+                    push @ok, $publisher->full_name() . ': pushing an event to the queue.';
                 } else {
-                    push @ko, 'an error occurred while manually pushing an event to the queue of publisher ' . $publisher->{name} . ': ' . $@ . '.';
+                    push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
                 }
             } else {
-                push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
+                push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
             }
         } else {
             push @ko, 'the request payload must represent a hash.';
@@ -360,9 +362,9 @@ sub delete_all_events_from_a_publisher {
     if (defined $publisher_runtime) {
         $publisher_runtime->clear_queue();
 
-        push @ok, 'clearing queue for publisher ' . $publisher->{name} . '.';
+        push @ok, $publisher->full_name() . ': queue cleared.';
     } else {
-        push @ko, 'the runtime of publisher ' . $publisher->{name} . ' is not yet initialized.';
+        push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
     }
 
     $controller->$callback(
@@ -392,9 +394,9 @@ sub connect_publisher {
     };
 
     unless ($@) {
-        push @ok, 'connecting publisher ' . $publisher->{name} . '.';
+        push @ok, $publisher->full_name() . ': connecting.';
     } else {
-        push @ko, 'connecting publisher ' . $publisher->{name} . ': the runtime of the publisher is not yet initialized: ' . $@ . '.';
+        push @ko, $publisher->full_name() . ': the runtime is not yet initialized: ' . $@ . '.';
     }
 
     $controller->$callback(
@@ -424,9 +426,9 @@ sub disconnect_publisher {
     };
 
     unless ($@) {
-        push @ok, 'disconnecting publisher ' . $publisher->{name} . '.';
+        push @ok, $publisher->full_name() . ': disconnecting.';
     } else {
-        push @ko, 'disconnecting publisher ' . $publisher->{name} . ': the runtime of the publisher is not yet initialized: ' . $@ . '.';
+        push @ko, $publisher->full_name() . ': the runtime is not yet initialized: ' . $@ . '.';
     }
 
     $controller->$callback(
