@@ -46,7 +46,7 @@ sub save_all_configuration {
     }
 
     my $id; $id = Mojo::IOLoop->recurring(
-        0.5 => sub {
+        0.1 => sub {
             if ($done_counter >= $done_limit) {
                 shift->remove($id);
 

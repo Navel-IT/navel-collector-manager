@@ -233,7 +233,7 @@ sub show_publisher_connection_status {
         }
 
         my $id; $id = Mojo::IOLoop->recurring(
-            0.5 => sub {
+            0.1 => sub {
                 if (keys %status >= @base_keys + @connectable_properties) {
                     shift->remove($id);
 
