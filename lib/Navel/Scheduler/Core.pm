@@ -69,110 +69,128 @@ sub new {
     bless $self, ref $class || $class;
 }
 
-sub register_collector_by_name {
+sub init_collector_by_name {
     my $self = shift;
 
     my $collector = $self->{collectors}->definition_by_name(shift);
 
     die "unknown collector definition\n" unless defined $collector;
 
-    $self->unregister_job_by_type_and_name('collector', $collector->{name});
+    my $collector_pool = $self->pool_matching_job_type('collector');
 
-    $self->pool_matching_job_type('collector')->attach_timer(
-        name => $collector->{name},
-        singleton => 1,
-        interval => $collector->{scheduling},
-        splay => 1,
-        callback => sub {
-            my $timer = shift->begin();
+    $self->{logger}->notice($collector->full_name() . ': initialization.');
 
-            my $collector_starting_time = time;
+    my $on_event_error_message_prefix = $collector->full_name() . ': incorrect behavior/declaration.';
 
-            my $on_event_error_message_prefix = $collector->full_name() . ': incorrect behavior/declaration.';
+    $self->{runtime_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
+        core => $self,
+        definition => $collector,
+        on_event => sub {
+            local $@;
 
-            $self->{runtime_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
-                core => $self,
-                definition => $collector,
-                on_event => sub {
-                    local $@;
-
-                    for (@_) {
-                        if (ref $_ eq 'ARRAY') {
-                            if (isint($_->[0])) {
-                                if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
-                                    eval {
-                                        $self->goto_collector_next_stage(
-                                            collector => $collector,
-                                            starting_time => $collector_starting_time,
-                                            data => $_->[1]
-                                        );
-                                    };
-                                } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
-                                    eval {
-                                        $self->{logger}->push_in_queue(
-                                            severity => $_->[1],
-                                            text => $collector->full_name() . ': ' . $_->[2]
-                                        ) if defined $_->[2];
-                                    };
-                                } else {
-                                    $self->{logger}->err(
-                                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
-                                            [
-                                                ' unknown event type.'
-                                            ]
-                                        )
-                                    );
-                                }
-
-                                $self->{logger}->err(
-                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
-                                        [
-                                            $@
-                                        ]
-                                    )
-                                ) if $@;
-                            } else {
-                                $self->{logger}->err(
-                                    Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
-                                        [
-                                            'event type must be an integer.'
-                                        ]
-                                    )
+            for (@_) {
+                if (ref $_ eq 'ARRAY') {
+                    if (isint($_->[0])) {
+                        if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
+                            eval {
+                                $self->goto_collector_next_stage(
+                                    collector => $collector,
+                                    time => time,
+                                    data => $_->[1]
                                 );
-                            }
+                            };
+                        } elsif ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_LOG) {
+                            eval {
+                                $self->{logger}->push_in_queue(
+                                    severity => $_->[1],
+                                    text => $collector->full_name() . ': ' . $_->[2]
+                                ) if defined $_->[2];
+                            };
                         } else {
                             $self->{logger}->err(
                                 Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
                                     [
-                                        'event must be a ARRAY reference.'
+                                        'unknown event type.'
                                     ]
                                 )
                             );
                         }
-                    }
-                },
-                on_error => sub {
-                    $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
 
-                    $self->goto_collector_next_stage(
-                        job => $timer,
-                        collector => $collector,
-                        status => 'itl',
-                        starting_time => $collector_starting_time
+                        $self->{logger}->err(
+                            Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                                [
+                                    $@
+                                ]
+                            )
+                        ) if $@;
+                    } else {
+                        $self->{logger}->err(
+                            Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                                [
+                                    'event type must be an integer.'
+                                ]
+                            )
+                        );
+                    }
+                } else {
+                    $self->{logger}->err(
+                        Navel::Logger::Message->stepped_message($on_event_error_message_prefix,
+                            [
+                                'event must be a ARRAY reference.'
+                            ]
+                        )
                     );
-                },
-                on_destroy => sub {
-                    $self->{logger}->info($collector->full_name() . ': destroyed.');
                 }
-            )->rpc(
+            }
+        },
+        on_error => sub {
+            $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
+
+            $self->goto_collector_next_stage(
+                job => $self->job_by_type_and_name('collector', $collector->{name}),
+                collector => $collector,
+                status => 'itl',
+                time => time
+            );
+        },
+        on_destroy => sub {
+            $self->{logger}->info($collector->full_name() . ': destroyed.');
+        }
+    );
+
+    $self;
+}
+
+sub init_collectors {
+    my $self = shift;
+
+    $self->init_collector_by_name($_->{name}) for @{$self->{collectors}->{definitions}};
+
+    $self;
+}
+
+sub register_collector_by_name {
+    my ($self, $name) = @_;
+
+    croak('name must be defined') unless defined $name;
+
+    my $collector = $self->{runtime_per_collector}->{$name};
+
+    die "unknown collector runtime\n" unless defined $collector;
+
+    $self->unregister_job_by_type_and_name('collector', $collector->{definition}->{name})->pool_matching_job_type('collector')->attach_timer(
+        name => $collector->{definition}->{name},
+        singleton => 1,
+        interval => $collector->{definition}->{scheduling},
+        splay => 1,
+        callback => sub {
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
                 callback => sub {
                     $self->goto_collector_next_stage(
-                        job => $timer
+                        job => shift->begin()
                     );
                 }
             );
-
-            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc} unless $collector->{async};
         }
     );
 
@@ -194,9 +212,7 @@ sub delete_collector_and_definition_associated_by_name {
 
     die "unknown collector runtime\n" unless defined $collector;
 
-    $self->unregister_job_by_type_and_name('collector', $collector->{name});
-
-    $self->{collectors}->delete_definition(
+    $self->unregister_job_by_type_and_name('collector', $collector->{name})->{collectors}->delete_definition(
         definition_name => $collector->{name}
     );
 
@@ -449,9 +465,7 @@ sub register_publisher_by_name {
 
     die "unknown publisher runtime\n" unless defined $publisher;
 
-    $self->unregister_job_by_type_and_name('publisher', $publisher->{definition}->{name});
-
-    $self->pool_matching_job_type('publisher')->attach_timer(
+    $self->unregister_job_by_type_and_name('publisher', $publisher->{definition}->{name})->pool_matching_job_type('publisher')->attach_timer(
         name => $publisher->{definition}->{name},
         singleton => 1,
         interval => $publisher->{definition}->{scheduling},
@@ -524,9 +538,7 @@ sub delete_publisher_and_definition_associated_by_name {
 
     die "unknown publisher\n" unless defined $publisher;
 
-    $self->unregister_job_by_type_and_name('publisher', $publisher->{name});
-
-    $self->{publishers}->delete_definition(
+    $self->unregister_job_by_type_and_name('publisher', $publisher->{name})->{publishers}->delete_definition(
         definition_name => $publisher->{name}
     );
 
@@ -580,9 +592,13 @@ sub job_by_type_and_name {
 }
 
 sub unregister_job_by_type_and_name {
-    my $job = shift->job_by_type_and_name(@_);
+    my $self = shift;
+
+    my $job = $self->job_by_type_and_name(@_);
 
     $job->DESTROY() if defined $job;
+
+    $self;
 }
 
 sub goto_collector_next_stage {

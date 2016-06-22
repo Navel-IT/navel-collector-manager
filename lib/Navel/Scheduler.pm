@@ -70,7 +70,7 @@ sub new {
 sub start {
     my $self = shift;
 
-    $self->SUPER::start(@_)->{core}->register_core_logger()->register_collectors()->init_publishers()->register_publishers()->recv();
+    $self->SUPER::start(@_)->{core}->register_core_logger()->init_collectors()->register_collectors()->init_publishers()->register_publishers()->recv();
 
     $self;
 }

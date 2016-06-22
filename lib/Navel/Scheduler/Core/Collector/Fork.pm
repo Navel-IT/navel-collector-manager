@@ -212,13 +212,11 @@ sub DESTROY {
     local $@;
 
     eval {
-        if ($self->{definition}->{async}) {
-            $self->rpc(
-                exit => 1
-            );
+        $self->rpc(
+            exit => 1
+        ) if $self->{definition}->{async};
 
-            undef $self->{rpc};
-        }
+        undef $self->{rpc};
     };
 
     $self;
