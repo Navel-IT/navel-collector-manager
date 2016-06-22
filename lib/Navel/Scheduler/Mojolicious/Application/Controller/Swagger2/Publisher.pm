@@ -176,7 +176,7 @@ sub delete_publisher {
     };
 
     unless ($@) {
-        push @ok, $publisher . ': killed, unregistered and deleted.';
+        push @ok, $publisher_full_name . ': killed, unregistered and deleted.';
     } else {
         push @ko, $@;
     }
