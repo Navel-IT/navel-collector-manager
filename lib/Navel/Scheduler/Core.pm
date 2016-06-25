@@ -184,10 +184,12 @@ sub register_collector_by_name {
         interval => $collector->{definition}->{scheduling},
         splay => 1,
         callback => sub {
+            my $timer = shift->begin();
+
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
                 callback => sub {
                     $self->goto_collector_next_stage(
-                        job => shift->begin()
+                        job => $timer
                     );
                 }
             );
