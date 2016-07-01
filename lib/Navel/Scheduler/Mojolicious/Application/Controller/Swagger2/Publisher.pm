@@ -13,8 +13,6 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Mojo::JSON 'decode_json';
 
-use Navel::Utils 'isint';
-
 #-> methods
 
 sub list_publishers {
