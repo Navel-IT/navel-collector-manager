@@ -49,7 +49,7 @@ sub new_collector {
             };
 
             unless ($@) {
-                $controller->daemon()->{core}->register_collector_by_name($collector->{name});
+                $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
                 push @ok, $collector->full_name() . ' added.';
             } else {
