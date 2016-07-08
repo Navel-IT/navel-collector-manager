@@ -11,8 +11,6 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Mojo::JSON 'decode_json';
-
 #-> methods
 
 sub list_publishers {
@@ -29,34 +27,26 @@ sub new_publisher {
 
     my (@ok, @ko);
 
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
     unless ($@) {
-        if (ref $body eq 'HASH') {
-            return $controller->resource_already_exists(
-                {
-                    callback => $callback,
-                    resource_name => $body->{name}
-                }
-            ) if defined $controller->daemon()->{core}->{publishers}->definition_by_name($body->{name});
-
-            my $publisher = eval {
-                $controller->daemon()->{core}->{publishers}->add_definition($body);
-            };
-
-            unless ($@) {
-                $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
-
-                push @ok, $publisher->full_name() . ' added.';
-            } else {
-                push @ko, $@;
+        return $controller->resource_already_exists(
+            {
+                callback => $callback,
+                resource_name => $arguments->{publisher}->{name}
             }
+        ) if defined $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisher}->{name});
+
+        local $@;
+
+        my $publisher = eval {
+            $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
+        };
+
+        unless ($@) {
+            $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
+
+            push @ok, $publisher->full_name() . ' added.';
         } else {
-            push @ko, 'the request payload must represent a hash.';
+            push @ko, $@;
         }
     } else {
         push @ko, $@;
@@ -91,55 +81,43 @@ sub modify_publisher {
 
     my (@ok, @ko);
 
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
     unless ($@) {
-        if (ref $body eq 'HASH') {
-            my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+        my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
 
-            return $controller->resource_not_found(
-                {
-                    callback => $callback,
-                    resource_name => $arguments->{publisherName}
-                }
-            ) unless defined $publisher;
+        return $controller->resource_not_found(
+            {
+                callback => $callback,
+                resource_name => $arguments->{publisherName}
+            }
+        ) unless defined $publisher;
 
-            delete $body->{name};
+        local $@;
 
-            $body = {
-                %{$publisher->properties()},
-                %{$body}
+        delete $arguments->{publisher}->{name};
+
+        $arguments->{publisher} = {
+            %{$publisher->properties()},
+            %{$arguments->{publisher}}
+        };
+
+        eval {
+            $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{publisher}->{name});
+        };
+
+        unless ($@) {
+            my $publisher = eval {
+                $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
             };
 
-            unless (my @validation_errors = @{$publisher->validate($body)}) {
-                eval {
-                    $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($body->{name});
-                };
+            unless ($@) {
+                $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-                unless ($@) {
-                    my $publisher = eval {
-                        $controller->daemon()->{core}->{publishers}->add_definition($body);
-                    };
-
-                    unless ($@) {
-                        $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
-
-                        push @ok, $publisher->full_name() . ' modified.';
-                    } else {
-                        push @ko, $@;
-                    }
-                } else {
-                    push @ko, 'an unknown eror occurred while modifying the publisher ' . $body->{name} . '.';
-                }
+                push @ok, $publisher->full_name() . ' modified.';
             } else {
-                push @ko, 'error(s) occurred while modifying publisher ' . $body->{name} . ':', \@validation_errors;
+                push @ko, $@;
             }
         } else {
-            push @ko, 'the request payload must represent a hash.';
+            push @ko, 'an unknown eror occurred while modifying the publisher ' . $arguments->{publisher}->{name} . '.';
         }
     } else {
         push @ko, $@;
@@ -298,38 +276,30 @@ sub push_event_to_a_publisher {
 
     my (@ok, @ko);
 
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
     unless ($@) {
-        if (ref $body eq 'HASH') {
-            if (defined $publisher_runtime) {
-                eval {
-                    $publisher_runtime->push_in_queue(
-                        {
-                            %{$body},
-                            %{
-                                {
-                                    status => 'std'
-                                }
+        if (defined $publisher_runtime) {
+            local $@;
+
+            eval {
+                $publisher_runtime->push_in_queue(
+                    {
+                        %{$arguments->{publisherEvent}},
+                        %{
+                            {
+                                status => 'std'
                             }
                         }
-                    );
-                };
+                    }
+                );
+            };
 
-                unless ($@) {
-                    push @ok, $publisher->full_name() . ': pushing an event to the queue.';
-                } else {
-                    push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
-                }
+            unless ($@) {
+                push @ok, $publisher->full_name() . ': pushing an event to the queue.';
             } else {
-                push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
+                push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
             }
         } else {
-            push @ko, 'the request payload must represent a hash.';
+            push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
         }
     } else {
         push @ko, $@;

@@ -11,8 +11,6 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Mojo::JSON 'decode_json';
-
 #-> methods
 
 sub list_collectors {
@@ -29,34 +27,26 @@ sub new_collector {
 
     my (@ok, @ko);
 
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
     unless ($@) {
-        if (ref $body eq 'HASH') {
-            return $controller->resource_already_exists(
-                {
-                    callback => $callback,
-                    resource_name => $body->{name}
-                }
-            ) if defined $controller->daemon()->{core}->{collectors}->definition_by_name($body->{name});
-
-            my $collector = eval {
-                $controller->daemon()->{core}->{collectors}->add_definition($body);
-            };
-
-            unless ($@) {
-                $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-                push @ok, $collector->full_name() . ' added.';
-            } else {
-                push @ko, $@;
+        return $controller->resource_already_exists(
+            {
+                callback => $callback,
+                resource_name => $arguments->{collector}->{name}
             }
+        ) if defined $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collector}->{name});
+
+        local $@;
+
+        my $collector = eval {
+            $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
+        };
+
+        unless ($@) {
+            $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
+
+            push @ok, $collector->full_name() . ' added.';
         } else {
-            push @ko, 'the request payload must represent a hash.';
+            push @ko, $@;
         }
     } else {
         push @ko, $@;
@@ -91,55 +81,43 @@ sub modify_collector {
 
     my (@ok, @ko);
 
-    local $@;
-
-    my $body = eval {
-        decode_json($controller->req()->body());
-    };
-
     unless ($@) {
-        if (ref $body eq 'HASH') {
-            my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+        my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
 
-            return $controller->resource_not_found(
-                {
-                    callback => $callback,
-                    resource_name => $arguments->{collectorName}
-                }
-            ) unless defined $collector;
+        return $controller->resource_not_found(
+            {
+                callback => $callback,
+                resource_name => $arguments->{collectorName}
+            }
+        ) unless defined $collector;
 
-            delete $body->{name};
+        local $@;
 
-            $body = {
-                %{$collector->properties()},
-                %{$body}
+        delete $arguments->{collector}->{name};
+
+        $arguments->{collector} = {
+            %{$collector->properties()},
+            %{$arguments->{collector}}
+        };
+
+        eval {
+            $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($arguments->{collector}->{name});
+        };
+
+        unless ($@) {
+            my $collector = eval {
+                $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
             };
 
-            unless (my @validation_errors = @{$collector->validate($body)}) {
-                eval {
-                    $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($body->{name});
-                };
+            unless ($@) {
+                $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-                unless ($@) {
-                    my $collector = eval {
-                        $controller->daemon()->{core}->{collectors}->add_definition($body);
-                    };
-
-                    unless ($@) {
-                        $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-                        push @ok, $collector->full_name() . ' modified.';
-                    } else {
-                        push @ko, $@;
-                    }
-                } else {
-                    push @ko, 'an unknown eror occurred while modifying the collector ' . $body->{name} . '.';
-                }
+                push @ok, $collector->full_name() . ' modified.';
             } else {
-                push @ko, 'error(s) occurred while modifying collector ' . $body->{name} . ':', \@validation_errors;
+                push @ko, $@;
             }
         } else {
-            push @ko, 'the request payload must represent a hash.';
+            push @ko, 'an unknown eror occurred while modifying the collector ' . $arguments->{collector}->{name} . '.';
         }
     } else {
         push @ko, $@;
