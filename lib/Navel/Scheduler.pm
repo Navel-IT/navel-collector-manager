@@ -21,6 +21,7 @@ use File::ShareDir 'dist_dir';
 use Navel::Scheduler::Parser;
 use Navel::API::Swagger2::Scheduler;
 use Navel::Logger::Message;
+use Navel::Utils 'isint';
 
 #-> methods
 
@@ -42,6 +43,8 @@ sub new {
     );
 
     sub sigtrap_handler {
+        state $stopping;
+
         eval {
             $self->{core}->{logger}->notice(
                 Navel::Logger::Message->stepped_message('catch a signal.',
@@ -51,7 +54,7 @@ sub new {
                 )
             )->notice('stopping the scheduler.')->flush_queue();
 
-            $self->stop();
+            $self->stop(5);
         };
     }
 
@@ -76,14 +79,20 @@ sub start {
 }
 
 sub stop {
-    my $self = shift;
+    my ($self, $delay) = @_;
+
+    $delay = 0 unless isint($delay) > 0;
 
     local $@;
 
     eval {
         $self->webserver(0) if $self->webserver();
 
-        $self->{core}->delete_collectors()->delete_publishers()->send();
+        $self->{core}->delete_collectors()->delete_publishers();
+
+        sleep $delay;
+
+        $self->{core}->send();
     };
 
     $self;
