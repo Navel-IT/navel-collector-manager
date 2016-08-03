@@ -40,6 +40,7 @@ WriteMakefile(
     PREREQ_PM => {
         'Navel::Base' => 0,
         'Navel::Base::Daemon' => 0,
+        'Navel::AnyEvent::Fork::RPC::Serializer::Sereal' => 0,
         'Navel::Mojolicious::Plugin::JSON::XS' => 0,
         'Navel::Mojolicious::Plugin::Logger' => 0,
         'Navel::Mojolicious::Plugin::Swagger2::StdResponses' => 0,
