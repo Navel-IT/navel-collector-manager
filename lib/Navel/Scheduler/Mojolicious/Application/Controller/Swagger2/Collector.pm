@@ -17,7 +17,7 @@ sub list_collectors {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->daemon()->{core}->{collectors}->name(),
+        $controller->daemon()->{core}->{collectors}->all_by_property_name('name'),
         200
     );
 }

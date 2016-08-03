@@ -17,7 +17,7 @@ sub list_publishers {
     my ($controller, $arguments, $callback) = @_;
 
     $controller->$callback(
-        $controller->daemon()->{core}->{publishers}->name(),
+        $controller->daemon()->{core}->{publishers}->all_by_property_name('name'),
         200
     );
 }
