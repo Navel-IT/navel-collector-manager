@@ -8,16 +8,16 @@ sudo: required
 before_install:
   - |
       f_install_navel_dep() {
-          git clone "https://github.com/navel-it/${1}" && \
-          pushd "${1}" && \
-          cpanm --quiet --installdeps --notest . && \
-          cpanm --quiet . && \
-          popd
+          local cpanm_chain=()
+
+          for dep in "${@}" ; do
+              cpanm_chain+=("https://github.com/navel-it/${dep}")
+          done
+
+          cpanm --quiet --installdeps --notest "${cpanm_chain[@]}" && \
+          cpanm --quiet "${cpanm_chain[@]}"
       }
-  - pushd ..
-  - f_install_navel_dep navel-base
-  - f_install_navel_dep navel-api-blueprints
-  - popd
+  - f_install_navel_dep navel-base navel-base-daemon navel-mojolicious-plugin-json-xs navel-mojolicious-plugin-logger navel-mojolicious-plugin-swagger2-stdresponses navel-logger navel-api navel-event navel-anyevent-pool navel-bcb
   - cpanm --quiet --notest Devel::Cover::Report::Coveralls
 after_success:
   - cover -test -report coveralls

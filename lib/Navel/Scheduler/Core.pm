@@ -9,6 +9,8 @@ package Navel::Scheduler::Core 0.1;
 
 use Navel::Base;
 
+use EV;
+
 use parent 'Navel::Base::Daemon::Core';
 
 use AnyEvent::Fork;

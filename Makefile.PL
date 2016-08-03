@@ -39,14 +39,21 @@ WriteMakefile(
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
         'Navel::Base' => 0,
+        'Navel::Base::Daemon' => 0,
+        'Navel::Mojolicious::Plugin::JSON::XS' => 0,
+        'Navel::Mojolicious::Plugin::Logger' => 0,
+        'Navel::Mojolicious::Plugin::Swagger2::StdResponses' => 0,
+        'Navel::Logger' => 0,
         'Navel::API' => 0,
+        'Navel::Event' => 0,
+        'Navel::AnyEvent::Pool' => 0,
+        'Navel::Broker::Client::Fork' => 0,
         'EV' => 0,
-        'AnyEvent::IO' => 0,
-        'AnyEvent::AIO' => 0,
-        'IO::AIO' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
-        'File::ShareDir' => 0
+        'File::ShareDir' => 0,
+        'Mojolicious' => 0,
+        'IO::Socket::SSL' => 1.84
     },
     TEST_REQUIRES => {
         'Test::More' => 0,
