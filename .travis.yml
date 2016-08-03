@@ -8,16 +8,24 @@ sudo: required
 before_install:
   - |
       f_install_navel_dep() {
-          local repo_url
-
-          for dep in "${@}" ; do
-              repo_url="https://github.com/navel-it/${dep}.git"
-
-              cpanm --quiet --installdeps --notest "${repo_url}" && \
-              cpanm --quiet "${repo_url}"
-          done
+          git clone "https://github.com/navel-it/${1}" && \
+          pushd "${1}" && \
+          cpanm --quiet --installdeps --notest . && \
+          cpanm --quiet . && \
+          popd
       }
-  - f_install_navel_dep navel-base navel-base-daemon navel-mojolicious-plugin-json-xs navel-mojolicious-plugin-logger navel-mojolicious-plugin-swagger2-stdresponses navel-logger navel-api navel-event navel-anyevent-pool navel-bcb
+  - pushd ..
+  - f_install_navel_dep navel-base
+  - f_install_navel_dep navel-base-daemon
+  - f_install_navel_dep navel-mojolicious-plugin-json-xs
+  - f_install_navel_dep navel-mojolicious-plugin-logger
+  - f_install_navel_dep navel-mojolicious-plugin-swagger2-stdresponses
+  - f_install_navel_dep navel-logger
+  - f_install_navel_dep navel-api
+  - f_install_navel_dep navel-event
+  - f_install_navel_dep navel-anyevent-pool
+  - f_install_navel_dep navel-bcb
+  - popd
   - cpanm --quiet --notest Devel::Cover::Report::Coveralls
 after_success:
   - cover -test -report coveralls
