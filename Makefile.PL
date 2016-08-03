@@ -49,6 +49,7 @@ WriteMakefile(
         'Navel::AnyEvent::Pool' => 0,
         'Navel::Broker::Client::Fork' => 0,
         'EV' => 0,
+        'AnyEvent' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
         'File::ShareDir' => 0,

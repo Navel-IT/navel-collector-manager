@@ -16,6 +16,8 @@ use sigtrap (
     'normal-signals'
 );
 
+use AnyEvent;
+
 use File::ShareDir 'dist_dir';
 
 use Navel::Scheduler::Parser;
@@ -43,19 +45,9 @@ sub new {
     );
 
     sub sigtrap_handler {
-        state $stopping;
-
-        eval {
-            $self->{core}->{logger}->notice(
-                Navel::Logger::Message->stepped_message('catch a signal.',
-                    [
-                        $!
-                    ]
-                )
-            )->notice('stopping the scheduler.')->flush_queue();
-
-            $self->stop(5);
-        };
+        $self->stop(
+            delay => 5
+        );
     }
 
     if ($self->webserver()) {
@@ -79,21 +71,38 @@ sub start {
 }
 
 sub stop {
-    my ($self, $delay) = @_;
+    my ($self, %options) = @_;
 
-    $delay = 0 unless isint($delay) > 0;
+    state $stopping;
 
-    local $@;
+    unless ($stopping) {
+        $stopping = 1;
 
-    eval {
-        $self->webserver(0) if $self->webserver();
+        $options{delay} = 0 unless isint($options{delay}) > 0;
 
-        $self->{core}->delete_collectors()->delete_publishers();
+        local $@;
 
-        sleep $delay;
+        $self->{core}->{logger}->notice('stopping the scheduler.');
 
-        $self->{core}->send();
-    };
+        eval {
+            $self->webserver(0) if $self->webserver();
+
+            $self->{core}->delete_collectors()->delete_publishers();
+
+            my $wait; $wait = AnyEvent->timer(
+                after => $options{delay},
+                cb => sub {
+                    undef $wait;
+
+                    $self->{core}->send();
+
+                    $options{delay_callback}->() if ref $options{delay_callback} eq 'CODE';
+
+                    $stopping = 0;
+                }
+            );
+        };
+    }
 
     $self;
 }
