@@ -31,9 +31,6 @@ WriteMakefile(
         resources => {
             license => 'http://www.apache.org/licenses/LICENSE-2.0.html',
             repository => 'http://github.com/Navel-IT/navel-scheduler'
-        },
-        no_index => {
-            directory => ['t']
         }
     },
     MIN_PERL_VERSION => $min_perl_version,
