@@ -1,0 +1,47 @@
+---
+abstract: navel-scheduler
+author:
+  - 'Yoann Le Garff, Nicolas Boquet and Yann Le Bras'
+build_requires:
+  ExtUtils::MakeMaker: '0'
+  Test::Exception: '0'
+  Test::More: '0'
+configure_requires:
+  ExtUtils::MakeMaker: '6.64'
+  File::ShareDir::Install: '0'
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 7.1001, CPAN::Meta::Converter version 2.150005'
+license: unknown
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: Navel-Scheduler
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  AnyEvent: '0'
+  AnyEvent::Fork: '0'
+  AnyEvent::Fork::RPC: '0'
+  EV: '0'
+  File::ShareDir: '0'
+  IO::Socket::SSL: '1.84'
+  Mojolicious: '0'
+  Navel::API: '0'
+  Navel::AnyEvent::Fork::RPC::Serializer::Sereal: '0'
+  Navel::AnyEvent::Pool: '0'
+  Navel::Base: '0'
+  Navel::Base::Daemon: '0'
+  Navel::Broker::Client::Fork: '0'
+  Navel::Event: '0'
+  Navel::Logger: '0'
+  Navel::Mojolicious::Plugin::JSON::XS: '0'
+  Navel::Mojolicious::Plugin::Logger: '0'
+  Navel::Mojolicious::Plugin::Swagger2::StdResponses: '0'
+  perl: v5.18.0
+resources:
+  license: http://www.apache.org/licenses/LICENSE-2.0.html
+  repository: http://github.com/Navel-IT/navel-scheduler
+version: '0.1'
+x_serialization_backend: 'CPAN::Meta::YAML version 0.018'
