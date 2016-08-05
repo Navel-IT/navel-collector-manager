@@ -11,6 +11,14 @@ use Navel::Base;
 
 use parent 'Navel::Base::Daemon::Parser';
 
+use Navel::API::Swagger2::Scheduler;
+
+#-> functions
+
+my $swagger_definition = sub {
+    state $definition = Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta');
+};
+
 #-> methods
 
 sub validate {
@@ -18,144 +26,7 @@ sub validate {
 
     $class->SUPER::validate(
         @_,
-        validator => {
-            type => 'object',
-            additionalProperties => 0,
-            required => [
-                qw/
-                    collectors
-                    publishers
-                    webservices
-                /
-            ],
-            properties => {
-                collectors => {
-                    type => 'object',
-                    additionalProperties => 0,
-                    required => [
-                        qw/
-                            definitions_from_file
-                            maximum
-                        /
-                    ],
-                    properties => {
-                        definitions_from_file => {
-                            type => [
-                                qw/
-                                    string
-                                    integer
-                                    number
-                                /
-                            ]
-                        },
-                        maximum => {
-                            type => 'integer',
-                            minimum => 0
-                        }
-                    }
-                },
-                publishers => {
-                    type => 'object',
-                    additionalProperties => 0,
-                    required => [
-                        qw/
-                            definitions_from_file
-                            maximum
-                        /
-                    ],
-                    properties => {
-                        definitions_from_file => {
-                            type => [
-                                qw/
-                                    string
-                                    integer
-                                    number
-                                /
-                            ]
-                        },
-                        maximum => {
-                            type => 'integer',
-                            minimum => 0
-                        }
-                    }
-                },
-                webservices => {
-                    type => 'object',
-                    additionalProperties => 0,
-                    required => [
-                        qw/
-                            definitions_from_file
-                            credentials
-                            mojo_server
-                        /
-                    ],
-                    properties => {
-                        definitions_from_file => {
-                            type => [
-                                qw/
-                                    string
-                                    integer
-                                    number
-                                /
-                            ]
-                        },
-                        credentials => {
-                            type => 'object',
-                            additionalProperties => 0,
-                            required => [
-                                qw/
-                                    login
-                                    password
-                                /
-                            ],
-                            properties => {
-                                login => {
-                                    type => [
-                                        qw/
-                                            string
-                                            integer
-                                            number
-                                        /
-                                    ]
-                                },
-                                password => {
-                                    type => [
-                                        qw/
-                                            string
-                                            integer
-                                            number
-                                        /
-                                    ]
-                                }
-                            }
-                        },
-                        mojo_server => {
-                            type => 'object',
-                            additionalProperties => 0,
-                            properties => {
-                                reverse_proxy => {
-                                    type => 'integer',
-                                    minimum => 0,
-                                    maximum => 1
-                                },
-                                backlog => {
-                                    type => 'integer'
-                                },
-                                inactivity_timeout => {
-                                    type => 'integer'
-                                },
-                                max_clients => {
-                                    type => 'integer'
-                                },
-                                max_requests => {
-                                    type => 'integer'
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
+        validator => $swagger_definition->(),
         raw_definition => $raw_definition
     );
 }

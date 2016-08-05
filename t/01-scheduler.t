@@ -30,7 +30,9 @@ lives_ok {
             severity => 'debug'
         ),
         meta_configuration_file_path => $meta_configuration_file_path,
-        enable_webservices => 1
+        webservice_listeners => [
+            'http://*:8080'
+        ]
     );
 } 'Navel::Scheduler->new(): loading and preparing meta configuration from ' . $meta_configuration_file_path;
 
