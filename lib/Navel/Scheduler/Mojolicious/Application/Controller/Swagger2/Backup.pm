@@ -25,7 +25,6 @@ sub save_all_configuration {
     for (
         $controller->daemon()->{core}->{collectors},
         $controller->daemon()->{core}->{publishers},
-        $controller->daemon()->{webservices},
         $controller->daemon()->{core}->{meta}
     ) {
         $_->write(

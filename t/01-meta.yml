@@ -5,8 +5,7 @@
   publishers:
     definitions_from_file: t/01-publishers.yml
     maximum: 0
-  webservices:
-    definitions_from_file: t/01-webservices.yml
+  webservice:
     credentials:
       login: admin
       password: password
