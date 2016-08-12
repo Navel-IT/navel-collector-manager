@@ -43,6 +43,8 @@ WriteMakefile(
         'Navel::Mojolicious::Plugin::Swagger2::StdResponses' => 0,
         'Navel::Logger' => 0,
         'Navel::API' => 0,
+        'Navel::Definition::Collector' => 0,
+        'Navel::Definition::Publisher' => 0,
         'Navel::Event' => 0,
         'Navel::AnyEvent::Pool' => 0,
         'Navel::Broker::Client::Fork' => 0,

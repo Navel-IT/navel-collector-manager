@@ -16,16 +16,19 @@ before_install:
       }
   - pushd ..
   - f_install_navel_dep navel-base
+  - f_install_navel_dep navel-base-definition
   - f_install_navel_dep navel-logger
+  - f_install_navel_dep navel-api
+  - f_install_navel_dep navel-base-daemon
   - f_install_navel_dep navel-mojolicious-plugin-json-xs
   - f_install_navel_dep navel-mojolicious-plugin-logger
   - f_install_navel_dep navel-mojolicious-plugin-swagger2-stdresponses
-  - f_install_navel_dep navel-api
   - f_install_navel_dep navel-anyevent-fork-rpc-serializer-sereal
   - f_install_navel_dep navel-anyevent-pool
+  - f_install_navel_dep navel-definition-collector
+  - f_install_navel_dep navel-definition-publisher
   - f_install_navel_dep navel-event
   - f_install_navel_dep navel-bcb
-  - f_install_navel_dep navel-base-daemon
   - popd
   - cpanm --quiet --notest Devel::Cover::Report::Coveralls
 after_success:
