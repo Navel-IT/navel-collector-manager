@@ -34,6 +34,8 @@ requires:
   Navel::Base: '0'
   Navel::Base::Daemon: '0'
   Navel::Broker::Client::Fork: '0'
+  Navel::Definition::Collector: '0'
+  Navel::Definition::Publisher: '0'
   Navel::Event: '0'
   Navel::Logger: '0'
   Navel::Mojolicious::Plugin::JSON::XS: '0'
