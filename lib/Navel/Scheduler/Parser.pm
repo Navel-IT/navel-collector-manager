@@ -11,22 +11,25 @@ use Navel::Base;
 
 use parent 'Navel::Base::Daemon::Parser';
 
+use JSON::Validator;
+
 use Navel::API::Swagger2::Scheduler;
 
-#-> functions
-
-my $swagger_definition = sub {
-    state $definition = Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta');
-};
-
 #-> methods
+
+sub json_validator {
+    my $class = shift;
+
+    state $json_validator = JSON::Validator->new()->schema(
+        Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta')
+    );
+}
 
 sub validate {
     my ($class, $raw_definition) = @_;
 
     $class->SUPER::validate(
         @_,
-        validator => $swagger_definition->(),
         raw_definition => $raw_definition
     );
 }

@@ -54,6 +54,7 @@ WriteMakefile(
         'AnyEvent::Fork::RPC' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0,
+        'JSON::Validator' => 0,
         'IO::Socket::SSL' => 1.84
     },
     CONFIGURE_REQUIRES => {
