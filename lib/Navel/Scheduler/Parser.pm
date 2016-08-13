@@ -17,20 +17,21 @@ use Navel::API::Swagger2::Scheduler;
 
 #-> methods
 
-sub json_validator {
-    my $class = shift;
-
-    state $json_validator = JSON::Validator->new()->schema(
-        Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta')
-    );
-}
-
 sub validate {
     my ($class, $raw_definition) = @_;
 
     $class->SUPER::validate(
         @_,
-        raw_definition => $raw_definition
+        raw_definition => $raw_definition,
+        validator => sub {
+            state $json_validator = JSON::Validator->new()->schema(
+                Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta')
+            );
+
+            [
+                $json_validator->validate(shift);
+            ];
+        }
     );
 }
 
