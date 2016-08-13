@@ -27,6 +27,7 @@ requires:
   EV: '0'
   File::ShareDir: '0'
   IO::Socket::SSL: '1.84'
+  JSON::Validator: '0'
   Mojolicious: '0'
   Navel::API: '0'
   Navel::AnyEvent::Fork::RPC::Serializer::Sereal: '0'
