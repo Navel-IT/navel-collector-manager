@@ -21,7 +21,6 @@ sub validate {
     my ($class, $raw_definition) = @_;
 
     $class->SUPER::validate(
-        @_,
         raw_definition => $raw_definition,
         validator => sub {
             state $json_validator = JSON::Validator->new()->schema(
@@ -29,7 +28,7 @@ sub validate {
             );
 
             [
-                $json_validator->validate(shift);
+                $json_validator->validate(shift)
             ];
         }
     );
