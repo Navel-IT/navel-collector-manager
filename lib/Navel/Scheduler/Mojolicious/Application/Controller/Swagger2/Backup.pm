@@ -51,7 +51,7 @@ sub save_all_configuration {
 
                 $controller->$callback(
                     $controller->ok_ko(\@ok, \@ko),
-                    200
+                    @ko ? 500 : 200
                 );
             }
         }

@@ -91,7 +91,7 @@ sub init_collector_by_name {
             local $@;
 
             for (@_) {
-                if (ref $_ eq 'ARRAY') {
+                if (ref eq 'ARRAY') {
                     if (isint($_->[0])) {
                         if ($_->[0] == Navel::Scheduler::Core::Collector::Fork::EVENT_EVENT) {
                             eval {
@@ -253,7 +253,7 @@ sub init_publisher_by_name {
             local $@;
 
             for (@_) {
-                if (ref $_ eq 'ARRAY') {
+                if (ref eq 'ARRAY') {
                     eval {
                         $self->{logger}->push_in_queue(
                             severity => $_->[0],
