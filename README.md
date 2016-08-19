@@ -70,6 +70,7 @@ Collectors
  - Documentation can be found [here](https://metacpan.org/pod/AnyEvent::Fork::RPC).
 - They are Perl packages.
 - A subroutine named `collect` must be declared.
+- Subroutines `enable` and `disable` must be declared if the collector is asynchronous.
 - The data returned by this subroutine are not used by the master process, instead there are two methods to do this:
  - `Navel::Scheduler::Core::Collector::Fork::Worker::event($data, $data, ...)` which send event(s) to the publishers.
  - `Navel::Scheduler::Core::Collector::Fork::Worker::log([$severity, $text], [$severity, $text], ...)` which send message(s) to the logger.

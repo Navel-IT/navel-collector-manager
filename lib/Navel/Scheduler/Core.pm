@@ -180,7 +180,7 @@ sub register_collector_by_name {
 
     die "unknown collector runtime\n" unless defined $collector;
 
-    $self->unregister_job_by_type_and_name('collector', $collector->{definition}->{name})->pool_matching_job_type('collector')->attach_timer(
+    my %timer_options = (
         name => $collector->{definition}->{name},
         singleton => 1,
         interval => $collector->{definition}->{scheduling},
@@ -197,6 +197,32 @@ sub register_collector_by_name {
             );
         }
     );
+
+    if ($collector->{definition}->{async}) {
+        $timer_options{on_enable} = sub {
+            my $timer = shift;
+
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
+                action => 'enable',
+                callback => sub {
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . 'activation successfully propagated to the worker.');
+                }
+            );
+        };
+
+        $timer_options{on_disable} = sub {
+            my $timer = shift;
+
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
+                action => 'disable',
+                callback => sub {
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' deactivation successfully propagated to the worker.');
+                }
+            );
+        };
+    }
+
+    $self->unregister_job_by_type_and_name('collector', $collector->{definition}->{name})->pool_matching_job_type('collector')->attach_timer(%timer_options);
 
     $self;
 }
@@ -311,7 +337,7 @@ sub connect_publisher_by_name {
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
-            method => 'is_connected',
+            action => 'is_connected',
             callback => sub {
                 if (shift) {
                     $self->{logger}->warning(
@@ -323,7 +349,7 @@ sub connect_publisher_by_name {
                     );
                 } else {
                     $publisher->rpc(
-                        method => 'is_connecting',
+                        action => 'is_connecting',
                         callback => sub {
                             if (shift) {
                                 $self->{logger}->warning(
@@ -337,7 +363,7 @@ sub connect_publisher_by_name {
                                 $self->{logger}->notice($connect_generic_message);
 
                                 $publisher->rpc(
-                                    method => 'connect'
+                                    action => 'connect'
                                 );
                             }
                         }
@@ -381,7 +407,7 @@ sub disconnect_publisher_by_name {
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
-            method => 'is_disconnected',
+            action => 'is_disconnected',
             callback => sub {
                 if (shift) {
                     $self->{logger}->warning(
@@ -393,7 +419,7 @@ sub disconnect_publisher_by_name {
                     );
                 } else {
                     $publisher->rpc(
-                        method => 'is_disconnecting',
+                        action => 'is_disconnecting',
                         callback => sub {
                             if (shift) {
                                 $self->{logger}->warning(
@@ -407,7 +433,7 @@ sub disconnect_publisher_by_name {
                                 $self->{logger}->notice($disconnect_generic_message);
 
                                 $publisher->rpc(
-                                    method => 'disconnect'
+                                    action => 'disconnect'
                                 );
                             }
                         }
@@ -444,7 +470,7 @@ my $register_publisher_by_name_common_workflow = sub {
     $self->{logger}->debug($options{publisher}->{definition}->full_name() . ': trying to publicate the events.');
 
     $options{publisher}->rpc(
-        method => 'publish',
+        action => 'publish',
         options => [
             $options{publisher}->{queue}
         ],
@@ -479,11 +505,11 @@ sub register_publisher_by_name {
 
             if ($publisher->{definition}->{connectable} && $publisher->{definition}->{auto_connect}) {
                 $publisher->rpc(
-                    method => 'is_connected',
+                    action => 'is_connected',
                     callback => sub {
                         unless (shift) {
                             $publisher->rpc(
-                                method => 'is_connecting',
+                                action => 'is_connecting',
                                 callback => sub {
                                     $self->connect_publisher_by_name($publisher->{definition}->{name}) unless shift;
                                 }
@@ -496,7 +522,7 @@ sub register_publisher_by_name {
             if (@{$publisher->{queue}}) {
                 if ($publisher->{definition}->{connectable}) {
                     $publisher->rpc(
-                        method => 'is_connected',
+                        action => 'is_connected',
                         callback => sub {
                             if (shift) {
                                 $self->$register_publisher_by_name_common_workflow(

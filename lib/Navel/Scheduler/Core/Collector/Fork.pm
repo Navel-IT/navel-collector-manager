@@ -74,7 +74,7 @@ sub rpc {
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
-            $options{exit},
+            $options{action} // 'collect',
             $self->{core}->{meta}->{definition}->{collectors},
             $self->{definition}->properties(),
             ref $options{callback} eq 'CODE' ? $options{callback} : sub {}
@@ -125,7 +125,7 @@ sub wrapped_code {
     sub run {' . ($self->{definition}->{async} ? '
         my $done = shift;' : '') . '
 
-        my $exit = shift;
+        my $action = shift;
 
         local $@;
 
@@ -138,7 +138,7 @@ sub wrapped_code {
             return;
         }
 
-        if ($exit) {
+        if ($action eq ' . "'exit'" . ') {
             $Navel::Scheduler::Core::Collector::Fork::Worker::stopping = 1;
 
             $done->();
@@ -172,13 +172,13 @@ sub wrapped_code {
         };
 
         unless ($@) {
-            if (' . $self->{definition}->{backend} . "->can('collect')) {
-                " . $self->{definition}->{backend} . '::collect(' . ($self->{definition}->{async} ? '$done, ' : '') . "\@_);
+            if (my $action_sub = ' . $self->{definition}->{backend} . '->can($action)) {
+                $action_sub->(' . ($self->{definition}->{async} ? '$done, ' : '') . "\@_);
             } else {
                 Navel::Scheduler::Core::Collector::Fork::Worker::log(
                     [
-                        'emerg',
-                        'the mandatory subroutine " . $self->{definition}->{backend}  . "::collect() is not declared.'
+                        'err',
+                        'the subroutine " . $self->{definition}->{backend}  . "::' . \$action . '() is not declared.'
                     ]
                 ); " . ($self->{definition}->{async} ? '
 
@@ -213,7 +213,7 @@ sub DESTROY {
 
     eval {
         $self->rpc(
-            exit => 1
+            action => 'exit'
         ) if $self->{definition}->{async};
 
         undef $self->{rpc};
