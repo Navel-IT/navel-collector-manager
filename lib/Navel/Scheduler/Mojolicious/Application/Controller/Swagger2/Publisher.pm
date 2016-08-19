@@ -198,7 +198,7 @@ sub show_publisher_connection_status {
 
             if (defined $publisher_runtime) {
                 $publisher_runtime->rpc(
-                    method => $method,
+                    action => $method,
                     callback => sub {
                         $status{$connectable_property} = shift ? 1 : 0;
                     }
