@@ -196,7 +196,7 @@ sub show_publisher_connection_status {
 
                     ($status{connecting}, $status{connected}, $status{disconnecting}, $status{disconnected}) = @_;
 
-                    $status{$_} = $status{$_} ? 1 : 0 for keys %status;
+                    $status{$_} = $status{$_}->[0] ? 1 : 0 for keys %status;
 
                     $status{name} = $publisher->{name};
 

@@ -29,7 +29,7 @@ sub save_all_configuration {
     )->then(
         sub {
             push @ok, map {
-                $_ . ': runtime configuration successfully saved.';
+                $_->[0] . ': runtime configuration successfully saved.';
             } @_;
         }
     )->catch(
