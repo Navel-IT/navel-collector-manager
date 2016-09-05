@@ -14,7 +14,9 @@ use Navel::API::Swagger2::Scheduler;
 #-> methods
 
 sub new {
-    shift->SUPER::new(
+    my $class = shift;
+
+    $class->SUPER::new(
         @_,
         swagger => Navel::API::Swagger2::Scheduler->new()
     );

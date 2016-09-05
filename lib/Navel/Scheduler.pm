@@ -34,10 +34,10 @@ sub run {
 }
 
 sub new {
-    my ($class, %options) = @_;
+    my $class = shift;
 
     state $self = $class->SUPER::new(
-        %options,
+        @_,
         meta => Navel::Scheduler::Parser->new(),
         core_class => 'Navel::Scheduler::Core',
         mojolicious_application_class => 'Navel::Scheduler::Mojolicious::Application',
