@@ -28,7 +28,9 @@ sub save_all_configuration {
         $controller->daemon()->{core}->{meta}->async_write()
     )->then(
         sub {
-            push @ok, @_;
+            push @ok, map {
+                $_ . ': runtime configuration successfully saved.';
+            } @_;
         }
     )->catch(
         sub {
