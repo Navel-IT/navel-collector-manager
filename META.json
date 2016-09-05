@@ -56,7 +56,8 @@
             "Navel::Mojolicious::Plugin::JSON::XS" : "0",
             "Navel::Mojolicious::Plugin::Logger" : "0",
             "Navel::Mojolicious::Plugin::Swagger2::StdResponses" : "0",
-            "perl" : "v5.18.0"
+            "perl" : "v5.18.0",
+            "Promises" : 0
          }
       }
    },

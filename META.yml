@@ -43,6 +43,7 @@ requires:
   Navel::Mojolicious::Plugin::Logger: '0'
   Navel::Mojolicious::Plugin::Swagger2::StdResponses: '0'
   perl: v5.18.0
+  Promises: '0'
 resources:
   license: http://www.apache.org/licenses/LICENSE-2.0.html
   repository: http://github.com/Navel-IT/navel-scheduler

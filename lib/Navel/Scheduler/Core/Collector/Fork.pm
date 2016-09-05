@@ -17,6 +17,8 @@ use constant {
 use AnyEvent::Fork;
 use AnyEvent::Fork::RPC;
 
+use Promises 'deferred';
+
 use Navel::Logger::Message;
 use Navel::AnyEvent::Fork::RPC::Serializer::Sereal;
 
@@ -70,24 +72,30 @@ sub new {
 }
 
 sub rpc {
-    my ($self, %options) = @_;
+    my $self = shift;
+
+    my $deferred = deferred();
 
     if (defined $self->{rpc}) {
         $self->{rpc}->(
-            $options{action} // 'collect',
+            shift // 'collect',
             $self->{core}->{meta}->{definition}->{collectors},
             $self->{definition}->properties(),
-            ref $options{callback} eq 'CODE' ? $options{callback} : sub {}
+            sub {
+                $deferred->resolve(@_);
+            }
         );
+    } else {
+        $deferred->reject('the worker had been destroyed');
     }
 
-    $self;
+    $deferred->promise();
 }
 
 sub wrapped_code {
     my $self = shift;
 
-    my $wrapped_code .= "package Navel::Scheduler::Core::Collector::Fork::Worker;
+    my $wrapped_code = "package Navel::Scheduler::Core::Collector::Fork::Worker;
 
 {
     BEGIN {
@@ -212,9 +220,7 @@ sub DESTROY {
     local $@;
 
     eval {
-        $self->rpc(
-            action => 'exit'
-        ) if $self->{definition}->{async};
+        $self->rpc('exit') if $self->{definition}->{async};
 
         undef $self->{rpc};
     };

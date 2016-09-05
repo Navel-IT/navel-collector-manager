@@ -148,6 +148,8 @@ sub init_collector_by_name {
         on_error => sub {
             $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
 
+            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc};
+
             $self->goto_collector_next_stage(
                 job => $self->job_by_type_and_name('collector', $collector->{name}),
                 collector => $collector,
@@ -180,6 +182,16 @@ sub register_collector_by_name {
 
     die "unknown collector runtime\n" unless defined $collector;
 
+    my $on_catch = sub {
+        $self->{logger}->warning(
+            Navel::Logger::Message->stepped_message($collector->{definition}->full_name() . ': cannot propagate order to the worker.',
+                [
+                    shift
+                ]
+            )
+        );
+    };
+
     my %timer_options = (
         name => $collector->{definition}->{name},
         singleton => 1,
@@ -188,11 +200,13 @@ sub register_collector_by_name {
         callback => sub {
             my $timer = shift->begin();
 
-            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
-                callback => sub {
-                    $self->goto_collector_next_stage(
-                        job => $timer
-                    );
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc()->then(
+                sub {
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': execution successfully propagated to the worker.');
+                }
+            )->catch($on_catch)->finally(
+                sub {
+                    $timer->end();
                 }
             );
         }
@@ -202,23 +216,21 @@ sub register_collector_by_name {
         $timer_options{on_enable} = sub {
             my $timer = shift;
 
-            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
-                action => 'enable',
-                callback => sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . 'activation successfully propagated to the worker.');
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('enable')->then(
+                sub {
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' activation successfully propagated to the worker.');
                 }
-            );
+            )->catch($on_catch);
         };
 
         $timer_options{on_disable} = sub {
             my $timer = shift;
 
-            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc(
-                action => 'disable',
-                callback => sub {
+            $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('disable')->then(
+                sub {
                     $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' deactivation successfully propagated to the worker.');
                 }
-            );
+            )->catch($on_catch);
         };
     }
 
@@ -307,6 +319,8 @@ sub init_publisher_by_name {
         },
         on_error => sub {
             $self->{logger}->warning($publisher->full_name() . ': execution stopped (fatal): ' . shift . '.');
+
+            undef $self->{runtime_per_publisher}->{$publisher->{name}}->{rpc};
         },
         on_destroy => sub {
             $self->{logger}->info($publisher->full_name() . ': destroyed.');
@@ -337,38 +351,28 @@ sub connect_publisher_by_name {
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
-            action => 'is_connected',
-            callback => sub {
-                if (shift) {
-                    $self->{logger}->warning(
-                        Navel::Logger::Message->stepped_message($connect_generic_message,
-                            [
-                                'already connected.'
-                            ]
-                        )
-                    );
-                } else {
-                    $publisher->rpc(
-                        action => 'is_connecting',
-                        callback => sub {
-                            if (shift) {
-                                $self->{logger}->warning(
-                                    Navel::Logger::Message->stepped_message($connect_generic_message,
-                                        [
-                                            'already trying to establish a connection.'
-                                        ]
-                                    )
-                                );
-                            } else {
-                                $self->{logger}->notice($connect_generic_message);
-
-                                $publisher->rpc(
-                                    action => 'connect'
-                                );
-                            }
-                        }
-                    );
-                }
+            action => 'is_connected'
+        )->then(
+            sub {
+                shift ? die 'already connected.' : $publisher->rpc(
+                    action => 'is_connecting'
+                );
+            }
+        )->then(
+            sub {
+                shift ? die 'already trying to establish a connection.' : $publisher->rpc(
+                    action => 'connect'
+                );
+            }
+        )->catch(
+            sub {
+                $self->{logger}->warning(
+                    Navel::Logger::Message->stepped_message($connect_generic_message,
+                        [
+                            shift
+                        ]
+                    )
+                );
             }
         );
     } else {
@@ -407,38 +411,28 @@ sub disconnect_publisher_by_name {
 
     if ($publisher->{definition}->{connectable}) {
         $publisher->rpc(
-            action => 'is_disconnected',
-            callback => sub {
-                if (shift) {
-                    $self->{logger}->warning(
-                        Navel::Logger::Message->stepped_message($disconnect_generic_message,
-                            [
-                                'already disconnected.'
-                            ]
-                        )
-                    );
-                } else {
-                    $publisher->rpc(
-                        action => 'is_disconnecting',
-                        callback => sub {
-                            if (shift) {
-                                $self->{logger}->warning(
-                                    Navel::Logger::Message->stepped_message($disconnect_generic_message,
-                                        [
-                                            'already trying to disconnect.'
-                                        ]
-                                    )
-                                );
-                            } else {
-                                $self->{logger}->notice($disconnect_generic_message);
-
-                                $publisher->rpc(
-                                    action => 'disconnect'
-                                );
-                            }
-                        }
-                    );
-                }
+            action => 'is_disconnected'
+        )->then(
+            sub {
+                shift ? die 'already disconnected.' : $publisher->rpc(
+                    action => 'is_disconnecting'
+                );
+            }
+        )->then(
+            sub {
+                shift ? die 'already trying to disconnect.' : $publisher->rpc(
+                    action => 'disconnect'
+                );
+            }
+        )->catch(
+            sub {
+                $self->{logger}->warning(
+                    Navel::Logger::Message->stepped_message($disconnect_generic_message,
+                        [
+                            shift
+                        ]
+                    )
+                );
             }
         );
     } else {
@@ -473,12 +467,19 @@ my $register_publisher_by_name_common_workflow = sub {
         action => 'publish',
         options => [
             $options{publisher}->{queue}
-        ],
-        callback => sub {
+        ]
+    )->then(
+        sub {
             $self->{logger}->debug($options{publisher}->{definition}->full_name() . ': clear queue.');
 
             $options{publisher}->clear_queue();
-
+        }
+    )->catch(
+        sub {
+            $self->{logger}->warning($options{publisher}->{definition}->full_name() . ': ' . shift);
+        }
+    )->finally(
+        sub {
             $options{job}->end();
         }
     );
@@ -503,27 +504,32 @@ sub register_publisher_by_name {
         callback => sub {
             my $timer = shift->begin();
 
+            my $on_catch = sub {
+                $self->{logger}->warning($publisher->{definition}->full_name() . ': ' . shift);
+            };
+
             if ($publisher->{definition}->{connectable} && $publisher->{definition}->{auto_connect}) {
                 $publisher->rpc(
-                    action => 'is_connected',
-                    callback => sub {
-                        unless (shift) {
-                            $publisher->rpc(
-                                action => 'is_connecting',
-                                callback => sub {
-                                    $self->connect_publisher_by_name($publisher->{definition}->{name}) unless shift;
-                                }
-                            );
-                        }
+                    action => 'is_connected'
+                )->then(
+                    sub {
+                        $publisher->rpc(
+                            action => 'is_connecting'
+                        ) unless shift;
                     }
-                );
+                )->then(
+                    sub {
+                        $self->connect_publisher_by_name($publisher->{definition}->{name}) unless shift;
+                    }
+                )->catch($on_catch);
             }
 
             if (@{$publisher->{queue}}) {
                 if ($publisher->{definition}->{connectable}) {
                     $publisher->rpc(
-                        action => 'is_connected',
-                        callback => sub {
+                        action => 'is_connected'
+                    )->then(
+                        sub {
                             if (shift) {
                                 $self->$register_publisher_by_name_common_workflow(
                                     job => $timer,
@@ -535,7 +541,7 @@ sub register_publisher_by_name {
                                 $timer->end();
                             }
                         }
-                    );
+                    )->catch($on_catch);
                 } else {
                     $self->$register_publisher_by_name_common_workflow(
                         job => $timer,

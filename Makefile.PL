@@ -52,6 +52,7 @@ WriteMakefile(
         'AnyEvent' => 0,
         'AnyEvent::Fork' => 0,
         'AnyEvent::Fork::RPC' => 0,
+        'Promises' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0,
         'JSON::Validator' => 0,

@@ -11,6 +11,8 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Promises 'collect';
+
 #-> methods
 
 sub save_all_configuration {
@@ -20,40 +22,24 @@ sub save_all_configuration {
 
     my (@ok, @ko);
 
-    my $done_counter = my $done_limit = 0;
-
-    for (
-        $controller->daemon()->{core}->{collectors},
-        $controller->daemon()->{core}->{publishers},
-        $controller->daemon()->{core}->{meta}
-    ) {
-        $_->write(
-            async => 1,
-            on_success => sub {
-                push @ok, shift . ': runtime configuration successfully saved.';
-
-                $done_counter++;
-            },
-            on_error => sub {
-                push @ko, shift;
-
-                $done_counter++;
-            }
-        );
-
-        $done_limit++;
-    }
-
-    my $id; $id = Mojo::IOLoop->recurring(
-        0.1 => sub {
-            if ($done_counter >= $done_limit) {
-                shift->remove($id);
-
-                $controller->$callback(
-                    $controller->ok_ko(\@ok, \@ko),
-                    @ko ? 500 : 200
-                );
-            }
+    collect(
+        $controller->daemon()->{core}->{collectors}->async_write(),
+        $controller->daemon()->{core}->{publishers}->async_write(),
+        $controller->daemon()->{core}->{meta}->async_write()
+    )->then(
+        sub {
+            push @ok, @_;
+        }
+    )->catch(
+        sub {
+            push @ko, @_;
+        }
+    )->finally(
+        sub {
+            $controller->$callback(
+                $controller->ok_ko(\@ok, \@ko),
+                @ko ? 500 : 200
+            );
         }
     );
 }

@@ -11,6 +11,8 @@ use Navel::Base;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use Promises 'collect';
+
 #-> methods
 
 sub list_publishers {
@@ -25,29 +27,25 @@ sub list_publishers {
 sub new_publisher {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_already_exists(
+        {
+            callback => $callback,
+            resource_name => $arguments->{publisher}->{name}
+        }
+    ) if defined $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisher}->{name});
+
     my (@ok, @ko);
 
+    local $@;
+
+    my $publisher = eval {
+        $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
+    };
+
     unless ($@) {
-        return $controller->resource_already_exists(
-            {
-                callback => $callback,
-                resource_name => $arguments->{publisher}->{name}
-            }
-        ) if defined $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisher}->{name});
+        $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-        local $@;
-
-        my $publisher = eval {
-            $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
-        };
-
-        unless ($@) {
-            $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
-
-            push @ok, $publisher->full_name() . ' added.';
-        } else {
-            push @ko, $@;
-        }
+        push @ok, $publisher->full_name() . ' added.';
     } else {
         push @ko, $@;
     }
@@ -79,45 +77,41 @@ sub show_publisher {
 sub modify_publisher {
     my ($controller, $arguments, $callback) = @_;
 
+    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{publisherName}
+        }
+    ) unless defined $publisher;
+
     my (@ok, @ko);
 
+    local $@;
+
+    delete $arguments->{publisher}->{name};
+
+    $arguments->{publisher} = {
+        %{$publisher->properties()},
+        %{$arguments->{publisher}}
+    };
+
+    eval {
+        $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{publisher}->{name});
+    };
+
     unless ($@) {
-        my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
-
-        return $controller->resource_not_found(
-            {
-                callback => $callback,
-                resource_name => $arguments->{publisherName}
-            }
-        ) unless defined $publisher;
-
-        local $@;
-
-        delete $arguments->{publisher}->{name};
-
-        $arguments->{publisher} = {
-            %{$publisher->properties()},
-            %{$arguments->{publisher}}
-        };
-
-        eval {
-            $controller->daemon()->{core}->delete_publisher_and_definition_associated_by_name($arguments->{publisher}->{name});
+        my $publisher = eval {
+            $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
         };
 
         unless ($@) {
-            my $publisher = eval {
-                $controller->daemon()->{core}->{publishers}->add_definition($arguments->{publisher});
-            };
+            $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-            unless ($@) {
-                $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
-
-                push @ok, $publisher->full_name() . ' modified.';
-            } else {
-                push @ko, $@;
-            }
+            push @ok, $publisher->full_name() . ' modified.';
         } else {
-            push @ko, 'an unknown eror occurred while modifying the publisher ' . $arguments->{publisher}->{name} . '.';
+            push @ko, $@;
         }
     } else {
         push @ko, $@;
@@ -175,57 +169,65 @@ sub show_publisher_connection_status {
         }
     ) unless defined $publisher;
 
-    my %status = (
-        name => $publisher->{name}
-    );
+    my (@ok, @ko);
 
-    my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
+    if (defined (my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}})) {
+        if ($publisher->{connectable}) {
+            $controller->render_later();
 
-    if ($status{connectable} = $publisher->{connectable}) {
-        $controller->render_later();
+            my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
 
-        my @base_keys = keys %status;
-
-        my @connectable_properties = qw/
-            connecting
-            connected
-            disconnecting
-            disconnected
-        /;
-
-        for my $connectable_property (@connectable_properties) {
-            my $method = 'is_' . $connectable_property;
-
-            if (defined $publisher_runtime) {
+            collect(
                 $publisher_runtime->rpc(
-                    action => $method,
-                    callback => sub {
-                        $status{$connectable_property} = shift ? 1 : 0;
-                    }
-                );
-            } else {
-                $status{$connectable_property} = 0;
-            }
-        }
+                    action => 'is_connecting'
+                ),
+                $publisher_runtime->rpc(
+                    action => 'is_connected'
+                ),
+                $publisher_runtime->rpc(
+                    action => 'is_disconnecting'
+                ),
+                $publisher_runtime->rpc(
+                    action => 'is_disconnected'
+                )
+            )->then(
+                sub {
+                    my %status;
 
-        my $id; $id = Mojo::IOLoop->recurring(
-            0.1 => sub {
-                if (keys %status >= @base_keys + @connectable_properties) {
-                    shift->remove($id);
+                    ($status{connecting}, $status{connected}, $status{disconnecting}, $status{disconnected}) = @_;
+
+                    $status{$_} = $status{$_} ? 1 : 0 for keys %status;
+
+                    $status{name} = $publisher->{name};
 
                     $controller->$callback(
                         \%status,
                         200
                     );
                 }
-            }
-        );
+            )->catch(
+                sub {
+                    push @ko, $publisher->full_name() . ': ' . shift;
+
+                    $controller->$callback(
+                        $controller->ok_ko(\@ok, \@ko),
+                        500
+                    );
+                }
+            );
+
+            return;
+        } else {
+            push @ko, $publisher->full_name() . ': this publisher is not connectable.',
+        }
     } else {
-        $controller->$callback(
-            \%status,
-            200
-        );
+        push @ko, $publisher->full_name() . ': the runtime is not yet initialized.'
     }
+
+    $controller->$callback(
+        $controller->ok_ko(\@ok, \@ko),
+        400
+    );
 }
 
 sub show_publisher_amount_of_events {
@@ -276,33 +278,29 @@ sub push_event_to_a_publisher {
 
     my (@ok, @ko);
 
-    unless ($@) {
-        if (defined $publisher_runtime) {
-            local $@;
+    if (defined $publisher_runtime) {
+        local $@;
 
-            eval {
-                $publisher_runtime->push_in_queue(
-                    {
-                        %{$arguments->{publisherEvent}},
-                        %{
-                            {
-                                status => 'std'
-                            }
+        eval {
+            $publisher_runtime->push_in_queue(
+                {
+                    %{$arguments->{publisherEvent}},
+                    %{
+                        {
+                            status => 'std'
                         }
                     }
-                );
-            };
+                }
+            );
+        };
 
-            unless ($@) {
-                push @ok, $publisher->full_name() . ': pushing an event to the queue.';
-            } else {
-                push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
-            }
+        unless ($@) {
+            push @ok, $publisher->full_name() . ': pushing an event to the queue.';
         } else {
-            push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
+            push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
         }
     } else {
-        push @ko, $@;
+        push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
     }
 
     $controller->$callback(

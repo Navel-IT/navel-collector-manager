@@ -25,29 +25,25 @@ sub list_collectors {
 sub new_collector {
     my ($controller, $arguments, $callback) = @_;
 
+    return $controller->resource_already_exists(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collector}->{name}
+        }
+    ) if defined $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collector}->{name});
+
     my (@ok, @ko);
 
+    local $@;
+
+    my $collector = eval {
+        $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
+    };
+
     unless ($@) {
-        return $controller->resource_already_exists(
-            {
-                callback => $callback,
-                resource_name => $arguments->{collector}->{name}
-            }
-        ) if defined $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collector}->{name});
+        $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-        local $@;
-
-        my $collector = eval {
-            $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
-        };
-
-        unless ($@) {
-            $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-            push @ok, $collector->full_name() . ' added.';
-        } else {
-            push @ko, $@;
-        }
+        push @ok, $collector->full_name() . ' added.';
     } else {
         push @ko, $@;
     }
@@ -79,48 +75,44 @@ sub show_collector {
 sub modify_collector {
     my ($controller, $arguments, $callback) = @_;
 
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless defined $collector;
+
     my (@ok, @ko);
 
+    local $@;
+
+    delete $arguments->{collector}->{name};
+
+    $arguments->{collector} = {
+        %{$collector->properties()},
+        %{$arguments->{collector}}
+    };
+
+    eval {
+        $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($arguments->{collector}->{name});
+    };
+
     unless ($@) {
-        my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
-
-        return $controller->resource_not_found(
-            {
-                callback => $callback,
-                resource_name => $arguments->{collectorName}
-            }
-        ) unless defined $collector;
-
-        local $@;
-
-        delete $arguments->{collector}->{name};
-
-        $arguments->{collector} = {
-            %{$collector->properties()},
-            %{$arguments->{collector}}
-        };
-
-        eval {
-            $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($arguments->{collector}->{name});
+        my $collector = eval {
+            $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
         };
 
         unless ($@) {
-            my $collector = eval {
-                $controller->daemon()->{core}->{collectors}->add_definition($arguments->{collector});
-            };
+            $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-            unless ($@) {
-                $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-                push @ok, $collector->full_name() . ' modified.';
-            } else {
-                push @ko, $@;
-            }
+            push @ok, $collector->full_name() . ' modified.';
         } else {
-            push @ko, 'an unknown eror occurred while modifying the collector ' . $arguments->{collector}->{name} . '.';
+            push @ko, $@;
         }
     } else {
-        push @ko, $@;
+        push @ko, 'an unknown eror occurred while modifying the collector ' . $arguments->{collector}->{name} . '.';
     }
 
     $controller->$callback(
@@ -132,8 +124,6 @@ sub modify_collector {
 sub delete_collector {
     my ($controller, $arguments, $callback) = @_;
 
-    local $@;
-
     my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
 
     return $controller->resource_not_found(
@@ -144,6 +134,8 @@ sub delete_collector {
     ) unless defined $collector;
 
     my (@ok, @ko);
+
+    local $@;
 
     eval {
         $controller->daemon()->{core}->delete_collector_and_definition_associated_by_name($collector->{name});
