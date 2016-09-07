@@ -25,6 +25,7 @@ use Navel::AnyEvent::Fork::RPC::Serializer::Sereal;
 use Navel::Utils qw/
     blessed
     croak
+    weaken
 /;
 
 #-> methods
@@ -47,6 +48,10 @@ sub new {
         }, $class;
     }
 
+    my $weak_self = $self;
+
+    weaken($weak_self);
+
     my $wrapped_code = $self->wrapped_code();
 
     $self->{core}->{logger}->debug(
@@ -61,7 +66,11 @@ sub new {
         'Navel::Scheduler::Core::Collector::Fork::Worker::run',
         async => $self->{definition}->{async},
         on_event => $options{on_event},
-        on_error => $options{on_error},
+        on_error => sub {
+            undef $weak_self->{rpc};
+
+            $options{on_error}->(@_);
+        },
         on_destroy => $options{on_destroy},
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
@@ -86,7 +95,7 @@ sub rpc {
             }
         );
     } else {
-        $deferred->reject('the worker had been destroyed');
+        $deferred->reject('the runtime is not ready');
     }
 
     $deferred->promise();
@@ -151,7 +160,7 @@ sub wrapped_code {
 
             $done->();
 
-            exit;
+            CORE::exit;
         }
 
 ';
