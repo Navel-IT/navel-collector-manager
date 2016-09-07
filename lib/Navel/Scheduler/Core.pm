@@ -148,8 +148,6 @@ sub init_collector_by_name {
         on_error => sub {
             $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
 
-            undef $self->{runtime_per_collector}->{$collector->{name}}->{rpc};
-
             $self->goto_collector_next_stage(
                 job => $self->job_by_type_and_name('collector', $collector->{name}),
                 collector => $collector,
@@ -184,7 +182,7 @@ sub register_collector_by_name {
 
     my $on_catch = sub {
         $self->{logger}->warning(
-            Navel::Logger::Message->stepped_message($collector->{definition}->full_name() . ': cannot propagate order to the worker.',
+            Navel::Logger::Message->stepped_message($collector->{definition}->full_name() . ': cannot propagate order to the runtime.',
                 [
                     shift
                 ]
@@ -202,7 +200,7 @@ sub register_collector_by_name {
 
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc()->then(
                 sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': execution successfully propagated to the worker.');
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': execution successfully propagated to the runtime.');
                 }
             )->catch($on_catch)->finally(
                 sub {
@@ -218,7 +216,7 @@ sub register_collector_by_name {
 
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('enable')->then(
                 sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' activation successfully propagated to the worker.');
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' activation successfully propagated to the runtime.');
                 }
             )->catch($on_catch);
         };
@@ -228,7 +226,7 @@ sub register_collector_by_name {
 
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('disable')->then(
                 sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' deactivation successfully propagated to the worker.');
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' deactivation successfully propagated to the runtime.');
                 }
             )->catch($on_catch);
         };
@@ -319,8 +317,6 @@ sub init_publisher_by_name {
         },
         on_error => sub {
             $self->{logger}->warning($publisher->full_name() . ': execution stopped (fatal): ' . shift . '.');
-
-            undef $self->{runtime_per_publisher}->{$publisher->{name}}->{rpc};
         },
         on_destroy => sub {
             $self->{logger}->info($publisher->full_name() . ': destroyed.');
