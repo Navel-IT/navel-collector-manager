@@ -350,13 +350,13 @@ sub connect_publisher_by_name {
             action => 'is_connected'
         )->then(
             sub {
-                shift ? die 'already connected.' : $publisher->rpc(
+                shift() ? die 'already connected.' : $publisher->rpc(
                     action => 'is_connecting'
                 );
             }
         )->then(
             sub {
-                shift ? die 'already trying to establish a connection.' : $publisher->rpc(
+                shift() ? die 'already trying to establish a connection.' : $publisher->rpc(
                     action => 'connect'
                 );
             }
@@ -410,13 +410,13 @@ sub disconnect_publisher_by_name {
             action => 'is_disconnected'
         )->then(
             sub {
-                shift ? die 'already disconnected.' : $publisher->rpc(
+                shift() ? die 'already disconnected.' : $publisher->rpc(
                     action => 'is_disconnecting'
                 );
             }
         )->then(
             sub {
-                shift ? die 'already trying to disconnect.' : $publisher->rpc(
+                shift() ? die 'already trying to disconnect.' : $publisher->rpc(
                     action => 'disconnect'
                 );
             }
