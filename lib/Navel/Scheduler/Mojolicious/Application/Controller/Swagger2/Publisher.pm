@@ -262,53 +262,6 @@ sub show_publisher_amount_of_events {
     }
 }
 
-sub push_event_to_a_publisher {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $publisher = $controller->daemon()->{core}->{publishers}->definition_by_name($arguments->{publisherName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{publisherName}
-        }
-    ) unless defined $publisher;
-
-    my $publisher_runtime = $controller->daemon()->{core}->{runtime_per_publisher}->{$publisher->{name}};
-
-    my (@ok, @ko);
-
-    if (defined $publisher_runtime) {
-        local $@;
-
-        eval {
-            $publisher_runtime->push_in_queue(
-                {
-                    %{$arguments->{publisherEvent}},
-                    %{
-                        {
-                            status => 'std'
-                        }
-                    }
-                }
-            );
-        };
-
-        unless ($@) {
-            push @ok, $publisher->full_name() . ': pushing an event to the queue.';
-        } else {
-            push @ko, $publisher->full_name() . ': an error occurred while manually pushing an event to the queue: ' . $@ . '.';
-        }
-    } else {
-        push @ko, $publisher->full_name() . ': the runtime is not yet initialized.';
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        @ko ? 400 : 201
-    );
-}
-
 sub delete_all_events_from_a_publisher {
     my ($controller, $arguments, $callback) = @_;
 
