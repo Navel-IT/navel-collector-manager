@@ -216,7 +216,7 @@ sub register_collector_by_name {
 
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('enable')->then(
                 sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' activation successfully propagated to the runtime.');
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': activation successfully propagated to the runtime.');
                 }
             )->catch($on_catch);
         };
@@ -226,7 +226,7 @@ sub register_collector_by_name {
 
             $self->{runtime_per_collector}->{$collector->{definition}->{name}}->rpc('disable')->then(
                 sub {
-                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ' deactivation successfully propagated to the runtime.');
+                    $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': deactivation successfully propagated to the runtime.');
                 }
             )->catch($on_catch);
         };

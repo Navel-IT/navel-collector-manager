@@ -45,7 +45,7 @@ sub new_publisher {
     unless ($@) {
         $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-        push @ok, $publisher->full_name() . ' added.';
+        push @ok, $publisher->full_name() . ': added.';
     } else {
         push @ko, $@;
     }
@@ -109,7 +109,7 @@ sub modify_publisher {
         unless ($@) {
             $controller->daemon()->{core}->init_publisher_by_name($publisher->{name})->register_publisher_by_name($publisher->{name});
 
-            push @ok, $publisher->full_name() . ' modified.';
+            push @ok, $publisher->full_name() . ': modified.';
         } else {
             push @ko, $@;
         }
@@ -135,8 +135,6 @@ sub delete_publisher {
         }
     ) unless defined $publisher;
 
-    my $publisher_full_name = $publisher->full_name();
-
     my (@ok, @ko);
 
     local $@;
@@ -146,7 +144,7 @@ sub delete_publisher {
     };
 
     unless ($@) {
-        push @ok, $publisher_full_name . ': killed, unregistered and deleted.';
+        push @ok, $publisher->full_name() . ': killed, unregistered and deleted.';
     } else {
         push @ko, $@;
     }

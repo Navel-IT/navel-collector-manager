@@ -43,7 +43,7 @@ sub new_collector {
     unless ($@) {
         $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-        push @ok, $collector->full_name() . ' added.';
+        push @ok, $collector->full_name() . ': added.';
     } else {
         push @ko, $@;
     }
@@ -107,12 +107,12 @@ sub modify_collector {
         unless ($@) {
             $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-            push @ok, $collector->full_name() . ' modified.';
+            push @ok, $collector->full_name() . ': modified.';
         } else {
             push @ko, $@;
         }
     } else {
-        push @ko, 'an unknown eror occurred while modifying the collector ' . $arguments->{collector}->{name} . '.';
+        push @ko, $@;
     }
 
     $controller->$callback(
