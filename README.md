@@ -81,7 +81,7 @@ Collectors
 Copyright
 ---------
 
-Copyright (C) 2015 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
+Copyright (C) 2015-2016 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 
 License
 -------
