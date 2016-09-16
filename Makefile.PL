@@ -38,7 +38,6 @@ WriteMakefile(
         'Navel::Base' => 0,
         'Navel::Base::Daemon' => 0,
         'Navel::AnyEvent::Fork::RPC::Serializer::Sereal' => 0,
-        'Navel::Mojolicious::Plugin::JSON::XS' => 0,
         'Navel::Mojolicious::Plugin::Logger' => 0,
         'Navel::Mojolicious::Plugin::Swagger2::StdResponses' => 0,
         'Navel::Logger' => 0,
@@ -55,6 +54,7 @@ WriteMakefile(
         'Promises' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0,
+        'Mojo::JSON::MaybeXS' => 0,
         'JSON::Validator' => 0,
         'IO::Socket::SSL' => 1.84
     },

@@ -1,9 +1,0 @@
----
-  collectors:
-    definitions_from_file: t/01-collectors.yml
-    maximum: 0
-  publishers:
-    definitions_from_file: t/01-publishers.yml
-    maximum: 0
-  webservice:
-    mojo_server: {}

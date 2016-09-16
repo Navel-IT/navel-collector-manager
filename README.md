@@ -29,7 +29,7 @@ All the help is available with `navel-scheduler --help`.
 - Manually
 
 ```
-[root@vmbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.yml
+[root@vmbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.json
 June 14 18:52:04 vmbox navel-scheduler[5211] 133 initialization done.
 June 14 18:52:04 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: initialization.
 June 14 18:52:07 vmbox navel-scheduler[5211] 133 Navel::Definition::Publisher.Navel::Broker::Client::Fork::Publisher::Backend::RabbitMQ.版元-rabbitmq-1: connecting.

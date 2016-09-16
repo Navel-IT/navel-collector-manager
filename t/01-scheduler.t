@@ -19,7 +19,7 @@ BEGIN {
 
 #-> main
 
-my $meta_configuration_file_path = 't/01-meta.yml';
+my $meta_configuration_file_path = 't/01-meta.json';
 
 my ($scheduler, $mojolicious_tester);
 
