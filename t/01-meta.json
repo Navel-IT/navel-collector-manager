@@ -1,0 +1,13 @@
+{
+    "collectors": {
+        "definitions_from_file": "t/01-collectors.json",
+        "maximum": 0
+    },
+    "publishers": {
+        "definitions_from_file": "t/01-publishers.json",
+        "maximum": 0
+    },
+    "webservice": {
+        "mojo_server": {}
+    }
+}
