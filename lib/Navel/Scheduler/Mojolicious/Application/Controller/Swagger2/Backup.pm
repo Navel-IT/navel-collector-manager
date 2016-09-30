@@ -9,40 +9,18 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup
 
 use Navel::Base;
 
-use Mojo::Base 'Mojolicious::Controller';
-
-use Promises 'collect';
+use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::Swagger2::Backup';
 
 #-> methods
 
 sub save_all_configuration {
-    my ($controller, $arguments, $callback) = @_;
+    my $controller = shift;
 
-    $controller->render_later();
-
-    my (@ok, @ko);
-
-    collect(
+    $controller->SUPER::save_all_configuration(
+        @_,
         $controller->daemon()->{core}->{collectors}->async_write(),
         $controller->daemon()->{core}->{publishers}->async_write(),
         $controller->daemon()->{core}->{meta}->async_write()
-    )->then(
-        sub {
-            push @ok, map {
-                $_->[0] . ': runtime configuration successfully saved.';
-            } @_;
-        }
-    )->catch(
-        sub {
-            push @ko, @_;
-        }
-    )->finally(
-        sub {
-            $controller->$callback(
-                $controller->ok_ko(\@ok, \@ko),
-                @ko ? 500 : 200
-            );
-        }
     );
 }
 
