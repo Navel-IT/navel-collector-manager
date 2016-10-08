@@ -155,7 +155,7 @@ sub delete_collector {
     );
 }
 
-sub show_associated_publisher_queue {
+sub show_associated_queue {
     my ($controller, $arguments, $callback) = @_;
 
     my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
@@ -182,10 +182,10 @@ sub show_associated_publisher_queue {
         sub {
             $controller->$callback(
                 $controller->ok_ko(
+                    [],
                     [
                         $collector->full_name() . ': unexpected error.'
-                    ],
-                    []
+                    ]
                 ),
                 500
             );
@@ -193,7 +193,7 @@ sub show_associated_publisher_queue {
     );
 }
 
-sub delete_all_events_from_the_associated_publisher_queue {
+sub delete_all_events_from_the_associated_queue {
     my ($controller, $arguments, $callback) = @_;
 
     my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
@@ -215,7 +215,7 @@ sub delete_all_events_from_the_associated_publisher_queue {
         }
     )->catch(
         sub {
-            push @ko, $collector->full_name() . ': unexpected error.';
+            push @ko, $collector->full_name() . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.';
         }
     )->finally(
         sub {
@@ -273,10 +273,10 @@ sub show_associated_publisher_connection_status {
         sub {
             $controller->$callback(
                 $controller->ok_ko(
+                    [],
                     [
-                        $collector->full_name() . ': unexpected error.'
-                    ],
-                    []
+                        $collector->full_name() . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.'
+                    ]
                 ),
                 500
             );
