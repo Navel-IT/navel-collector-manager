@@ -9,6 +9,8 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Collec
 
 use Navel::Base;
 
+use Promises 'collect';
+
 use Mojo::Base 'Mojolicious::Controller';
 
 #-> methods
@@ -72,7 +74,7 @@ sub show_collector {
     );
 }
 
-sub modify_collector {
+sub update_collector {
     my ($controller, $arguments, $callback) = @_;
 
     my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
@@ -142,7 +144,7 @@ sub delete_collector {
     };
 
     unless ($@) {
-        push @ok, $collector->full_name() . ': ' . ($collector->{async} ? 'killed, ' : '') . 'unregistered and deleted.';
+        push @ok, $collector->full_name() . ': killed, unregistered and deleted.';
     } else {
         push @ko, $@;
     }
@@ -150,6 +152,135 @@ sub delete_collector {
     $controller->$callback(
         $controller->ok_ko(\@ok, \@ko),
         @ko ? 400 : 200
+    );
+}
+
+sub show_associated_publisher_queue {
+    my ($controller, $arguments, $callback) = @_;
+
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless defined $collector;
+
+    $controller->render_later();
+
+    $controller->daemon()->{core}->{worker_per_collector}->{$collector->{name}}->rpc(undef, 'queue')->then(
+        sub {
+            $controller->$callback(
+                {
+                    amount_of_events => shift
+                },
+                200
+            );
+        }
+    )->catch(
+        sub {
+            $controller->$callback(
+                $controller->ok_ko(
+                    [
+                        $collector->full_name() . ': unexpected error.'
+                    ],
+                    []
+                ),
+                500
+            );
+        }
+    );
+}
+
+sub delete_all_events_from_the_associated_publisher_queue {
+    my ($controller, $arguments, $callback) = @_;
+
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless defined $collector;
+
+    $controller->render_later();
+
+    my (@ok, @ko);
+
+    $controller->daemon()->{core}->{worker_per_collector}->{$collector->{name}}->rpc(undef, 'dequeue')->then(
+        sub {
+            push @ok, $collector->full_name() . ': queue cleared.';
+        }
+    )->catch(
+        sub {
+            push @ko, $collector->full_name() . ': unexpected error.';
+        }
+    )->finally(
+        sub {
+            $controller->$callback(
+                $controller->ok_ko(\@ok, \@ko),
+                @ko ? 500 : 200
+            );
+        }
+    );
+}
+
+sub show_associated_publisher_connection_status {
+    my ($controller, $arguments, $callback) = @_;
+
+    my $collector = $controller->daemon()->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+
+    return $controller->resource_not_found(
+        {
+            callback => $callback,
+            resource_name => $arguments->{collectorName}
+        }
+    ) unless defined $collector;
+
+    my $collector_worker = $controller->daemon()->{core}->{worker_per_collector}->{$collector->{name}};
+
+    $controller->render_later();
+
+    my $connectable;
+
+    $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connectable')->then(
+        sub {
+            collect(
+                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connecting'),
+                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connected'),
+                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_disconnecting'),
+                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_disconnected')
+            ) if $connectable = shift;
+        }
+    )->then(
+        sub {
+            my %status;
+
+            ($status{connecting}, $status{connected}, $status{disconnecting}, $status{disconnected}) = @_;
+
+            $status{$_} = $status{$_}->[0] ? 1 : 0 for keys %status;
+
+            $status{connectable} = $connectable ? 1 : 0;
+
+            $controller->$callback(
+                \%status,
+                200
+            );
+        }
+    )->catch(
+        sub {
+            $controller->$callback(
+                $controller->ok_ko(
+                    [
+                        $collector->full_name() . ': unexpected error.'
+                    ],
+                    []
+                ),
+                500
+            );
+        }
     );
 }
 

@@ -2,10 +2,12 @@
     {
         "name": "test-1",
         "collection": "test",
-        "async": 1,
-        "scheduling": 5,
-        "execution_timeout": 0,
         "backend": "Navel::Collector::Test",
-        "backend_input": null
+        "backend_input": null,
+        "publisher" : {
+            "backend": "Navel::Broker::Client::Publisher::Test",
+            "backend_input": null,
+            "auto_clean": 0
+        }
     }
 ]

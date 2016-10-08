@@ -65,7 +65,7 @@ sub new {
 sub start {
     my $self = shift;
 
-    $self->SUPER::start(@_)->{core}->register_core_logger()->init_collectors()->register_collectors()->init_publishers()->register_publishers()->recv();
+    $self->SUPER::start(@_)->{core}->register_core_logger()->init_collectors()->register_collectors()->recv();
 
     $self;
 }
@@ -87,7 +87,7 @@ sub stop {
         eval {
             $self->webserver(0) if $self->webserver();
 
-            $self->{core}->delete_collectors()->delete_publishers();
+            $self->{core}->delete_collectors();
 
             my $wait; $wait = AnyEvent->timer(
                 after => $options{delay},

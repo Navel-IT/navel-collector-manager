@@ -25,9 +25,7 @@ before_install:
   - f_install_navel_dep navel-anyevent-fork-rpc-serializer-sereal
   - f_install_navel_dep navel-anyevent-pool
   - f_install_navel_dep navel-definition-collector
-  - f_install_navel_dep navel-definition-publisher
   - f_install_navel_dep navel-event
-  - f_install_navel_dep navel-bcb
   - popd
   - cpanm --quiet --notest Devel::Cover::Report::Coveralls
 after_success:

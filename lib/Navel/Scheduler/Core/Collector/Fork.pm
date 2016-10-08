@@ -10,8 +10,8 @@ package Navel::Scheduler::Core::Collector::Fork 0.1;
 use Navel::Base;
 
 use constant {
-    EVENT_EVENT => 0,
-    EVENT_LOG => 1
+    WORKER_PACKAGE_NAME => 'Navel::Scheduler::Core::Collector::Fork::Worker',
+    WORKER_RPC_METHOD_NAME => '_rpc'
 };
 
 use AnyEvent::Fork;
@@ -63,8 +63,7 @@ sub new {
     );
 
     $self->{rpc} = (blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new())->fork()->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
-        'Navel::Scheduler::Core::Collector::Fork::Worker::run',
-        async => $self->{definition}->{async},
+        WORKER_PACKAGE_NAME . '::' . WORKER_RPC_METHOD_NAME,
         on_event => $options{on_event},
         on_error => sub {
             undef $weak_self->{rpc};
@@ -72,10 +71,12 @@ sub new {
             $options{on_error}->(@_);
         },
         on_destroy => $options{on_destroy},
+        async => 1,
+        initialized => 0,
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
 
-    $self->{core}->{logger}->info($self->{definition}->full_name() . ': spawned a new process.');
+    $self->{core}->{logger}->info($self->{definition}->full_name() . ': spawned a new worker.');
 
     $self;
 }
@@ -86,16 +87,23 @@ sub rpc {
     my $deferred = deferred();
 
     if (defined $self->{rpc}) {
+        my @definitions;
+
+        unless ($self->{initialized}) {
+            $self->{initialized} = 1;
+
+            push @definitions, $self->{core}->{meta}, $self->{definition};
+        }
+
         $self->{rpc}->(
-            shift // 'collect',
-            $self->{core}->{meta}->{definition}->{collectors},
-            $self->{definition}->properties(),
+            @_,
+            @definitions,
             sub {
-                $deferred->resolve(@_);
+                shift ? $deferred->resolve(@_) : $deferred->reject(@_);
             }
         );
     } else {
-        $deferred->reject('the runtime is not ready');
+        $deferred->reject('the worker is not ready');
     }
 
     $deferred->promise();
@@ -104,121 +112,91 @@ sub rpc {
 sub wrapped_code {
     my $self = shift;
 
-    my $wrapped_code = "package Navel::Scheduler::Core::Collector::Fork::Worker;
+    'package ' . WORKER_PACKAGE_NAME . " 0.1;
 
-{
-    BEGIN {
-        open STDIN, '</dev/null';
-        open STDOUT, '>/dev/null';
-        open STDERR, '>&STDOUT';
-    }" . ($self->{definition}->{async} ? '
+BEGIN {
+    open STDIN, '</dev/null';
+    open STDOUT, '>/dev/null';
+    open STDERR, '>&STDOUT';
+}" . '
 
-    our $stopping;' : '') . '
+use Navel::Base;
 
-    sub event {
-        AnyEvent::Fork::RPC::event(
-            map {
-                [
-                    ' . EVENT_EVENT . ',
-                    $_
-                ]
-            } @_
-        );
+use Navel::Queue;
+use Navel::Event;
+
+require ' . $self->{definition}->{backend} . ';
+require ' . $self->{definition}->{publisher}->{backend} . ';
+
+my ($initialized, $exiting);
+
+sub ' . WORKER_RPC_METHOD_NAME . ' {
+    my ($done, $backend, $sub, $meta, $collector) = @_;
+
+    if ($exiting) {
+        $done->(0, ' . "'currently exiting the worker'" . ');
+
+        return;
     }
 
-    sub log {
-        AnyEvent::Fork::RPC::event(
-            map {
-                [
-                    ' . EVENT_LOG . ',
-                    @{$_}
-                ]
-            } @_
-        );
-    }
-};
+    unless (defined $backend) {
+        if ($sub eq ' . "'queue'" . ') {
+            $done->(1, scalar @{queue()->{items}});
+        } elsif ($sub eq ' . "'dequeue'" . ') {
+            $done->(1, scalar queue()->dequeue());
+        } else {
+            $exiting = 1;
 
-{
-    sub run {' . ($self->{definition}->{async} ? '
-        my $done = shift;' : '') . '
-
-        my $action = shift;
-
-        local $@;
-
-';
-
-    if ($self->{definition}->{async}) {
-        $wrapped_code .= '        if ($Navel::Scheduler::Core::Collector::Fork::Worker::stopping) {
-            $done->();
-
-            return;
-        }
-
-        if ($action eq ' . "'exit'" . ') {
-            $Navel::Scheduler::Core::Collector::Fork::Worker::stopping = 1;
-
-            $done->();
-
-            CORE::exit;
-        }
-
-';
-    }
-
-    if ($self->{definition}->{execution_timeout}) {
-        $wrapped_code .= '        local $SIG{ALRM}' . " = sub {
-            Navel::Scheduler::Core::Collector::Fork::Worker::log(
-                [
-                    'warning',
-                    'execution timeout after " . $self->{definition}->{execution_timeout} . "s.'
-                ]
-            );" . ($self->{definition}->{async} ? '
-            $done->();' : '') . '
+            $done->(1, ' . "'exiting the worker'" . ');
 
             exit;
-        };
-
-        alarm ' . $self->{definition}->{execution_timeout} . ";
-
-";
-    }
-
-    $wrapped_code .= '        eval {
-            require ' . $self->{definition}->{backend} . ';
-        };
-
-        unless ($@) {
-            if (my $action_sub = ' . $self->{definition}->{backend} . '->can($action)) {
-                $action_sub->(' . ($self->{definition}->{async} ? '$done, ' : '') . "\@_);
-            } else {
-                Navel::Scheduler::Core::Collector::Fork::Worker::log(
-                    [
-                        'err',
-                        'the subroutine " . $self->{definition}->{backend}  . "::' . \$action . '() is not declared.'
-                    ]
-                ); " . ($self->{definition}->{async} ? '
-
-                $done->();' : '') . "
-            }
-        } else {
-            Navel::Scheduler::Core::Collector::Fork::Worker::log(
-                [
-                    'emerg',
-                    'an error occured while loading the collector: ' . \$@ . '.'
-                ]
-            ); " . ($self->{definition}->{async} ? '
-
-            $done->();' : '') . '
         }
 
         return;
     }
-};
+
+    unless ($initialized) {
+        $initialized = 1;
+        
+        *meta = sub {
+            $meta;
+        };
+
+        *collector = sub {
+            state $collector = Navel::Definition::Collector->new($collector);
+        };
+
+        *event = sub {
+            map {
+                Navel::Event->new(
+                    collector => collector(),
+                    data => $_
+                )->serialize();
+            } @_;
+        };
+
+        ' . $self->{definition}->{backend} . '->init();
+        ' . $self->{definition}->{publisher}->{backend} . '->init();
+    }
+
+    if (my $sub_ref = $backend->can($sub)) {
+        $sub_ref->($done);
+    } else {
+        $done->(0, ' . "\$backend . '::' . \$sub . '() is not declared'" . ');
+    }
+
+    return;
+}
+
+*log = \&AnyEvent::Fork::RPC::event;
+
+sub queue {
+    state $queue = Navel::Queue->new(
+        auto_clean => ' . $self->{definition}->{publisher}->{auto_clean} . '
+    );
+}
 
 1;';
-
-    $wrapped_code;
 }
 
 # sub AUTOLOAD {}
@@ -229,7 +207,7 @@ sub DESTROY {
     local $@;
 
     eval {
-        $self->rpc('exit') if $self->{definition}->{async};
+        $self->rpc();
 
         undef $self->{rpc};
     };
