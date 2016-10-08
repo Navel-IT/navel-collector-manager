@@ -157,7 +157,7 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
 
     unless ($initialized) {
         $initialized = 1;
-        
+
         *meta = sub {
             $meta;
         };
