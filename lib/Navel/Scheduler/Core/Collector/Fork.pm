@@ -126,7 +126,7 @@ use Navel::Queue;
 use Navel::Event;
 
 require ' . $self->{definition}->{backend} . ';
-require ' . $self->{definition}->{publisher}->{backend} . ';
+require ' . $self->{definition}->{publisher_backend} . ';
 
 my ($initialized, $exiting);
 
@@ -176,7 +176,7 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
         };
 
         ' . $self->{definition}->{backend} . '->init();
-        ' . $self->{definition}->{publisher}->{backend} . '->init();
+        ' . $self->{definition}->{publisher_backend} . '->init();
     }
 
     if (my $sub_ref = $backend->can($sub)) {
@@ -192,7 +192,7 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
 
 sub queue {
     state $queue = Navel::Queue->new(
-        auto_clean => ' . $self->{definition}->{publisher}->{auto_clean} . '
+        auto_clean => ' . $self->{definition}->{queue_auto_clean} . '
     );
 }
 

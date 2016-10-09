@@ -2,12 +2,10 @@
     {
         "name": "test-1",
         "collection": "test",
+        "queue_auto_clean": 0,
         "backend": "Navel::Collector::Test",
         "backend_input": null,
-        "publisher" : {
-            "backend": "Navel::Broker::Client::Publisher::Test",
-            "backend_input": null,
-            "auto_clean": 0
-        }
+        "publisher_backend": "Navel::Broker::Client:::Publisher::Test",
+        "publisher_backend_input": null
     }
 ]

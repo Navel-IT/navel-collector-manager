@@ -109,7 +109,7 @@ sub update_collector {
         unless ($@) {
             $controller->daemon()->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
 
-            push @ok, $collector->full_name() . ': modified.';
+            push @ok, $collector->full_name() . ': updated.';
         } else {
             push @ko, $@;
         }
@@ -184,7 +184,7 @@ sub show_associated_queue {
                 $controller->ok_ko(
                     [],
                     [
-                        $collector->full_name() . ': unexpected error.'
+                        $collector->full_name() . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.'
                     ]
                 ),
                 500
@@ -245,13 +245,13 @@ sub show_associated_publisher_connection_status {
 
     my $connectable;
 
-    $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connectable')->then(
+    $collector_worker->rpc($collector->{publisher_backend}, 'is_connectable')->then(
         sub {
             collect(
-                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connecting'),
-                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_connected'),
-                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_disconnecting'),
-                $collector_worker->rpc($collector->{publisher}->{backend}, 'is_disconnected')
+                $collector_worker->rpc($collector->{publisher_backend}, 'is_connecting'),
+                $collector_worker->rpc($collector->{publisher_backend}, 'is_connected'),
+                $collector_worker->rpc($collector->{publisher_backend}, 'is_disconnecting'),
+                $collector_worker->rpc($collector->{publisher_backend}, 'is_disconnected')
             ) if $connectable = shift;
         }
     )->then(

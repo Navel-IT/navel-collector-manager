@@ -142,7 +142,7 @@ sub register_collector_by_name {
             my $timer = shift->begin();
 
             $collector->rpc(
-                $collector->{definition}->{publisher}->{backend},
+                $collector->{definition}->{publisher_backend},
                 'is_connectable'
             )->then(
                 sub {
@@ -150,8 +150,8 @@ sub register_collector_by_name {
                         $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': the associated publisher is apparently connectable.');
 
                         collect(
-                            $collector->rpc($collector->{definition}->{publisher}->{backend}, 'is_connected'),
-                            $collector->rpc($collector->{definition}->{publisher}->{backend}, 'is_connecting')
+                            $collector->rpc($collector->{definition}->{publisher_backend}, 'is_connected'),
+                            $collector->rpc($collector->{definition}->{publisher_backend}, 'is_connecting')
                         );
                     } else {
                         (
@@ -169,14 +169,14 @@ sub register_collector_by_name {
                     if (shift->[0]) {
                         $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': starting publication.');
 
-                        $collector->rpc($collector->{definition}->{publisher}->{backend}, 'publish');
+                        $collector->rpc($collector->{definition}->{publisher_backend}, 'publish');
                     } else {
                         if (shift->[0]) {
                             die "connecting is in progress, cannot continue\n";
                         } else {
                             $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': starting connection.');
 
-                            $collector->rpc($collector->{definition}->{publisher}->{backend}, 'connect');
+                            $collector->rpc($collector->{definition}->{publisher_backend}, 'connect');
                         }
                     }
                 }
@@ -195,7 +195,7 @@ sub register_collector_by_name {
 
             collect(
                 $collector->rpc($collector->{definition}->{backend}, 'enable'),
-                $collector->rpc($collector->{definition}->{publisher}->{backend}, 'enable')
+                $collector->rpc($collector->{definition}->{publisher_backend}, 'enable')
             )->then(
                 sub {
                     $self->{logger}->notice($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': chain of activation successfully completed.');
@@ -207,7 +207,7 @@ sub register_collector_by_name {
 
             collect(
                 $collector->rpc($collector->{definition}->{backend}, 'disable'),
-                $collector->rpc($collector->{definition}->{publisher}->{backend}, 'disable')
+                $collector->rpc($collector->{definition}->{publisher_backend}, 'disable')
             )->then(
                 sub {
                     $self->{logger}->notice($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': chain of deactivation successfully completed.');
