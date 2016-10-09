@@ -17,6 +17,7 @@ before_install:
   - pushd ..
   - f_install_navel_dep navel-base
   - f_install_navel_dep navel-base-definition
+  - f_install_navel_dep navel-queue
   - f_install_navel_dep navel-logger
   - f_install_navel_dep navel-api
   - f_install_navel_dep navel-base-daemon
