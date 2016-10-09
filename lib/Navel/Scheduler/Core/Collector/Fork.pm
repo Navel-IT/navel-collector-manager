@@ -99,7 +99,7 @@ sub rpc {
             @_,
             @definitions,
             sub {
-                shift ? $deferred->resolve(@_) : $deferred->reject(@_);
+                shift() ? $deferred->resolve(@_) : $deferred->reject(@_);
             }
         );
     } else {
