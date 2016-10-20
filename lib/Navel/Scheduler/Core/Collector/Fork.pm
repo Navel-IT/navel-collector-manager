@@ -62,7 +62,7 @@ sub new {
         )
     );
 
-    $self->{rpc} = (blessed($options{ae_fork}) && $options{ae_fork}->isa('AnyEvent::Fork') ? $options{ae_fork} : AnyEvent::Fork->new())->fork()->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
+    $self->{rpc} = $self->{core}->{ae_fork}->fork()->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
         WORKER_PACKAGE_NAME . '::' . WORKER_RPC_METHOD_NAME,
         on_event => $options{on_event},
         on_error => sub {
