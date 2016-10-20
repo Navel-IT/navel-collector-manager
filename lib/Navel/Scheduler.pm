@@ -11,11 +11,6 @@ use Navel::Base;
 
 use parent 'Navel::Base::Daemon';
 
-use sigtrap (
-    'handler' => \&sigtrap_handler,
-    'normal-signals'
-);
-
 use AnyEvent;
 
 use File::ShareDir 'dist_dir';
@@ -23,13 +18,34 @@ use File::ShareDir 'dist_dir';
 use Navel::Scheduler::Parser;
 use Navel::API::Swagger2::Scheduler;
 use Navel::Logger::Message;
-use Navel::Utils 'isint';
+
+#-> class variables
+
+my @signal_watchers;
 
 #-> methods
 
 sub run {
     shift->SUPER::run(
-        program_name => 'navel-scheduler'
+        program_name => 'navel-scheduler',
+        before_starting => sub {
+            my $self = shift;
+
+            push @signal_watchers, AnyEvent->signal(
+                signal => $_,
+                cb => sub {
+                    $self->stop(
+                        sub {
+                            exit;
+                        }
+                    );
+                }
+            ) for qw/
+                INT
+                QUIT
+                TERM
+            /;
+        }
     );
 }
 
@@ -43,12 +59,6 @@ sub new {
         mojolicious_application_class => 'Navel::Scheduler::Mojolicious::Application',
         swagger => Navel::API::Swagger2::Scheduler->new()
     );
-
-    sub sigtrap_handler {
-        $self->stop(
-            delay => 5
-        );
-    }
 
     if ($self->webserver()) {
         $self->{webserver}->app()->mode('production');
@@ -71,14 +81,12 @@ sub start {
 }
 
 sub stop {
-    my ($self, %options) = @_;
+    my ($self, $callback) = @_;
 
     state $stopping;
 
     unless ($stopping) {
         $stopping = 1;
-
-        $options{delay} = 0 unless isint($options{delay}) > 0;
 
         local $@;
 
@@ -90,13 +98,13 @@ sub stop {
             $self->{core}->delete_collectors();
 
             my $wait; $wait = AnyEvent->timer(
-                after => $options{delay},
+                after => 5,
                 cb => sub {
                     undef $wait;
 
                     $self->{core}->send();
 
-                    $options{delay_callback}->() if ref $options{delay_callback} eq 'CODE';
+                    $callback->() if ref $callback eq 'CODE';
 
                     $stopping = 0;
                 }
