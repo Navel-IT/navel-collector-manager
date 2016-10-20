@@ -10,7 +10,7 @@ package Navel::Scheduler::Core::Collector::Fork 0.1;
 use Navel::Base;
 
 use constant {
-    WORKER_PACKAGE_NAME => 'Navel::Scheduler::Core::Collector::Fork::Worker',
+    WORKER_PACKAGE_NAME => 'W',
     WORKER_RPC_METHOD_NAME => '_rpc'
 };
 
