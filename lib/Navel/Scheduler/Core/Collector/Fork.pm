@@ -92,7 +92,7 @@ sub rpc {
         unless ($self->{initialized}) {
             $self->{initialized} = 1;
 
-            push @definitions, $self->{core}->{meta}, $self->{definition};
+            push @definitions, $self->{core}->{meta}->{definition}, $self->{definition}->properties();
         }
 
         $self->{rpc}->(
@@ -163,13 +163,13 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
         };
 
         *collector = sub {
-            state $collector = Navel::Definition::Collector->new($collector);
+            $collector;
         };
 
         *event = sub {
             map {
                 Navel::Event->new(
-                    collector => collector(),
+                    collection => collector()->{collection},
                     data => $_
                 )->serialize();
             } @_;
