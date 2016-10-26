@@ -22,21 +22,13 @@ Check this [repository](https://github.com/navel-it/navel-installation-scripts).
 Usage
 -----
 
-All the help is available with `navel-scheduler --help`.
-
-- Manually
-
 ```
 [root@vmbox tmp]# navel-scheduler /usr/local/etc/navel-scheduler/meta.json
 Oct 18 18:52:04 vmbox navel-scheduler[5211] 133 initialization done.
 Oct 18 18:52:04 vmbox navel-scheduler[5211] 133 Navel::Definition::Collector.Navel::Collector::Monitoring::Plugin.nagios-worker-1: initialization.
 ```
 
-- As a service
-
-By default, the service is named *navel-scheduler* and run under the user and the group of the same name.
-
-If you want to change the service options, edit */etc/sysconfig/navel-scheduler* or */etc/default/navel-scheduler* in accordance with the help.
+All the help is available via `navel-scheduler --help`.
 
 API
 ---
@@ -50,8 +42,6 @@ mojo swagger2 edit $(perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API
 ```
 
 - WebSocket
-
-navel-scheduler expose the following endpoints:
 
 Endpoint | Summary
 -------- | -------
