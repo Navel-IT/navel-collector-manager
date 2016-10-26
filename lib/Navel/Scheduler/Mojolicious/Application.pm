@@ -18,7 +18,7 @@ sub new {
 
     $class->SUPER::new(
         @_,
-        swagger => Navel::API::Swagger2::Scheduler->new()
+        swagger => Navel::API::Swagger2::Scheduler->new
     );
 }
 

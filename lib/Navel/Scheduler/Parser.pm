@@ -23,8 +23,8 @@ sub validate {
     $class->SUPER::validate(
         raw_definition => shift,
         validator => sub {
-            state $json_validator = JSON::Validator->new()->schema(
-                Navel::API::Swagger2::Scheduler->new()->expand()->api_spec()->get('/definitions/meta')
+            state $json_validator = JSON::Validator->new->schema(
+                Navel::API::Swagger2::Scheduler->new->expand->api_spec->get('/definitions/meta')
             );
 
             [

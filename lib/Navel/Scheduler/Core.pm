@@ -34,7 +34,7 @@ sub new {
         maximum => $self->{meta}->{definition}->{collectors}->{maximum}
     )->read(
         file_path => $self->{meta}->{definition}->{collectors}->{definitions_from_file}
-    )->make();
+    )->make;
 
     $self->{worker_per_collector} = {};
 
@@ -50,7 +50,7 @@ sub new {
         }
     };
 
-    $self->{ae_fork} = AnyEvent::Fork->new();
+    $self->{ae_fork} = AnyEvent::Fork->new;
 
     bless $self, ref $class || $class;
 }
@@ -62,9 +62,9 @@ sub init_collector_by_name {
 
     die "unknown collector definition\n" unless defined $collector;
 
-    $self->{logger}->notice($collector->full_name() . ': initialization.');
+    $self->{logger}->notice($collector->full_name . ': initialization.');
 
-    my $on_event_error_message_prefix = $collector->full_name() . ': incorrect behavior/declaration.';
+    my $on_event_error_message_prefix = $collector->full_name . ': incorrect behavior/declaration.';
 
     $self->{worker_per_collector}->{$collector->{name}} = Navel::Scheduler::Core::Collector::Fork->new(
         core => $self,
@@ -77,7 +77,7 @@ sub init_collector_by_name {
                     eval {
                         $self->{logger}->enqueue(
                             severity => $_->[0],
-                            text => $collector->full_name() . ': ' . $_->[1]
+                            text => $collector->full_name . ': ' . $_->[1]
                         ) if defined $_->[1];
                     };
 
@@ -100,10 +100,10 @@ sub init_collector_by_name {
             }
         },
         on_error => sub {
-            $self->{logger}->warning($collector->full_name() . ': execution stopped (fatal): ' . shift . '.');
+            $self->{logger}->warning($collector->full_name . ': execution stopped (fatal): ' . shift . '.');
         },
         on_destroy => sub {
-            $self->{logger}->info($collector->full_name() . ': destroyed.');
+            $self->{logger}->info($collector->full_name . ': destroyed.');
         }
     );
 
@@ -129,7 +129,7 @@ sub register_collector_by_name {
 
     my $on_catch = sub {
         $self->{logger}->warning(
-            Navel::Logger::Message->stepped_message($collector->{definition}->full_name() . ': chain of action cannot be completed.', \@_)
+            Navel::Logger::Message->stepped_message($collector->{definition}->full_name . ': chain of action cannot be completed.', \@_)
         );
     };
 
@@ -139,7 +139,7 @@ sub register_collector_by_name {
         splay => 1,
         interval => 5,
         callback => sub {
-            my $timer = shift->begin();
+            my $timer = shift->begin;
 
             $collector->rpc(
                 $collector->{definition}->{publisher_backend},
@@ -147,7 +147,7 @@ sub register_collector_by_name {
             )->then(
                 sub {
                     if (shift) {
-                        $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': the associated publisher is apparently connectable.');
+                        $self->{logger}->debug($collector->{definition}->full_name . ': ' . $timer->full_name . ': the associated publisher is apparently connectable.');
 
                         collect(
                             $collector->rpc($collector->{definition}->{publisher_backend}, 'is_connected'),
@@ -167,14 +167,14 @@ sub register_collector_by_name {
             )->then(
                 sub {
                     if (shift->[0]) {
-                        $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': starting publication.');
+                        $self->{logger}->debug($collector->{definition}->full_name . ': ' . $timer->full_name . ': starting publication.');
 
                         $collector->rpc($collector->{definition}->{publisher_backend}, 'publish');
                     } else {
                         if (shift->[0]) {
                             die "connecting is in progress, cannot continue\n";
                         } else {
-                            $self->{logger}->debug($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': starting connection.');
+                            $self->{logger}->debug($collector->{definition}->full_name . ': ' . $timer->full_name . ': starting connection.');
 
                             $collector->rpc($collector->{definition}->{publisher_backend}, 'connect');
                         }
@@ -182,11 +182,11 @@ sub register_collector_by_name {
                 }
             )->then(
                 sub {
-                    $self->{logger}->notice($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': chain of action successfully completed.');
+                    $self->{logger}->notice($collector->{definition}->full_name . ': ' . $timer->full_name . ': chain of action successfully completed.');
                 }
             )->catch($on_catch)->finally(
                 sub {
-                    $timer->end();
+                    $timer->end;
                 }
             );
         },
@@ -198,7 +198,7 @@ sub register_collector_by_name {
                 $collector->rpc($collector->{definition}->{publisher_backend}, 'enable')
             )->then(
                 sub {
-                    $self->{logger}->notice($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': chain of activation successfully completed.');
+                    $self->{logger}->notice($collector->{definition}->full_name . ': ' . $timer->full_name . ': chain of activation successfully completed.');
                 }
             )->catch($on_catch);
         },
@@ -210,7 +210,7 @@ sub register_collector_by_name {
                 $collector->rpc($collector->{definition}->{publisher_backend}, 'disable')
             )->then(
                 sub {
-                    $self->{logger}->notice($collector->{definition}->full_name() . ': ' . $timer->full_name() . ': chain of deactivation successfully completed.');
+                    $self->{logger}->notice($collector->{definition}->full_name . ': ' . $timer->full_name . ': chain of deactivation successfully completed.');
                 }
             )->catch($on_catch);
         }

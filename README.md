@@ -46,7 +46,7 @@ API
 The documentation is available through the Swagger spec:
 
 ```bash
-mojo swagger2 edit $(perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->spec_file_location();') --listen http://*:8080
+mojo swagger2 edit $(perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->spec_file_location;') --listen http://*:8080
 ```
 
 - WebSocket

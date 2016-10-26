@@ -52,17 +52,17 @@ sub new {
 
     weaken($weak_self);
 
-    my $wrapped_code = $self->wrapped_code();
+    my $wrapped_code = $self->wrapped_code;
 
     $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message($self->{definition}->full_name() . ': dump of the source.',
+        Navel::Logger::Message->stepped_message($self->{definition}->full_name . ': dump of the source.',
             [
                 split /\n/, $wrapped_code
             ]
         )
     );
 
-    $self->{rpc} = $self->{core}->{ae_fork}->fork()->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
+    $self->{rpc} = $self->{core}->{ae_fork}->fork->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
         WORKER_PACKAGE_NAME . '::' . WORKER_RPC_METHOD_NAME,
         on_event => $options{on_event},
         on_error => sub {
@@ -76,7 +76,7 @@ sub new {
         serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
     );
 
-    $self->{core}->{logger}->info($self->{definition}->full_name() . ': spawned a new worker.');
+    $self->{core}->{logger}->info($self->{definition}->full_name . ': spawned a new worker.');
 
     $self;
 }
@@ -84,7 +84,7 @@ sub new {
 sub rpc {
     my $self = shift;
 
-    my $deferred = deferred();
+    my $deferred = deferred;
 
     if (defined $self->{rpc}) {
         my @definitions;
@@ -92,7 +92,7 @@ sub rpc {
         unless ($self->{initialized}) {
             $self->{initialized} = 1;
 
-            push @definitions, $self->{core}->{meta}->{definition}, $self->{definition}->properties();
+            push @definitions, $self->{core}->{meta}->{definition}, $self->{definition}->properties;
         }
 
         $self->{rpc}->(
@@ -106,7 +106,7 @@ sub rpc {
         $deferred->reject('the worker is not ready');
     }
 
-    $deferred->promise();
+    $deferred->promise;
 }
 
 sub wrapped_code {
@@ -130,6 +130,14 @@ require ' . $self->{definition}->{publisher_backend} . ';
 
 my ($initialized, $exiting);
 
+*log = \&AnyEvent::Fork::RPC::event;
+
+sub queue {
+    state $queue = Navel::Queue->new(
+        auto_clean => ' . $self->{definition}->{queue_auto_clean} . '
+    );
+}
+
 sub ' . WORKER_RPC_METHOD_NAME . ' {
     my ($done, $backend, $sub, $meta, $collector) = @_;
 
@@ -141,9 +149,9 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
 
     unless (defined $backend) {
         if ($sub eq ' . "'queue'" . ') {
-            $done->(1, scalar @{queue()->{items}});
+            $done->(1, scalar @{queue->{items}});
         } elsif ($sub eq ' . "'dequeue'" . ') {
-            $done->(1, scalar queue()->dequeue());
+            $done->(1, scalar queue->dequeue);
         } else {
             $exiting = 1;
 
@@ -169,31 +177,23 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
         *event = sub {
             map {
                 Navel::Event->new(
-                    collection => collector()->{collection},
+                    collection => ' . "'" . $self->{definition}->{collection} . "'" . ',
                     data => $_
-                )->serialize();
+                )->serialize;
             } @_;
         };
 
-        ' . $self->{definition}->{backend} . '->init();
-        ' . $self->{definition}->{publisher_backend} . '->init();
+        ' . $self->{definition}->{backend} . '::init();
+        ' . $self->{definition}->{publisher_backend} . '::init();
     }
 
     if (my $sub_ref = $backend->can($sub)) {
         $sub_ref->($done);
     } else {
-        $done->(0, ' . "\$backend . '::' . \$sub . '() is not declared'" . ');
+        $done->(0, ' . "\$backend . '::' . \$sub . ' is not declared'" . ');
     }
 
     return;
-}
-
-*log = \&AnyEvent::Fork::RPC::event;
-
-sub queue {
-    state $queue = Navel::Queue->new(
-        auto_clean => ' . $self->{definition}->{queue_auto_clean} . '
-    );
 }
 
 1;';
@@ -207,7 +207,7 @@ sub DESTROY {
     local $@;
 
     eval {
-        $self->rpc();
+        $self->rpc;
 
         undef $self->{rpc};
     };

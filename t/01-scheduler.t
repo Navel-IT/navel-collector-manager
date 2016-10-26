@@ -34,11 +34,11 @@ lives_ok {
             'http://*:8080'
         ]
     );
-} 'Navel::Scheduler->new(): loading and preparing meta configuration from ' . $meta_configuration_file_path;
+} 'Navel::Scheduler->new: loading and preparing meta configuration from ' . $meta_configuration_file_path;
 
 lives_ok {
     $mojolicious_tester = Test::Mojo->new(
-        $scheduler->{webserver}->app()
+        $scheduler->{webserver}->app
     );
 }
 

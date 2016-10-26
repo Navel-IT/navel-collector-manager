@@ -18,8 +18,8 @@ sub save_all_configuration {
 
     $controller->SUPER::save_all_configuration(
         @_,
-        $controller->daemon()->{core}->{collectors}->async_write(),
-        $controller->daemon()->{core}->{meta}->async_write()
+        $controller->daemon->{core}->{collectors}->async_write,
+        $controller->daemon->{core}->{meta}->async_write
     );
 }
 

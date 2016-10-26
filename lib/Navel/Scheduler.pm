@@ -54,19 +54,19 @@ sub new {
 
     state $self = $class->SUPER::new(
         @_,
-        meta => Navel::Scheduler::Parser->new(),
+        meta => Navel::Scheduler::Parser->new,
         core_class => 'Navel::Scheduler::Core',
         mojolicious_application_class => 'Navel::Scheduler::Mojolicious::Application',
-        swagger => Navel::API::Swagger2::Scheduler->new()
+        swagger => Navel::API::Swagger2::Scheduler->new
     );
 
-    if ($self->webserver()) {
-        $self->{webserver}->app()->mode('production');
+    if ($self->webserver) {
+        $self->{webserver}->app->mode('production');
 
         my $mojolicious_app_home = dist_dir('Navel-Scheduler') . '/mojolicious/home';
 
-        @{$self->{webserver}->app()->renderer()->paths()} = ($mojolicious_app_home . '/templates');
-        @{$self->{webserver}->app()->static()->paths()} = ($mojolicious_app_home . '/public');
+        @{$self->{webserver}->app->renderer->paths} = ($mojolicious_app_home . '/templates');
+        @{$self->{webserver}->app->static->paths} = ($mojolicious_app_home . '/public');
     }
 
     $self;
@@ -75,7 +75,7 @@ sub new {
 sub start {
     my $self = shift;
 
-    $self->SUPER::start(@_)->{core}->register_core_logger()->init_collectors()->register_collectors()->recv();
+    $self->SUPER::start(@_)->{core}->register_core_logger->init_collectors->register_collectors->recv;
 
     $self;
 }
@@ -93,16 +93,16 @@ sub stop {
         $self->{core}->{logger}->notice('stopping the scheduler.');
 
         eval {
-            $self->webserver(0) if $self->webserver();
+            $self->webserver(0) if $self->webserver;
 
-            $self->{core}->delete_collectors();
+            $self->{core}->delete_collectors;
 
             my $wait; $wait = AnyEvent->timer(
                 after => 5,
                 cb => sub {
                     undef $wait;
 
-                    $self->{core}->send();
+                    $self->{core}->send;
 
                     $callback->() if ref $callback eq 'CODE';
 

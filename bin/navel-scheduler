@@ -13,7 +13,7 @@ use Navel::Scheduler;
 
 #-> main
 
-Navel::Scheduler->run();
+Navel::Scheduler->run;
 
 #-> END
 
