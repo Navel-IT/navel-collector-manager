@@ -137,7 +137,7 @@ sub register_collector_by_name {
         name => $collector->{definition}->{name},
         singleton => 1,
         splay => 1,
-        interval => 5,
+        interval => 1,
         callback => sub {
             my $timer = shift->begin;
 
