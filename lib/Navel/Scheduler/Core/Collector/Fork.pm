@@ -127,7 +127,7 @@ use Navel::Event;
 
 BEGIN {
     require ' . $self->{definition}->{backend} . ';
-    require ' . $self->{definition}->{publisher_backend} . ' '';
+    require ' . $self->{definition}->{publisher_backend} . ';
 }
 
 my ($initialized, $exiting);
