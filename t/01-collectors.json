@@ -1,7 +1,6 @@
 [
     {
         "name": "test-1",
-        "collection": "test",
         "queue_auto_clean": 0,
         "backend": "Navel::Collector::Test",
         "backend_input": null,

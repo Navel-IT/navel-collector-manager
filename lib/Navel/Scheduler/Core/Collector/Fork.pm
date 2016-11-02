@@ -11,7 +11,7 @@ use Navel::Base;
 
 use constant {
     WORKER_PACKAGE_NAME => 'W',
-    WORKER_RPC_METHOD_NAME => '_rpc'
+    WORKER_RPC_METHOD_NAME => '_run'
 };
 
 use AnyEvent::Fork;
@@ -125,8 +125,10 @@ use Navel::Base;
 use Navel::Queue;
 use Navel::Event;
 
-require ' . $self->{definition}->{backend} . ';
-require ' . $self->{definition}->{publisher_backend} . ';
+BEGIN {
+    require ' . $self->{definition}->{backend} . ';
+    require ' . $self->{definition}->{publisher_backend} . ' '';
+}
 
 my ($initialized, $exiting);
 
@@ -137,6 +139,15 @@ sub queue {
         auto_clean => ' . $self->{definition}->{queue_auto_clean} . '
     );
 }
+
+sub event {
+    map {
+        Navel::Event->new(
+            class => ' . $self->{definition}->{backend} . '::EVENT_CLASS,
+            data => $_
+        )->serialize;
+    } @_;
+};
 
 sub ' . WORKER_RPC_METHOD_NAME . ' {
     my ($done, $backend, $sub, $meta, $collector) = @_;
@@ -174,17 +185,8 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
             $collector;
         };
 
-        *event = sub {
-            map {
-                Navel::Event->new(
-                    collection => ' . "'" . $self->{definition}->{collection} . "'" . ',
-                    data => $_
-                )->serialize;
-            } @_;
-        };
-
-        ' . $self->{definition}->{backend} . '::init();
-        ' . $self->{definition}->{publisher_backend} . '::init();
+        ' . $self->{definition}->{backend} . '::init;
+        ' . $self->{definition}->{publisher_backend} . '::init;
     }
 
     if (my $sub_ref = $backend->can($sub)) {
