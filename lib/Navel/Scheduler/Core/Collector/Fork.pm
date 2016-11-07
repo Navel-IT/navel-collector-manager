@@ -11,7 +11,7 @@ use Navel::Base;
 
 use constant {
     WORKER_PACKAGE_NAME => 'W',
-    WORKER_RPC_METHOD_NAME => '_run'
+    WORKER_RPC_METHOD_NAME => '_collector'
 };
 
 use AnyEvent::Fork;
@@ -136,7 +136,7 @@ my ($initialized, $exiting);
 
 sub queue {
     state $queue = Navel::Queue->new(
-        auto_clean => ' . $self->{definition}->{queue_auto_clean} . '
+        size => ' . $self->{definition}->{queue_size} . '
     );
 }
 
