@@ -17,7 +17,6 @@ use File::ShareDir 'dist_dir';
 
 use Navel::Scheduler::Parser;
 use Navel::API::Swagger2::Scheduler;
-use Navel::Logger::Message;
 
 #-> class variables
 
