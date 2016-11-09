@@ -1,10 +1,10 @@
 [
     {
-        "name": "test-1",
+        "name": "t",
         "queue_size": 0,
-        "backend": "Navel::Collector::Test",
+        "backend": "Collector",
         "backend_input": null,
-        "publisher_backend": "Navel::Broker::Client:::Publisher::Test",
+        "publisher_backend": "Publisher",
         "publisher_backend_input": null
     }
 ]
