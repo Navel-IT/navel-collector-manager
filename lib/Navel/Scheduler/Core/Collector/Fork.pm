@@ -9,110 +9,14 @@ package Navel::Scheduler::Core::Collector::Fork 0.1;
 
 use Navel::Base;
 
-use constant {
-    WORKER_PACKAGE_NAME => 'W',
-    WORKER_RPC_METHOD_NAME => '_collector'
-};
-
-use AnyEvent::Fork;
-use AnyEvent::Fork::RPC;
-
-use Promises 'deferred';
-
-use Navel::Logger::Message;
-use Navel::AnyEvent::Fork::RPC::Serializer::Sereal;
-
-use Navel::Utils qw/
-    blessed
-    croak
-    weaken
-/;
+use parent 'Navel::Base::WorkerManager::Core::Worker::Fork';
 
 #-> methods
-
-sub new {
-    my ($class, %options) = @_;
-
-    my $self;
-
-    if (ref $class) {
-        $self = $class;
-    } else {
-        croak('core class is invalid') unless blessed($options{core}) && $options{core}->isa('Navel::Scheduler::Core');
-
-        croak('collector definition is invalid') unless blessed($options{definition}) && $options{definition}->isa('Navel::Definition::Collector');
-
-        $self = bless {
-            core => $options{core},
-            definition => $options{definition}
-        }, $class;
-    }
-
-    my $weak_self = $self;
-
-    weaken($weak_self);
-
-    my $wrapped_code = $self->wrapped_code;
-
-    $self->{core}->{logger}->debug(
-        Navel::Logger::Message->stepped_message($self->{definition}->full_name . ': dump of the source.',
-            [
-                split /\n/, $wrapped_code
-            ]
-        )
-    );
-
-    $self->{rpc} = $self->{core}->{ae_fork}->fork->eval($wrapped_code)->AnyEvent::Fork::RPC::run(
-        WORKER_PACKAGE_NAME . '::' . WORKER_RPC_METHOD_NAME,
-        on_event => $options{on_event},
-        on_error => sub {
-            undef $weak_self->{rpc};
-
-            $options{on_error}->(@_);
-        },
-        on_destroy => $options{on_destroy},
-        async => 1,
-        initialized => 0,
-        serialiser => Navel::AnyEvent::Fork::RPC::Serializer::Sereal::SERIALIZER
-    );
-
-    $self->{core}->{logger}->info($self->{definition}->full_name . ': spawned a new worker.');
-
-    $self;
-}
-
-sub rpc {
-    my $self = shift;
-
-    my $deferred = deferred;
-
-    if (defined $self->{rpc}) {
-        my @definitions;
-
-        unless ($self->{initialized}) {
-            $self->{initialized} = 1;
-
-            push @definitions, $self->{core}->{meta}->{definition}, $self->{definition}->properties;
-        }
-
-        $self->{rpc}->(
-            @_,
-            @definitions,
-            sub {
-                shift() ? $deferred->resolve(@_) : $deferred->reject(@_);
-            }
-        );
-    } else {
-        $deferred->reject('the worker is not ready');
-    }
-
-    $deferred->promise;
-}
 
 sub wrapped_code {
     my $self = shift;
 
-    'package ' . WORKER_PACKAGE_NAME . " 0.1;
+    'package ' . $self->{worker_package} . " 0.1;
 
 BEGIN {
     open STDIN, '</dev/null';
@@ -149,7 +53,7 @@ sub event {
     } @_;
 };
 
-sub ' . WORKER_RPC_METHOD_NAME . ' {
+sub ' . $self->{worker_rpc_method} . ' {
     my ($done, $backend, $sub, $meta, $collector) = @_;
 
     if ($exiting) {
@@ -203,19 +107,7 @@ sub ' . WORKER_RPC_METHOD_NAME . ' {
 
 # sub AUTOLOAD {}
 
-sub DESTROY {
-    my $self = shift;
-
-    local $@;
-
-    eval {
-        $self->rpc;
-
-        undef $self->{rpc};
-    };
-
-    $self;
-}
+# sub DESTROY {}
 
 1;
 

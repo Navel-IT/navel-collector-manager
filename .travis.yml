@@ -21,6 +21,7 @@ before_install:
   - f_install_navel_dep navel-logger
   - f_install_navel_dep navel-api
   - f_install_navel_dep navel-base-daemon
+  - f_install_navel_dep navel-base-workermanager
   - f_install_navel_dep navel-mojolicious-plugin-logger
   - f_install_navel_dep navel-mojolicious-plugin-swagger2-stdresponses
   - f_install_navel_dep navel-anyevent-fork-rpc-serializer-sereal

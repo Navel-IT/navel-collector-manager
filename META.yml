@@ -21,20 +21,14 @@ no_index:
     - t
     - inc
 requires:
-  AnyEvent: '0'
-  AnyEvent::Fork: '0'
-  AnyEvent::Fork::RPC: '0'
-  EV: '0'
   File::ShareDir: '0'
-  IO::Socket::SSL: '1.84'
   JSON::Validator: '0'
   Mojolicious: '0'
-  Mojo::JSON::MaybeXS: '0'
   Navel::API: '0'
   Navel::AnyEvent::Fork::RPC::Serializer::Sereal: '0'
   Navel::AnyEvent::Pool: '0'
   Navel::Base: '0'
-  Navel::Base::Daemon: '0'
+  Navel::Base::WorkerManager: '0'
   Navel::Definition::Collector: '0'
   Navel::Event: '0'
   Navel::Logger: '0'

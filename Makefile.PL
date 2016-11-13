@@ -36,8 +36,7 @@ WriteMakefile(
     MIN_PERL_VERSION => $min_perl_version,
     PREREQ_PM => {
         'Navel::Base' => 0,
-        'Navel::Base::Daemon' => 0,
-        'Navel::AnyEvent::Fork::RPC::Serializer::Sereal' => 0,
+        'Navel::Base::WorkerManager' => 0,
         'Navel::Mojolicious::Plugin::Logger' => 0,
         'Navel::Mojolicious::Plugin::Swagger2::StdResponses' => 0,
         'Navel::Logger' => 0,
@@ -46,16 +45,10 @@ WriteMakefile(
         'Navel::Queue' => 0,
         'Navel::Event' => 0,
         'Navel::AnyEvent::Pool' => 0,
-        'EV' => 0,
-        'AnyEvent' => 0,
-        'AnyEvent::Fork' => 0,
-        'AnyEvent::Fork::RPC' => 0,
         'Promises' => 0,
         'File::ShareDir' => 0,
         'Mojolicious' => 0,
-        'Mojo::JSON::MaybeXS' => 0,
-        'JSON::Validator' => 0,
-        'IO::Socket::SSL' => 1.84
+        'JSON::Validator' => 0
     },
     CONFIGURE_REQUIRES => {
         'ExtUtils::MakeMaker' => 6.64,

@@ -9,249 +9,39 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Collec
 
 use Navel::Base;
 
-use Promises 'collect';
-
 use Mojo::Base 'Mojolicious::Controller';
 
+use parent 'Navel::Base::WorkerManager::Mojolicious::Application::Controller::Swagger2::Worker';
+
+use Promises 'collect';
+
 #-> methods
-
-sub list_collectors {
-    my ($controller, $arguments, $callback) = @_;
-
-    $controller->$callback(
-        $controller->daemon->{core}->{collectors}->all_by_property_name('name'),
-        200
-    );
-}
-
-sub new_collector {
-    my ($controller, $arguments, $callback) = @_;
-
-    return $controller->resource_already_exists(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collector}->{name}
-        }
-    ) if defined $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collector}->{name});
-
-    my (@ok, @ko);
-
-    local $@;
-
-    my $collector = eval {
-        $controller->daemon->{core}->{collectors}->add_definition($arguments->{collector});
-    };
-
-    unless ($@) {
-        $controller->daemon->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-        push @ok, $collector->full_name . ': added.';
-    } else {
-        push @ko, $@;
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        @ko ? 400 : 201
-    );
-}
-
-sub show_collector {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $collector = $controller->daemon->{core}->{collectors}->definition_properties_by_name($arguments->{collectorName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collectorName}
-        }
-    ) unless defined $collector;
-
-    $controller->$callback(
-        $collector,
-        200
-    );
-}
-
-sub update_collector {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $collector = $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collectorName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collectorName}
-        }
-    ) unless defined $collector;
-
-    my (@ok, @ko);
-
-    local $@;
-
-    delete $arguments->{collector}->{name};
-
-    $arguments->{collector} = {
-        %{$collector->properties},
-        %{$arguments->{collector}}
-    };
-
-    eval {
-        $controller->daemon->{core}->delete_collector_and_definition_associated_by_name($arguments->{collector}->{name});
-    };
-
-    unless ($@) {
-        my $collector = eval {
-            $controller->daemon->{core}->{collectors}->add_definition($arguments->{collector});
-        };
-
-        unless ($@) {
-            $controller->daemon->{core}->init_collector_by_name($collector->{name})->register_collector_by_name($collector->{name});
-
-            push @ok, $collector->full_name . ': updated.';
-        } else {
-            push @ko, $@;
-        }
-    } else {
-        push @ko, $@;
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        @ko ? 400 : 200
-    );
-}
-
-sub delete_collector {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $collector = $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collectorName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collectorName}
-        }
-    ) unless defined $collector;
-
-    my (@ok, @ko);
-
-    local $@;
-
-    eval {
-        $controller->daemon->{core}->delete_collector_and_definition_associated_by_name($collector->{name});
-    };
-
-    unless ($@) {
-        push @ok, $collector->full_name . ': killed, unregistered and deleted.';
-    } else {
-        push @ko, $@;
-    }
-
-    $controller->$callback(
-        $controller->ok_ko(\@ok, \@ko),
-        @ko ? 400 : 200
-    );
-}
-
-sub show_associated_queue {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $collector = $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collectorName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collectorName}
-        }
-    ) unless defined $collector;
-
-    $controller->render_later;
-
-    $controller->daemon->{core}->{worker_per_collector}->{$collector->{name}}->rpc(undef, 'queue')->then(
-        sub {
-            $controller->$callback(
-                {
-                    amount_of_events => shift
-                },
-                200
-            );
-        }
-    )->catch(
-        sub {
-            $controller->$callback(
-                $controller->ok_ko(
-                    [],
-                    [
-                        $collector->full_name . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.'
-                    ]
-                ),
-                500
-            );
-        }
-    );
-}
-
-sub delete_all_events_from_the_associated_queue {
-    my ($controller, $arguments, $callback) = @_;
-
-    my $collector = $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collectorName});
-
-    return $controller->resource_not_found(
-        {
-            callback => $callback,
-            resource_name => $arguments->{collectorName}
-        }
-    ) unless defined $collector;
-
-    $controller->render_later;
-
-    my (@ok, @ko);
-
-    $controller->daemon->{core}->{worker_per_collector}->{$collector->{name}}->rpc(undef, 'dequeue')->then(
-        sub {
-            push @ok, $collector->full_name . ': queue cleared.';
-        }
-    )->catch(
-        sub {
-            push @ko, $collector->full_name . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.';
-        }
-    )->finally(
-        sub {
-            $controller->$callback(
-                $controller->ok_ko(\@ok, \@ko),
-                @ko ? 500 : 200
-            );
-        }
-    );
-}
 
 sub show_associated_publisher_connection_status {
     my ($controller, $arguments, $callback) = @_;
 
-    my $collector = $controller->daemon->{core}->{collectors}->definition_by_name($arguments->{collectorName});
+    my $definition = $controller->daemon->{core}->{definitions}->definition_by_name($arguments->{name});
 
     return $controller->resource_not_found(
         {
             callback => $callback,
-            resource_name => $arguments->{collectorName}
+            resource_name => $arguments->{name}
         }
-    ) unless defined $collector;
+    ) unless defined $definition;
 
-    my $collector_worker = $controller->daemon->{core}->{worker_per_collector}->{$collector->{name}};
+    my $worker_worker = $controller->daemon->{core}->{worker_per_definition}->{$definition->{name}};
 
     $controller->render_later;
 
     my $connectable;
 
-    $collector_worker->rpc($collector->{publisher_backend}, 'is_connectable')->then(
+    $worker_worker->rpc($definition->{publisher_backend}, 'is_connectable')->then(
         sub {
             collect(
-                $collector_worker->rpc($collector->{publisher_backend}, 'is_connecting'),
-                $collector_worker->rpc($collector->{publisher_backend}, 'is_connected'),
-                $collector_worker->rpc($collector->{publisher_backend}, 'is_disconnecting'),
-                $collector_worker->rpc($collector->{publisher_backend}, 'is_disconnected')
+                $worker_worker->rpc($definition->{publisher_backend}, 'is_connecting'),
+                $worker_worker->rpc($definition->{publisher_backend}, 'is_connected'),
+                $worker_worker->rpc($definition->{publisher_backend}, 'is_disconnecting'),
+                $worker_worker->rpc($definition->{publisher_backend}, 'is_disconnected')
             ) if $connectable = shift;
         }
     )->then(
@@ -275,7 +65,7 @@ sub show_associated_publisher_connection_status {
                 $controller->ok_ko(
                     [],
                     [
-                        $collector->full_name . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.'
+                        $definition->full_name . ': ' . (@_ ? join ', ', @_ : 'unexpected error') . '.'
                     ]
                 ),
                 500

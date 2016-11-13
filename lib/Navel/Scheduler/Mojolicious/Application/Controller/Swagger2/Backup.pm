@@ -9,19 +9,9 @@ package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup
 
 use Navel::Base;
 
-use parent 'Navel::Base::Daemon::Mojolicious::Application::Controller::Swagger2::Backup';
+use parent 'Navel::Base::WorkerManager::Mojolicious::Application::Controller::Swagger2::Backup';
 
 #-> methods
-
-sub save_all_configuration {
-    my $controller = shift;
-
-    $controller->SUPER::save_all_configuration(
-        @_,
-        $controller->daemon->{core}->{collectors}->async_write,
-        $controller->daemon->{core}->{meta}->async_write
-    );
-}
 
 # sub AUTOLOAD {}
 
