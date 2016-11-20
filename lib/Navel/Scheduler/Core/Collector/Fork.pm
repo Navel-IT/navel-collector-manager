@@ -45,12 +45,11 @@ sub queue {
 }
 
 sub event {
-    map {
-        Navel::Event->new(
-            class => ' . $self->{definition}->{backend} . '::EVENT_CLASS,
-            data => $_
-        )->serialize;
-    } @_;
+    Navel::Event->new(
+        class => ' . $self->{definition}->{backend} . '::EVENT_CLASS,
+        id => $_[0],
+        data => $_[1]
+    )->serialize;
 };
 
 sub ' . $self->{worker_rpc_method} . ' {
