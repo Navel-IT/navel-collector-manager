@@ -46,9 +46,9 @@ sub queue {
 
 sub event {
     Navel::Event->new(
-        class => ' . $self->{definition}->{backend} . '::EVENT_CLASS,
-        id => $_[0],
-        data => $_[1]
+        time => time,
+        @_,
+        class => ' . $self->{definition}->{backend} . '::EVENT_CLASS
     )->serialize;
 };
 
