@@ -5,11 +5,11 @@
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup 0.1;
+package Navel::Scheduler::Mojolicious::Application::Controller::OpenAPI::Configuration 0.1;
 
 use Navel::Base;
 
-use parent 'Navel::Base::WorkerManager::Mojolicious::Application::Controller::Swagger2::Backup';
+use parent 'Navel::Base::WorkerManager::Mojolicious::Application::Controller::OpenAPI::Configuration';
 
 #-> methods
 
@@ -29,7 +29,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Mojolicious::Application::Controller::Swagger2::Backup
+Navel::Scheduler::Mojolicious::Application::Controller::OpenAPI::Configuration
 
 =head1 COPYRIGHT
 

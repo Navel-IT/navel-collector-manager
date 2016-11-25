@@ -11,9 +11,9 @@ use Navel::Base;
 
 use parent 'Navel::Base::Daemon::Parser';
 
-use JSON::Validator;
+use JSON::Validator::OpenAPI;
 
-use Navel::API::Swagger2::Scheduler;
+use Navel::API::OpenAPI::Scheduler;
 
 #-> methods
 
@@ -24,7 +24,7 @@ sub validate {
         raw_definition => shift,
         validator => sub {
             state $json_validator = JSON::Validator->new->schema(
-                Navel::API::Swagger2::Scheduler->new->expand->api_spec->get('/definitions/meta')
+                Navel::API::OpenAPI::Scheduler->new->schema->get('/definitions/meta')
             );
 
             [

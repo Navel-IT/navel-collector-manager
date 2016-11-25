@@ -9,7 +9,7 @@ package Navel::Scheduler::Mojolicious::Application 0.1;
 
 use parent 'Navel::Base::Daemon::Mojolicious::Application';
 
-use Navel::API::Swagger2::Scheduler;
+use Navel::API::OpenAPI::Scheduler;
 
 #-> methods
 
@@ -18,7 +18,7 @@ sub new {
 
     $class->SUPER::new(
         @_,
-        swagger => Navel::API::Swagger2::Scheduler->new
+        openapi => Navel::API::OpenAPI::Scheduler->new
     );
 }
 

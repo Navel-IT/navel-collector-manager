@@ -35,11 +35,7 @@ API
 
 - REST
 
-The documentation is available through the Swagger spec:
-
-```bash
-mojo swagger2 edit $(perl -MNavel::API::Swagger2::Scheduler -e 'print Navel::API::Swagger2::Scheduler->spec_file_location;') --listen http://*:8080
-```
+The documentation is available through the OpenAPI spec.
 
 - WebSocket
 

@@ -14,7 +14,7 @@ use parent 'Navel::Base::WorkerManager';
 use File::ShareDir 'dist_dir';
 
 use Navel::Scheduler::Parser;
-use Navel::API::Swagger2::Scheduler;
+use Navel::API::OpenAPI::Scheduler;
 
 #-> class variables
 
@@ -36,7 +36,7 @@ sub new {
         core_class => 'Navel::Scheduler::Core',
         mojolicious_application_class => 'Navel::Scheduler::Mojolicious::Application',
         mojolicious_application_home_directory => dist_dir('Navel-Scheduler') . '/mojolicious/home',
-        swagger => Navel::API::Swagger2::Scheduler->new
+        openapi_url => Navel::API::OpenAPI::Scheduler->spec_file_location
     );
 
     $self->{webserver}->app->mode('production') if $self->webserver;
