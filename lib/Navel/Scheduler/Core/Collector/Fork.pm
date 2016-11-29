@@ -61,6 +61,21 @@ sub ' . $self->{worker_rpc_method} . ' {
         return;
     }
 
+    unless ($initialized) {
+        $initialized = 1;
+
+        *meta = sub {
+            $meta;
+        };
+
+        *collector = sub {
+            $collector;
+        };
+
+        ' . $self->{definition}->{backend} . '::init;
+        ' . $self->{definition}->{publisher_backend} . '::init;
+    }
+
     unless (defined $backend) {
         if ($sub eq ' . "'queue'" . ') {
             $done->(1, scalar @{queue->{items}});
@@ -75,21 +90,6 @@ sub ' . $self->{worker_rpc_method} . ' {
         }
 
         return;
-    }
-
-    unless ($initialized) {
-        $initialized = 1;
-
-        *meta = sub {
-            $meta;
-        };
-
-        *collector = sub {
-            $collector;
-        };
-
-        ' . $self->{definition}->{backend} . '::init;
-        ' . $self->{definition}->{publisher_backend} . '::init;
     }
 
     if (my $sub_ref = $backend->can($sub)) {
