@@ -50,7 +50,7 @@
             "Navel::Mojolicious::Plugin::OpenAPI::StdResponses" : "0",
             "Navel::Queue" : "0",
             "perl" : "v5.18.0",
-            "Promises" : 0
+            "Promises" : "0"
          }
       }
    },
