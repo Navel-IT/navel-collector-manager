@@ -11,7 +11,7 @@ configure_requires:
   File::ShareDir::Install: '0'
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 7.1001, CPAN::Meta::Converter version 2.150005'
-license: unknown
+license: apache_2_0
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
