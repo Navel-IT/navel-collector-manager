@@ -84,7 +84,7 @@ sub ' . $self->{worker_rpc_method} . ' {
         } else {
             $exiting = 1;
 
-            $done->(1, ' . "'exiting the worker'" . ');
+            $done->(1);
 
             exit;
         }
