@@ -22,7 +22,7 @@ sub show_associated_queue {
 }
 
 sub delete_all_events_from_associated_queue {
-    shift->_delete_all_events_from_associated_queue('publisher_backend');
+    shift->_delete_all_events_from_associated_queue('dequeue');
 }
 
 sub show_associated_publisher_connection_status {
