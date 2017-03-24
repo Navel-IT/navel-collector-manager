@@ -37,12 +37,6 @@ API
 
 The documentation is available through the OpenAPI spec.
 
-- WebSocket
-
-Endpoint | Summary
--------- | -------
-/api/logger/stream | stream the output of the core logger
-
 Copyright
 ---------
 
