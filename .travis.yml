@@ -21,7 +21,7 @@ before_install:
   - f_install_navel_dep navel-logger
   - f_install_navel_dep navel-api
   - f_install_navel_dep navel-base-daemon
-  - f_install_navel_dep anyevent-fork-rpc-serializer-sereal
+  - f_install_navel_dep anyevent-fork-rpc-serializer-cpanel-json-xs
   - f_install_navel_dep navel-base-workermanager
   - f_install_navel_dep navel-mojolicious-plugin-logger
   - f_install_navel_dep navel-mojolicious-plugin-openapi-stdresponses
