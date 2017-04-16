@@ -1,7 +1,7 @@
 #!perl
 
 # Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
-# navel-scheduler is licensed under the Apache License, Version 2.0
+# navel-collector-manager is licensed under the Apache License, Version 2.0
 
 #-> BEGIN
 
@@ -9,11 +9,11 @@
 
 use Navel::Base;
 
-use Navel::Scheduler;
+use Navel::CollectorManager;
 
 #-> main
 
-Navel::Scheduler->run;
+Navel::CollectorManager->run;
 
 #-> END
 
@@ -25,7 +25,7 @@ __END__
 
 =head1 NAME
 
-navel-scheduler - Run Navel::Scheduler
+navel-collector-manager - Run Navel::CollectorManager
 
 =head1 COPYRIGHT
 
@@ -33,6 +33,6 @@ Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 
 =head1 LICENSE
 
-navel-scheduler is licensed under the Apache License, Version 2.0
+navel-collector-manager is licensed under the Apache License, Version 2.0
 
 =cut

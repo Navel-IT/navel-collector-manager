@@ -1,5 +1,5 @@
 {
-   "abstract" : "navel-scheduler",
+   "abstract" : "navel-collector-manager",
    "author" : [
       "Yoann Le Garff, Nicolas Boquet and Yann Le Bras"
    ],
@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "Navel-Scheduler",
+   "name" : "Navel-CollectorManager",
    "no_index" : {
       "directory" : [
          "t",
@@ -24,6 +24,7 @@
          "requires" : {
             "ExtUtils::MakeMaker" : "0",
             "Test::Exception" : "0",
+            "Test::Mojo" : "0",
             "Test::More" : "0"
          }
       },
@@ -59,7 +60,7 @@
          "http://www.apache.org/licenses/LICENSE-2.0.html"
       ],
       "repository" : {
-         "url" : "http://github.com/Navel-IT/navel-scheduler"
+         "url" : "http://github.com/Navel-IT/navel-collector-manager"
       }
    },
    "version" : "0.1",

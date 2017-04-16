@@ -1,10 +1,11 @@
 ---
-abstract: navel-scheduler
+abstract: navel-collector-manager
 author:
   - 'Yoann Le Garff, Nicolas Boquet and Yann Le Bras'
 build_requires:
   ExtUtils::MakeMaker: '0'
   Test::Exception: '0'
+  Test::Mojo: '0'
   Test::More: '0'
 configure_requires:
   ExtUtils::MakeMaker: '6.64'
@@ -15,7 +16,7 @@ license: apache_2_0
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
-name: Navel-Scheduler
+name: Navel-CollectorManager
 no_index:
   directory:
     - t
@@ -38,6 +39,6 @@ requires:
   Promises: '0'
 resources:
   license: http://www.apache.org/licenses/LICENSE-2.0.html
-  repository: http://github.com/Navel-IT/navel-scheduler
+  repository: http://github.com/Navel-IT/navel-collector-manager
 version: '0.1'
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'

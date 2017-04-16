@@ -1,11 +1,11 @@
 # Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
-# navel-scheduler is licensed under the Apache License, Version 2.0
+# navel-collector-manager is licensed under the Apache License, Version 2.0
 
 #-> BEGIN
 
 #-> initialization
 
-package Navel::Scheduler::Mojolicious::Application::Controller::OpenAPI::Collector 0.1;
+package Navel::CollectorManager::Mojolicious::Application::Controller::OpenAPI::Collector 0.1;
 
 use Navel::Base;
 
@@ -45,7 +45,7 @@ __END__
 
 =head1 NAME
 
-Navel::Scheduler::Mojolicious::Application::Controller::OpenAPI::Collector
+Navel::CollectorManager::Mojolicious::Application::Controller::OpenAPI::Collector
 
 =head1 COPYRIGHT
 
@@ -53,6 +53,6 @@ Copyright (C) 2015-2017 Yoann Le Garff, Nicolas Boquet and Yann Le Bras
 
 =head1 LICENSE
 
-navel-scheduler is licensed under the Apache License, Version 2.0
+navel-collector-manager is licensed under the Apache License, Version 2.0
 
 =cut
