@@ -25,7 +25,6 @@ Usage
 ```
 [root@vmbox tmp]# navel-collector-manager /usr/local/etc/navel-collector-manager/meta.json
 Oct 18 18:52:04 vmbox navel-collector-manager[5211] 133 initialization done.
-Oct 18 18:52:04 vmbox navel-collector-manager[5211] 133 Navel::Definition::Collector.Navel::Collector::Monitoring::Plugin.nagios-worker-1: initialization.
 ```
 
 All the help is available via `navel-collector-manager --help`.
