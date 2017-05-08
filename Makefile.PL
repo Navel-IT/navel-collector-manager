@@ -38,7 +38,7 @@ WriteMakefile(
         'Navel::Base' => 0,
         'Navel::Base::WorkerManager' => 0,
         'Navel::Mojolicious::Plugin::Logger' => 0,
-        'Navel::Mojolicious::Plugin::OpenAPI::StdResponses' => 0,
+        'Navel::Mojolicious::Plugin::API::StdResponses' => 0,
         'Navel::Logger' => 0,
         'Navel::API' => 0,
         'Navel::Definition::Collector' => 0,
