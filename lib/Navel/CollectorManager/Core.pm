@@ -62,8 +62,6 @@ sub init_worker_by_name {
         core => $self,
         definition => $definition,
         on_event => sub {
-            local $@;
-
             for (@_) {
                 if (ref eq 'ARRAY') {
                     eval {
